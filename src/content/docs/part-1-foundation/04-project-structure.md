@@ -94,6 +94,10 @@ Controller ไม่ควรเป็นที่รวมทุกอย่า
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+  </ItemGroup>
 </Project>
 ```
 
