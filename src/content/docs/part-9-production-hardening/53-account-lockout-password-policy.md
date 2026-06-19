@@ -1,0 +1,89 @@
+﻿---
+title: "53. Account Lockout และ Password Policy"
+description: "ป้องกัน brute force login และบันทึกสถานะความปลอดภัยของ account"
+---
+
+Production API ต้องคิดถึงการเดารหัสผ่าน ไม่ใช่แค่ตรวจว่า password ถูกหรือผิด ถ้า attacker ยิง login ได้เรื่อย ๆ โดยไม่มี limit ระบบจะเปิดช่องให้ brute force ได้
+
+ใน final project เราเพิ่ม field เหล่านี้:
+
+- `AccessFailedCount`
+- `LockoutEnd`
+- `LastLoginAt`
+- `PasswordChangedAt`
+
+## Flow ตอน login ผิด
+
+เมื่อ password ผิด ระบบจะเพิ่ม `AccessFailedCount` และถ้าถึงค่าที่กำหนด จะตั้ง `LockoutEnd`
+
+```csharp
+user.AccessFailedCount++;
+
+if (user.AccessFailedCount >= _lockoutOptions.MaxFailedAccessAttempts)
+{
+    user.LockoutEnd = utcNow.AddMinutes(_lockoutOptions.LockoutMinutes);
+}
+```
+
+ค่าเริ่มต้นอยู่ใน `appsettings.json`
+
+```json
+{
+  "AccountLockout": {
+    "MaxFailedAccessAttempts": 5,
+    "LockoutMinutes": 15
+  }
+}
+```
+
+## Flow ตอน login สำเร็จ
+
+เมื่อ login สำเร็จ ระบบ reset failed count และบันทึกเวลา login ล่าสุด
+
+```csharp
+user.AccessFailedCount = 0;
+user.LockoutEnd = null;
+user.LastLoginAt = utcNow;
+```
+
+## Audit log และ error response
+
+final project และ validation project บันทึก audit log สำหรับเหตุการณ์ login สำคัญ:
+
+- `LOGIN_FAILED` เมื่อ password ผิด หรือ account ถูกปฏิเสธระหว่าง login
+- `ACCOUNT_LOCKED` เมื่อ failed count ถึงจำนวนที่กำหนด
+- `LOGIN_SUCCEEDED` เมื่อ login สำเร็จ
+
+response ของ invalid credentials ต้องใช้ข้อความกลาง ๆ เช่น `Invalid email or password` ทั้งกรณี email ไม่มีอยู่จริงและ password ผิด เพื่อไม่ให้ API leak ว่า email นั้นมี account อยู่หรือไม่
+
+integration tests ตรวจสิ่งเหล่านี้แล้ว:
+
+- login password ผิดเพิ่ม failed count และเขียน audit log
+- login สำเร็จ reset `AccessFailedCount`, clear `LockoutEnd` และตั้ง `LastLoginAt`
+- failed login ครบ limit แล้ว account ถูก lock
+- lockout เขียน audit log `ACCOUNT_LOCKED`
+- invalid email และ wrong password ตอบข้อความกลาง ๆ โดยไม่ echo email กลับไปใน response
+
+## Password policy
+
+ตัวอย่างในหนังสือใช้ minimum length เพื่อให้มือใหม่ทำตามได้ แต่ production ควรมี policy เพิ่ม เช่น:
+
+- ความยาวขั้นต่ำ 12 ตัวอักษรขึ้นไปสำหรับระบบจริง
+- block password ที่รั่วใน breach list
+- ไม่บังคับ pattern ซับซ้อนเกินไปจนผู้ใช้ตั้ง password ที่คาดเดาง่าย
+- ใช้ MFA สำหรับ admin
+- บังคับเปลี่ยน password เมื่อสงสัยว่ารั่ว ไม่ใช่บังคับเปลี่ยนทุก 30 วันแบบไม่มีเหตุผล
+
+สำหรับระบบองค์กรจริง ควรพิจารณาใช้ ASP.NET Core Identity หรือ external identity provider เช่น Microsoft Entra ID, Auth0, Keycloak หรือ OAuth/OIDC provider อื่น แทนการดูแล password เองทั้งหมด
+
+ในหนังสือเล่มนี้ใช้ `PasswordHasher<TUser>` จาก ASP.NET Core Identity core services เป็น baseline เพราะได้ password-specific hashing พร้อม salt และรองรับการ rehash เมื่อ policy ของ hasher เปลี่ยน โดยไม่ต้องนำ ASP.NET Core Identity ทั้งระบบเข้ามา
+
+## Checkpoint
+
+ก่อนอ่านบทต่อไป ให้ตรวจว่าทำได้ครบตามนี้
+
+- login ผิดเพิ่ม failed count
+- login สำเร็จ reset failed count และ lockout state
+- account ถูก lock เมื่อผิดครบ limit
+- invalid credentials ใช้ response กลาง ๆ
+- audit log ครอบคลุม login failed, locked และ succeeded

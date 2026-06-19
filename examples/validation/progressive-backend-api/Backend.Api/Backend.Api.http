@@ -1,0 +1,204 @@
+@Backend.Api_HostAddress = http://localhost:5232
+@token = paste-token-here
+@adminToken = paste-admin-token-here
+@refreshToken = paste-refresh-token-here
+@verificationToken = paste-email-verification-token-here
+@resetToken = paste-password-reset-token-here
+@userId = paste-user-guid-here
+@missingUserId = 00000000-0000-0000-0000-000000000000
+
+### Liveness check
+GET {{Backend.Api_HostAddress}}/health/live
+Accept: application/json
+
+### Readiness check
+GET {{Backend.Api_HostAddress}}/health/ready
+Accept: application/json
+
+### Register
+POST {{Backend.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "registered-user@example.com",
+  "password": "Passw0rd!"
+}
+
+### Verify email
+POST {{Backend.Api_HostAddress}}/api/auth/verify-email
+Content-Type: application/json
+
+{
+  "token": "{{verificationToken}}"
+}
+
+### Resend email verification
+POST {{Backend.Api_HostAddress}}/api/auth/resend-email-verification
+Content-Type: application/json
+
+{
+  "email": "registered-user@example.com"
+}
+
+### Forgot password
+POST {{Backend.Api_HostAddress}}/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "registered-user@example.com"
+}
+
+### Reset password
+POST {{Backend.Api_HostAddress}}/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "{{resetToken}}",
+  "newPassword": "NewPassw0rd!"
+}
+
+### Login
+POST {{Backend.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo-user@example.com",
+  "password": "User1234!"
+}
+
+### Admin login
+POST {{Backend.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin1234!"
+}
+
+### Refresh access token
+POST {{Backend.Api_HostAddress}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Revoke refresh token
+POST {{Backend.Api_HostAddress}}/api/auth/revoke
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Current user
+GET {{Backend.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Admin ping
+GET {{Backend.Api_HostAddress}}/api/admin/users/ping
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Admin users page 1
+GET {{Backend.Api_HostAddress}}/api/admin/users?page=1&pageSize=20
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Admin users filter by role
+GET {{Backend.Api_HostAddress}}/api/admin/users?role=Admin
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Admin users search by email
+GET {{Backend.Api_HostAddress}}/api/admin/users?search=admin
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Admin users sort by email ascending
+GET {{Backend.Api_HostAddress}}/api/admin/users?sortBy=email&sortDirection=asc
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Admin change user role
+PATCH {{Backend.Api_HostAddress}}/api/admin/users/{{userId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "role": "Admin"
+}
+
+### Admin change user status
+PATCH {{Backend.Api_HostAddress}}/api/admin/users/{{userId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "isActive": false
+}
+
+### Get all users
+GET {{Backend.Api_HostAddress}}/api/users
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Get user by id
+GET {{Backend.Api_HostAddress}}/api/users/{{userId}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Get missing user
+GET {{Backend.Api_HostAddress}}/api/users/{{missingUserId}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Create user
+POST {{Backend.Api_HostAddress}}/api/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "new-user@example.com"
+}
+
+### Validation failed
+POST {{Backend.Api_HostAddress}}/api/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "not-an-email"
+}
+
+### Custom validation failed
+POST {{Backend.Api_HostAddress}}/api/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "user@example.invalid"
+}
+
+### Email conflict
+POST {{Backend.Api_HostAddress}}/api/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "demo-user@example.com"
+}
+
+### Update user
+PUT {{Backend.Api_HostAddress}}/api/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "updated-admin@example.com"
+}
+
+### Delete user
+DELETE {{Backend.Api_HostAddress}}/api/users/{{userId}}
+Authorization: Bearer {{token}}

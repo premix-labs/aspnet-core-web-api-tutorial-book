@@ -1,0 +1,38 @@
+services:
+  api:
+    build:
+      context: ./Backend.Api
+      dockerfile: Dockerfile
+    ports:
+      - "18080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=BackendApiDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;"
+      DataSeeding__Enabled: "false"
+      Jwt__Issuer: "Backend.Api"
+      Jwt__Audience: "Backend.ApiClient"
+      Jwt__SigningKey: "${JWT_SIGNING_KEY}"
+      Jwt__ExpirationMinutes: "60"
+      Cors__AllowedOrigins__0: "http://localhost:3000"
+      Cors__AllowedOrigins__1: "http://localhost:5173"
+      Cors__AllowedOrigins__2: "http://localhost:5174"
+      EmailVerification__VerificationUrlTemplate: "http://localhost:5173/verify-email?token={token}"
+      PasswordReset__ResetUrlTemplate: "http://localhost:5173/reset-password?token={token}"
+      Email__FromAddress: "no-reply@example.com"
+      Email__FromName: "Backend API"
+      Email__UseSmtp: "false"
+    depends_on:
+      - db
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+
+volumes:
+  sqlserver-data:

@@ -1,0 +1,144 @@
+﻿---
+title: 41 - Logging
+description: ใช้ ILogger และ structured logging เพื่อตรวจสอบพฤติกรรมของ API
+---
+
+Logging ช่วยให้เราเห็นว่า API ทำงานอย่างไร เกิด error ที่ไหน และ request สำคัญเกิดขึ้นเมื่อไหร่
+
+ใน ASP.NET Core เราจะใช้ `ILogger<T>` ซึ่งรองรับ structured logging และทำงานร่วมกับ logging providers ที่ framework มีให้ เช่น Console และ Debug
+
+## Structured Logging คืออะไร
+
+Structured logging คือการเขียน log โดยใช้ placeholder แทนการต่อ string เอง
+
+ควรเขียนแบบนี้
+
+```csharp
+logger.LogInformation("User {UserId} logged in", user.Id);
+```
+
+ไม่ควรเขียนแบบนี้
+
+```csharp
+logger.LogInformation("User " + user.Id + " logged in");
+```
+
+แบบแรกทำให้ระบบ log provider เข้าใจว่า `UserId` เป็น field หนึ่ง สามารถค้นหา filter หรือ query ต่อได้ง่ายกว่า
+
+## เพิ่ม logging ใน AuthService
+
+เปิด `AuthService.cs` แล้วแก้ constructor ให้รับ logger
+
+```csharp
+public class AuthService(
+    IUserRepository userRepository,
+    IPasswordHasher<User> passwordHasher,
+    JwtTokenService jwtTokenService,
+    ILogger<AuthService> logger)
+```
+
+เพิ่ม log ใน `RegisterAsync`
+
+```csharp
+logger.LogInformation("Register requested for email {Email}", request.Email);
+```
+
+หลังสร้าง user สำเร็จ
+
+```csharp
+logger.LogInformation(
+    "User {UserId} registered with role {Role}",
+    createdUser.Id,
+    createdUser.Role);
+```
+
+เพิ่ม log ใน `LoginAsync`
+
+```csharp
+logger.LogWarning(
+    "Login failed for email {Email}: invalid credentials",
+    request.Email);
+```
+
+และเมื่อ login สำเร็จ
+
+```csharp
+logger.LogInformation("User {UserId} logged in", user.Id);
+```
+
+## เพิ่ม logging ใน AdminUserService
+
+แก้ constructor ให้รับ logger
+
+```csharp
+public class AdminUserService(
+    IUserRepository userRepository,
+    CurrentUserService currentUserService,
+    AuditLogService auditLogService,
+    ILogger<AdminUserService> logger)
+```
+
+หลังเปลี่ยน role สำเร็จ
+
+```csharp
+logger.LogInformation(
+    "Admin {AdminUserId} changed user {TargetUserId} role from {OldRole} to {NewRole}",
+    currentAdminId,
+    user.Id,
+    oldRole,
+    user.Role);
+```
+
+หลังเปลี่ยนสถานะสำเร็จ
+
+```csharp
+logger.LogInformation(
+    "Admin {AdminUserId} changed user {TargetUserId} active status from {OldStatus} to {NewStatus}",
+    currentAdminId,
+    user.Id,
+    oldIsActive,
+    user.IsActive);
+```
+
+## ตั้งค่า LogLevel
+
+เปิด `appsettings.json`
+
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning",
+      "Microsoft.EntityFrameworkCore.Database.Command": "Warning"
+    }
+  }
+}
+```
+
+`Default` คือค่า default ของ application
+
+`Microsoft.AspNetCore` คุม log จาก framework
+
+`Microsoft.EntityFrameworkCore.Database.Command` คุม log SQL command จาก EF Core ถ้าเปิด `Information` อาจเห็น SQL เยอะมาก
+
+## สิ่งที่ไม่ควร log
+
+- password
+- password hash
+- JWT access token
+- signing key
+- connection string ที่มี password
+- personal data ที่ไม่จำเป็นต่อการ debug
+
+ถ้าต้อง log email เพื่อ debug ให้เข้าใจว่า email เป็นข้อมูลส่วนบุคคล ควรใช้เท่าที่จำเป็นและตรวจนโยบายของระบบจริง
+
+## Checkpoint
+
+ก่อนอ่านบทต่อไป ให้ตรวจว่าทำได้ครบตามนี้
+
+- service สำคัญใช้ `ILogger<T>`
+- log ใช้ placeholder เช่น `{UserId}` ไม่ต่อ string เอง
+- login/register/admin action มี log ที่ช่วยตรวจสอบได้
+- ไม่ log password, token หรือ secret
+- `appsettings.json` มี `Logging:LogLevel`

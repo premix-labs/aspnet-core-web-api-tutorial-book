@@ -1,0 +1,91 @@
+@Backend.Api_HostAddress = http://localhost:5169
+@Docker_HostAddress = http://localhost:18080
+@accessToken = paste-token-here
+@refreshToken = paste-refresh-token-here
+@verificationToken = paste-email-verification-token-here
+@resetToken = paste-password-reset-token-here
+
+### Liveness check
+GET {{Backend.Api_HostAddress}}/health/live
+Accept: application/json
+
+### Readiness check
+GET {{Backend.Api_HostAddress}}/health/ready
+Accept: application/json
+
+### Register
+POST {{Backend.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "reader@example.com",
+  "password": "Passw0rd!"
+}
+
+### Verify email
+POST {{Backend.Api_HostAddress}}/api/auth/verify-email
+Content-Type: application/json
+
+{
+  "token": "{{verificationToken}}"
+}
+
+### Resend email verification
+POST {{Backend.Api_HostAddress}}/api/auth/resend-email-verification
+Content-Type: application/json
+
+{
+  "email": "reader@example.com"
+}
+
+### Forgot password
+POST {{Backend.Api_HostAddress}}/api/auth/forgot-password
+Content-Type: application/json
+
+{
+  "email": "reader@example.com"
+}
+
+### Reset password
+POST {{Backend.Api_HostAddress}}/api/auth/reset-password
+Content-Type: application/json
+
+{
+  "token": "{{resetToken}}",
+  "newPassword": "NewPassw0rd!"
+}
+
+### Login with seeded admin after docker compose up
+POST {{Docker_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Passw0rd!"
+}
+
+### Current user
+GET {{Backend.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{accessToken}}
+Accept: application/json
+
+### Refresh access token
+POST {{Backend.Api_HostAddress}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Revoke refresh token
+POST {{Backend.Api_HostAddress}}/api/auth/revoke
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### Admin user list
+GET {{Backend.Api_HostAddress}}/api/admin/users?page=1&pageSize=10&sortBy=createdAt&sortDirection=desc
+Authorization: Bearer {{accessToken}}
+Accept: application/json

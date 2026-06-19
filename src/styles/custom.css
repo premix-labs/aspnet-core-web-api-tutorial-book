@@ -1,0 +1,35 @@
+@media (max-width: 50rem) {
+	html,
+	body {
+		overflow-x: hidden;
+	}
+
+	main,
+	.main-pane,
+	.content-panel,
+	.sl-container,
+	.hero,
+	.sl-markdown-content {
+		max-width: 100vw;
+		min-width: 0;
+	}
+
+	.sl-container {
+		padding-inline: 1rem;
+	}
+
+	.hero {
+		text-align: center;
+	}
+
+	.hero .tagline,
+	.sl-markdown-content p,
+	.sl-markdown-content li {
+		overflow-wrap: anywhere;
+		word-break: normal;
+	}
+
+	.sl-markdown-content ul {
+		padding-inline-start: 1.25rem;
+	}
+}
