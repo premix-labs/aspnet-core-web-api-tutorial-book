@@ -35,6 +35,21 @@ flowchart LR
 
 `Repository` คือชั้นที่คุยกับแหล่งข้อมูล เช่น in-memory list ในช่วงแรก และ database ผ่าน EF Core ในภายหลัง
 
+## สิ่งที่ต้องจำก่อนลง code ในบทถัดไป
+
+ภาคนี้จะใช้คำและ pattern เหล่านี้ซ้ำหลายครั้ง:
+
+| คำ | ความหมายแบบสั้น |
+| --- | --- |
+| `Model` | object ภายในระบบ เช่น `User` |
+| `DTO` | object สำหรับรับ/ส่งข้อมูลผ่าน API |
+| `Interface` | สัญญาว่า class ต้องมี method อะไรบ้าง เช่น `IUserService` |
+| `Implementation` | class ที่ทำงานจริงตาม interface เช่น `UserService` |
+| `Dependency Injection` | ให้ ASP.NET Core สร้าง object และส่งเข้า class ให้ |
+| `InMemory` | เก็บข้อมูลใน list ชั่วคราว ยังไม่ใช่ database |
+
+ในบทถัดไป เราจะยังไม่เปลี่ยน behavior ของ API เป้าหมายคือให้ endpoint เดิมทำงานเหมือนเดิม แต่ code ถูกย้ายไปอยู่ในชั้นที่เหมาะสมกว่า
+
 ## เป้าหมายของการแยกชั้น
 
 การแยกชั้นไม่ได้ทำเพื่อให้มีไฟล์เยอะขึ้น แต่ทำเพื่อให้แต่ละไฟล์มีหน้าที่ชัด
@@ -88,10 +103,12 @@ Controller ควรทำงานบาง ๆ:
 [HttpGet("{id:int}")]
 public IActionResult GetUserById(int id)
 {
+    // Controller delegates the lookup to the service layer.
     var user = userService.GetUserById(id);
 
     if (user is null)
     {
+        // HTTP concern stays in the controller.
         return NotFound();
     }
 
@@ -128,6 +145,7 @@ public class UserService(IUserRepository userRepository)
 {
     public IReadOnlyList<User> GetUsers()
     {
+        // Service decides the use case, repository handles data access.
         return userRepository.GetAll();
     }
 }
@@ -142,6 +160,7 @@ Repository เป็นชั้นที่ติดต่อข้อมูล
 ```csharp
 public class InMemoryUserRepository
 {
+    // Temporary storage for learning. Database access comes later.
     private static readonly List<User> Users = [];
 
     public IReadOnlyList<User> GetAll()

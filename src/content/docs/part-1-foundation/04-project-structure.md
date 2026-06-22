@@ -30,31 +30,50 @@ Backend.Api/
 
 `Program.cs` คือจุดเริ่มต้นของ application ใช้ตั้งค่า service, middleware และ endpoint
 
+ก่อนอ่าน code ให้รู้จัก method สำคัญที่มักเห็นในไฟล์นี้ก่อน:
+
+| สิ่งที่จะเห็น | ความหมาย |
+| --- | --- |
+| `WebApplication.CreateBuilder(args)` | สร้าง builder สำหรับเตรียม configuration, service และ environment |
+| `builder.Services.AddControllers()` | ลงทะเบียนระบบ Controller ให้ ASP.NET Core รู้จัก |
+| `builder.Services.AddOpenApi()` | ลงทะเบียน OpenAPI document สำหรับอธิบาย endpoint |
+| `builder.Build()` | สร้าง application จากค่าที่ตั้งไว้ใน builder |
+| `app.Environment.IsDevelopment()` | ตรวจว่ากำลังรันใน environment แบบ Development หรือไม่ |
+| `app.MapOpenApi()` | เปิด endpoint สำหรับ OpenAPI document ในเครื่อง development |
+| `app.UseHttpsRedirection()` | redirect request จาก HTTP ไป HTTPS เมื่อกำหนดค่าได้ |
+| `app.UseAuthorization()` | เพิ่ม authorization middleware เข้า pipeline |
+| `app.MapControllers()` | map request ไปยัง Controller action |
+| `app.Run()` | เริ่มรัน web application |
+
 ตัวอย่าง code ที่มักเจอ:
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
+// Register services before the app is built.
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+// OpenAPI lets tools describe and test the API endpoints.
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Only expose OpenAPI while developing locally.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
+// Redirect HTTP requests to HTTPS when HTTPS is configured.
 app.UseHttpsRedirection();
 
+// Add authorization middleware. We will configure real auth in later chapters.
 app.UseAuthorization();
 
+// Connect attribute-routed controllers to the request pipeline.
 app.MapControllers();
 
+// Start the web application.
 app.Run();
 ```
 
@@ -66,6 +85,26 @@ app.Run();
 - `app.Run()` คือเริ่มรัน application
 
 ในบทหลัง ๆ เราจะกลับมาเพิ่ม database, JWT, error handler และ service ของเราในไฟล์นี้
+
+## ภาพรวม Request Pipeline
+
+เมื่อ API รับ request เข้ามา ASP.NET Core จะพา request ผ่าน pipeline ที่เราตั้งค่าไว้ใน `Program.cs`
+
+```mermaid
+flowchart TD
+    Request[HTTP Request]
+    Middleware[Middleware<br/>HTTPS, Auth, Error Handling]
+    Routing[Routing]
+    Controller[Controller Action]
+    Response[HTTP Response]
+
+    Request --> Middleware
+    Middleware --> Routing
+    Routing --> Controller
+    Controller --> Response
+```
+
+ตอนนี้ pipeline ยังสั้นมาก แต่ในบทต่อ ๆ ไปเราจะเพิ่ม middleware สำหรับ error handling, authentication, authorization, logging และ OpenAPI
 
 ## Controllers
 
@@ -143,6 +182,8 @@ dotnet add package Microsoft.EntityFrameworkCore.SqlServer
 
 ตัวอย่างค่าที่เจอบ่อย:
 
+เลข port ในไฟล์นี้เป็นตัวอย่างเท่านั้น โปรเจกต์ของคุณอาจได้ port อื่นจาก template ให้ดูค่าจริงจาก `applicationUrl` หรือจาก terminal ตอนรัน `dotnet run`
+
 ```json
 {
   "$schema": "https://json.schemastore.org/launchsettings.json",
@@ -195,6 +236,36 @@ Backend.Api/
 ```
 
 อย่าเพิ่งสร้างทุกโฟลเดอร์พร้อมกันถ้ายังไม่เข้าใจ เราจะเพิ่มทีละส่วนตามบทเรียน
+
+## เวลาแก้ปัญหาควรดูไฟล์ไหน
+
+ถ้า endpoint ไม่ถูกเรียก ให้เริ่มดู `Program.cs`, `app.MapControllers()` และ attribute route ใน controller
+
+ถ้า application อ่านค่า configuration ไม่ถูก ให้ดู `appsettings.json`, `appsettings.Development.json` และ environment ที่กำลังรัน
+
+ถ้า package หายหรือ build ไม่ผ่านหลังติดตั้ง library ให้ดูไฟล์ `.csproj`
+
+ถ้า port หรือ environment ไม่ตรงกับที่คาดไว้ ให้ดู `Properties/launchSettings.json`
+
+ถ้าต้องการทดสอบ endpoint ซ้ำ ให้ดูไฟล์ `.http`
+
+## แบบฝึกหัด
+
+เปิดโปรเจกต์ `Backend.Api` แล้วลองตอบคำถามเหล่านี้:
+
+1. ไฟล์ไหนเป็นจุดเริ่มต้นของ application
+2. บรรทัดไหนใน `Program.cs` ทำให้ Controller ถูก map เป็น endpoint
+3. ถ้าจะเพิ่ม package EF Core ในอนาคต ไฟล์ไหนจะเปลี่ยน
+4. ถ้าจะเปลี่ยน port ตอนรัน local ควรเริ่มดูไฟล์ไหน
+5. ถ้าจะเก็บ request สำหรับทดสอบ API ควรใช้ไฟล์ชนิดใด
+
+## แนวคำตอบโดยย่อ
+
+- จุดเริ่มต้นคือ `Program.cs`
+- การ map Controller อยู่ที่ `app.MapControllers()`
+- package reference อยู่ในไฟล์ `.csproj`
+- port local มักอยู่ใน `Properties/launchSettings.json`
+- request สำหรับทดสอบ API เก็บในไฟล์ `.http`
 
 ## Checkpoint
 

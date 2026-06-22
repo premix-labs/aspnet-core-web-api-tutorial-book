@@ -32,9 +32,9 @@ export default defineConfig({
 				{
 					label: 'เริ่มต้น',
 					items: [
-						{ label: 'หน้าแรก', slug: '' },
-						{ label: 'แผนทั้งเล่ม', slug: 'book-plan' },
-						{ label: 'สถานะต้นฉบับ', slug: 'manuscript-status' },
+						{ label: 'หน้าแรก', link: '/' },
+						{ label: 'แผนทั้งเล่ม', link: 'book-plan/' },
+						{ label: 'สถานะต้นฉบับ', link: 'manuscript-status/' },
 					],
 				},
 				{

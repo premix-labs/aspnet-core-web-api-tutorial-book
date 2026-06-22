@@ -12,10 +12,12 @@ Controller คือ class ที่รับ HTTP request แล้วส่ง
 เปิด `Program.cs` แล้วตรวจว่ามีสองส่วนนี้
 
 ```csharp
+// Register controller services.
 builder.Services.AddControllers();
 
 // ...
 
+// Map controller routes into the HTTP pipeline.
 app.MapControllers();
 ```
 
@@ -36,9 +38,42 @@ WeatherForecast.cs
 
 ถ้ายังไม่อยากลบก็ไม่เป็นไร แต่ในหนังสือจะใช้ `UsersController` เป็นหลัก
 
+## สิ่งที่จะใช้ใน Controller แรก
+
+ก่อนสร้างไฟล์ ให้รู้จักคำสำคัญที่จะเห็นใน code ก่อน:
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `using Microsoft.AspNetCore.Mvc;` | นำ class และ attribute สำหรับเขียน Controller มาใช้ |
+| `namespace Backend.Api.Controllers;` | ระบุตำแหน่งทาง logical ของ class ในโปรเจกต์ |
+| `[ApiController]` | บอก ASP.NET Core ว่า class นี้เป็น API controller |
+| `[Route("api/[controller]")]` | กำหนด route หลักของ controller |
+| `ControllerBase` | base class สำหรับ API controller ที่ไม่ render view |
+| `[HttpGet]` | บอกว่า method นี้รับ HTTP GET |
+| `IActionResult` | return type สำหรับ response หลายแบบ เช่น `Ok`, `NotFound`, `BadRequest` |
+| `Ok(value)` | ตอบ `200 OK` พร้อมข้อมูลเป็น JSON |
+
+เมื่อเห็น code ในหัวข้อถัดไป ให้มองว่าเรากำลังประกาศ controller หนึ่งตัวที่เปิด endpoint `GET /api/users`
+
 ## สร้าง UsersController
 
-สร้างไฟล์นี้
+ให้รันคำสั่งจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path Controllers
+New-Item -ItemType File -Path Controllers/UsersController.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+mkdir -p Controllers
+touch Controllers/UsersController.cs
+```
+
+จากนั้นเปิดไฟล์นี้
 
 ```text
 Controllers/UsersController.cs
@@ -51,19 +86,24 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
 
+// Marks this class as a Web API controller.
 [ApiController]
+// Base route becomes /api/users because the class name is UsersController.
 [Route("api/[controller]")]
 public class UsersController : ControllerBase
 {
+    // Handles GET /api/users.
     [HttpGet]
     public IActionResult GetUsers()
     {
+        // Temporary sample data. Later chapters will move data to services and a database.
         var users = new[]
         {
             new { Id = 1, Email = "admin@example.com" },
             new { Id = 2, Email = "user@example.com" }
         };
 
+        // Return 200 OK with JSON body.
         return Ok(users);
     }
 }
@@ -98,14 +138,16 @@ dotnet run
 ดู URL ที่ terminal แสดง เช่น
 
 ```text
-https://localhost:7001
-http://localhost:5000
+https://localhost:<https-port>
+http://localhost:<http-port>
 ```
 
-จากนั้นเปิด endpoint นี้ โดยเปลี่ยน port ให้ตรงกับเครื่องของคุณ
+URL ด้านบนเป็นเพียงตัวอย่าง เครื่องของคุณอาจแสดงเป็นค่าอื่น เช่น `http://localhost:5156` และ `https://localhost:7127`
+
+จากนั้นเปิด endpoint นี้ โดยเปลี่ยน host และ port ให้ตรงกับ terminal ของคุณ
 
 ```text
-GET https://localhost:7001/api/users
+GET http://localhost:5156/api/users
 ```
 
 ผลลัพธ์ที่คาดหวังคือ JSON array

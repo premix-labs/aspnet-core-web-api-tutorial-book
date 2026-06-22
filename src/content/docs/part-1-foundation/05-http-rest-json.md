@@ -15,7 +15,7 @@ Request คือข้อมูลที่ client ส่งมาหา server
 
 ```http
 POST /api/users HTTP/1.1
-Host: localhost:7001
+Host: localhost:<port>
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -104,6 +104,28 @@ POST /api/deleteUser
 
 เหตุผลคือ method เช่น `GET`, `POST`, `DELETE` บอก action อยู่แล้ว ไม่จำเป็นต้องใส่ action ซ้ำใน URL
 
+## หลักออกแบบ Route แบบง่าย
+
+เวลาออกแบบ REST API ให้เริ่มจาก resource ก่อน แล้วค่อยเลือก HTTP method
+
+ตัวอย่าง resource คือ `users`
+
+```text
+GET    /api/users       อ่านรายการ user
+GET    /api/users/1     อ่าน user คนเดียว
+POST   /api/users       สร้าง user ใหม่
+PUT    /api/users/1     แก้ไข user คนเดียว
+DELETE /api/users/1     ลบ user คนเดียว
+```
+
+หลักที่ควรจำ:
+
+- ใช้คำนามใน URL เช่น `users`, `orders`, `products`
+- ใช้ HTTP method เพื่อบอกการกระทำ
+- ไม่ควรใช้ `GET` เพื่อแก้ไขหรือลบข้อมูล
+- ถ้าต้องระบุ record เดียว ให้ใส่ id ใน path
+- ถ้าต้องค้นหา กรอง หรือแบ่งหน้า ให้ใช้ query string
+
 ## JSON คืออะไร
 
 JSON คือ format ที่นิยมใช้ส่งข้อมูลระหว่าง client และ API เพราะอ่านง่ายและ mapping กับ object ในภาษา programming ได้สะดวก
@@ -167,6 +189,59 @@ Authorization: Bearer <token>
 `Accept` บอก server ว่า client อยากรับ response แบบไหน
 
 `Authorization` ใช้ส่ง credential เช่น JWT token
+
+## ลองอ่าน Request และ Response
+
+ดู request นี้:
+
+```http
+GET /api/users/1 HTTP/1.1
+Host: localhost:<port>
+Accept: application/json
+Authorization: Bearer <token>
+```
+
+เราสามารถอ่านได้ว่า client ต้องการอ่าน user id `1`, อยากรับข้อมูลเป็น JSON และส่ง token มาด้วย
+
+ถ้า API ตอบกลับแบบนี้:
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+  "id": 1,
+  "email": "admin@example.com"
+}
+```
+
+แปลว่า request สำเร็จ และ API ส่งข้อมูล user กลับมาในรูปแบบ JSON
+
+ถ้า API ตอบแบบนี้:
+
+```http
+HTTP/1.1 404 Not Found
+```
+
+แปลว่า route เรียกถูก แต่ไม่พบ resource ที่ต้องการ เช่นไม่มี user id `1`
+
+## แบบฝึกหัด
+
+ลองตอบก่อนดูแนวคำตอบ:
+
+1. ถ้าต้องการอ่านรายการสินค้า ควรใช้ method และ route อะไร
+2. ถ้าต้องการสร้าง order ใหม่ ควรใช้ method และ route อะไร
+3. ถ้าต้องการลบ user id `10` ควรใช้ method และ route อะไร
+4. ถ้า user ยังไม่ได้ login แล้วเรียก endpoint ที่ต้องใช้ token ควรตอบ status code อะไร
+5. ถ้า user login แล้วแต่ไม่ใช่ admin แล้วเรียก admin endpoint ควรตอบ status code อะไร
+
+## แนวคำตอบโดยย่อ
+
+- อ่านรายการสินค้า: `GET /api/products`
+- สร้าง order ใหม่: `POST /api/orders`
+- ลบ user id `10`: `DELETE /api/users/10`
+- ยังไม่ได้ login หรือ token ไม่ถูกต้อง: `401 Unauthorized`
+- login แล้วแต่ไม่มีสิทธิ์: `403 Forbidden`
 
 ## Checkpoint
 

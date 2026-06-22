@@ -18,10 +18,13 @@ dotnet run
 ดู URL ที่ terminal แสดง เช่น
 
 ```text
-https://localhost:7001
+http://localhost:5156
+https://localhost:7127
 ```
 
-ถ้าเครื่องคุณแสดง port อื่น ให้ใช้ port ของเครื่องคุณ
+เลข port เป็นค่าจากเครื่องของคุณ อาจไม่ตรงกับตัวอย่างในหนังสือ ให้ใช้ URL ที่ terminal แสดงจริง
+
+ถ้าเริ่มต้นด้วย REST Client แล้วเจอปัญหา certificate กับ HTTPS ให้ใช้ URL แบบ `http` ก่อน เช่น `http://localhost:5156`
 
 ## เตรียมไฟล์ Backend.Api.http
 
@@ -35,13 +38,51 @@ Backend.Api.http
 
 ถ้า project ของคุณไม่มีไฟล์นี้ จะสร้างไฟล์ชื่อ `Backend.Api.http` หรือ `requests.http` เองก็ได้ หลักการเหมือนกัน
 
+ให้รันคำสั่งจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Path Backend.Api.http
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Backend.Api.http
+```
+
+## สิ่งที่จะใช้ในไฟล์ .http
+
+ก่อนเขียน request ให้รู้จัก syntax พื้นฐานของไฟล์ `.http`:
+
+| Syntax | ความหมาย |
+| --- | --- |
+| `@baseUrl = ...` | ประกาศตัวแปรชื่อ `baseUrl` เพื่อเก็บ URL หลักของ API |
+| `{{baseUrl}}` | เรียกใช้ค่าจากตัวแปร `baseUrl` |
+| `###` | แยก request แต่ละชุดออกจากกัน |
+| `GET`, `POST`, `PUT`, `DELETE` | HTTP method ที่จะส่งไปหา API |
+| `Accept: application/json` | บอก API ว่า client ต้องการรับ JSON |
+| `Content-Type: application/json` | บอก API ว่า request body ที่ส่งไปเป็น JSON |
+| `{ ... }` หลัง header | JSON body ที่ส่งไปกับ `POST` หรือ `PUT` |
+
+การใช้ตัวแปร `baseUrl` ช่วยให้เปลี่ยน port ได้ในที่เดียว ไม่ต้องแก้ทุก request
+
 เพิ่มตัวแปร `baseUrl`
 
 ```http
-@baseUrl = https://localhost:7001
+# Use the URL shown by dotnet run on your machine.
+@baseUrl = http://localhost:5156
 ```
 
-ถ้า port ในเครื่องคุณไม่ใช่ `7001` ให้แก้ `baseUrl` ให้ตรงกับ terminal ตอน `dotnet run`
+ถ้า port ในเครื่องคุณไม่ใช่ `5156` ให้แก้ `baseUrl` ให้ตรงกับ terminal ตอน `dotnet run`
+
+ตัวอย่างเช่น ถ้า terminal แสดง `https://localhost:7127` และเครื่องคุณ trust development certificate แล้ว จะใช้แบบนี้ก็ได้:
+
+```http
+# Use HTTPS only if your development certificate is trusted.
+@baseUrl = https://localhost:7127
+```
 
 ## ทดสอบ GET รายการทั้งหมด
 
@@ -114,22 +155,43 @@ DELETE {{baseUrl}}/api/users/1
 
 หลัง DELETE สำเร็จ ให้กด `GET /api/users/1` อีกครั้ง ผลลัพธ์ควรเป็น `404 Not Found`
 
+## ลำดับการทดสอบที่แนะนำ
+
+ให้ทดสอบตามลำดับนี้เมื่อเริ่ม server ใหม่:
+
+| ลำดับ | Request | ผลลัพธ์ที่ควรได้ |
+| --- | --- | --- |
+| 1 | `GET /api/users` | `200 OK` และมี user เริ่มต้น |
+| 2 | `GET /api/users/1` | `200 OK` และได้ user id `1` |
+| 3 | `GET /api/users/999` | `404 Not Found` |
+| 4 | `POST /api/users` | `201 Created` และได้ user ใหม่ |
+| 5 | `GET /api/users` | `200 OK` และเห็น user ใหม่ใน list |
+| 6 | `PUT /api/users/1` | `200 OK` และ email เปลี่ยน |
+| 7 | `GET /api/users/1` | `200 OK` และเห็น email ใหม่ |
+| 8 | `DELETE /api/users/1` | `204 No Content` |
+| 9 | `GET /api/users/1` | `404 Not Found` |
+
+ถ้าคุณทดสอบ `DELETE` ก่อน `PUT` แล้ว `PUT /api/users/1` ได้ `404 Not Found` ถือว่าถูกต้อง เพราะ user id `1` ถูกลบจาก memory ไปแล้ว ให้ restart API ถ้าต้องการกลับไปข้อมูลเริ่มต้น
+
 ## ไฟล์ Backend.Api.http แบบเต็ม
 
 คุณสามารถใช้ไฟล์นี้เป็นจุดเริ่มต้น
 
 ```http
-@baseUrl = https://localhost:7001
+# Base URL for the API. Change the port to match dotnet run.
+@baseUrl = http://localhost:5156
 
 ### Get all users
 GET {{baseUrl}}/api/users
 Accept: application/json
 
 ### Get user by id
+# id 1 exists in the initial in-memory data.
 GET {{baseUrl}}/api/users/1
 Accept: application/json
 
 ### Get missing user
+# id 999 should not exist, so this request should return 404.
 GET {{baseUrl}}/api/users/999
 Accept: application/json
 
@@ -137,6 +199,7 @@ Accept: application/json
 POST {{baseUrl}}/api/users
 Content-Type: application/json
 
+# JSON body sent to CreateUserRequest.
 {
   "email": "new-user@example.com"
 }
@@ -145,11 +208,13 @@ Content-Type: application/json
 PUT {{baseUrl}}/api/users/1
 Content-Type: application/json
 
+# JSON body sent to UpdateUserRequest.
 {
   "email": "updated-admin@example.com"
 }
 
 ### Delete user
+# A successful delete should return 204 No Content.
 DELETE {{baseUrl}}/api/users/1
 ```
 
@@ -169,6 +234,57 @@ DELETE {{baseUrl}}/api/users/1
 ไฟล์ `Backend.Api.http` ทำหน้าที่เหมือนเอกสารทดสอบ API แบบง่าย ทุกครั้งที่แก้ endpoint เราสามารถกดทดสอบซ้ำได้ทันที
 
 เมื่อโปรเจกต์โตขึ้น ไฟล์นี้จะมี request สำหรับ register, login, แนบ token, admin endpoint และ error case ต่าง ๆ
+
+## ถ้าผลลัพธ์ไม่ตรง
+
+ถ้าได้ `404 Not Found` ให้ตรวจ path เช่น `/api/users` ต้องมี `/api` นำหน้า และใช้ id ที่ยังมีอยู่ใน memory
+
+ถ้าได้ `405 Method Not Allowed` ให้ตรวจ HTTP method และ attribute ใน controller เช่น `PUT` ต้องคู่กับ `[HttpPut("{id:int}")]`
+
+ถ้า request ไม่ถึง API ให้ตรวจว่า `dotnet run` หรือ Visual Studio debug ยังรันอยู่ และ `baseUrl` ใช้ port ตรงกับ terminal
+
+ถ้าแก้ code แล้วผลลัพธ์ยังเหมือนเดิม ให้หยุด application แล้ว start ใหม่
+
+ถ้าใช้ HTTPS แล้ว REST Client error เรื่อง certificate ให้ใช้ URL แบบ `http` ก่อน หรือ trust development certificate ด้วย `dotnet dev-certs https --trust`
+
+## แบบฝึกหัดปิดภาค
+
+ลองเพิ่ม request ในไฟล์ `.http` สำหรับกรณีเหล่านี้:
+
+```http
+### Update missing user
+PUT {{baseUrl}}/api/users/999
+Content-Type: application/json
+
+{
+  "email": "missing@example.com"
+}
+
+### Delete missing user
+DELETE {{baseUrl}}/api/users/999
+```
+
+ผลลัพธ์ที่คาดหวังคือทั้งสอง request ควรได้ `404 Not Found`
+
+ถ้าคุณทำแบบฝึกหัด `GET /api/users/by-email/{email}` จากบท CRUD ให้เพิ่ม request นี้ด้วย:
+
+```http
+### Get user by email
+GET {{baseUrl}}/api/users/by-email/admin@example.com
+Accept: application/json
+```
+
+## Checklist ปิดภาค
+
+ก่อนเข้าภาค Architecture ให้ตรวจว่า:
+
+- `UsersController` มีครบทั้ง `GET`, `POST`, `PUT`, `DELETE`
+- ทุก action ที่รับ id ใช้ `{id:int}`
+- `POST` ตอบ `201 Created`
+- `DELETE` สำเร็จตอบ `204 No Content`
+- กรณี id ไม่มีตอบ `404 Not Found`
+- ไฟล์ `.http` มี request สำหรับกรณีสำเร็จและกรณีผิด
+- คุณอธิบายได้ว่า route parameter ต่างจาก request body อย่างไร
 
 ## Checkpoint
 
