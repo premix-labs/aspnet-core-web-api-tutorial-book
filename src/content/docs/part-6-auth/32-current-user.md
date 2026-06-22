@@ -7,6 +7,17 @@ description: ดึง user id, email และ role จาก claims ใน JWT
 
 บทนี้เราจะสร้าง `CurrentUserService` เพื่ออ่านข้อมูลผู้ใช้ปัจจุบันจาก claims โดยไม่ต้องเขียน code ซ้ำใน Controller ทุกตัว
 
+ภาพรวมการอ่าน current user จาก token:
+
+```mermaid
+flowchart LR
+    Client["Client sends Bearer token"] --> JwtMiddleware["JWT Bearer middleware"]
+    JwtMiddleware --> Principal["HttpContext.User<br/>ClaimsPrincipal"]
+    Principal --> CurrentUserService["CurrentUserService"]
+    CurrentUserService --> AuthController["AuthController /api/auth/me"]
+    AuthController --> Response["CurrentUserResponse"]
+```
+
 ## รูปแบบ Authorization header
 
 client ต้องส่ง header แบบนี้

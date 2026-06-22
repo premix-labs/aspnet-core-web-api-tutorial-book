@@ -18,6 +18,15 @@ description: "ทำระบบยืนยันอีเมลและลื
 - ส่ง email ผ่าน `IEmailSender` เพื่อเปลี่ยนจาก log sender ไป SMTP หรือ provider จริงได้
 - มี integration test รองรับ flow สำคัญ
 
+## Implementation map ใน final example
+
+| Feature | Files | Tests |
+| --- | --- | --- |
+| Verification/reset token entity และ EF mapping | `examples/final-backend-api/Backend.Api/Models/EmailVerificationToken.cs`<br/>`examples/final-backend-api/Backend.Api/Models/PasswordResetToken.cs`<br/>`examples/final-backend-api/Backend.Api/Data/AppDbContext.cs` | `examples/final-backend-api/Backend.Api.Tests/DatabaseModelTests.cs` |
+| Verification flow และ token lifecycle | `examples/final-backend-api/Backend.Api/Services/EmailVerificationService.cs`<br/>`examples/final-backend-api/Backend.Api/Options/EmailVerificationOptions.cs` | `examples/final-backend-api/Backend.Api.Tests/AuthIntegrationTests.cs` |
+| Forgot/reset password และ revoke session หลัง reset | `examples/final-backend-api/Backend.Api/Services/PasswordResetService.cs`<br/>`examples/final-backend-api/Backend.Api/Services/RefreshTokenService.cs`<br/>`examples/final-backend-api/Backend.Api/Options/PasswordResetOptions.cs` | `examples/final-backend-api/Backend.Api.Tests/AuthIntegrationTests.cs`<br/>`examples/final-backend-api/Backend.Api.Tests/AuditLogIntegrationTests.cs` |
+| Email sender abstraction สำหรับ dev/test/SMTP | `examples/final-backend-api/Backend.Api/Services/IEmailSender.cs`<br/>`examples/final-backend-api/Backend.Api/Services/LoggingEmailSender.cs`<br/>`examples/final-backend-api/Backend.Api/Services/SmtpEmailSender.cs` | `examples/final-backend-api/Backend.Api.Tests/TestEmailSender.cs` |
+
 ## Model ที่เพิ่ม
 
 ใน `User` มี field สำหรับ email verification และความปลอดภัยของ password:
@@ -119,6 +128,21 @@ public interface IEmailSender
 
 flow ยืนยันอีเมล:
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant AuthApi
+    participant TokenStore
+    participant EmailSender
+
+    User->>AuthApi: Register
+    AuthApi->>TokenStore: store verification token hash
+    AuthApi->>EmailSender: send verification link
+    User->>AuthApi: POST /api/auth/verify-email
+    AuthApi->>TokenStore: validate token hash
+    AuthApi-->>User: email verified
+```
+
 1. user register
 2. server สร้าง raw token แบบสุ่ม
 3. server hash token ด้วย SHA-256
@@ -129,6 +153,22 @@ flow ยืนยันอีเมล:
 8. backend hash token ที่รับมาแล้วเทียบกับ database
 9. ถ้า token active ให้ตั้ง `IsEmailVerified = true` และ `EmailVerifiedAt`
 10. mark token ว่าใช้แล้ว และ revoke token อื่นของ user
+
+```text
+VerifyEmail(rawToken):
+  tokenHash = Hash(rawToken)
+  storedToken = find active verification token by tokenHash
+
+  if token is missing, used, revoked, or expired:
+    return 401
+
+  user.IsEmailVerified = true
+  user.EmailVerifiedAt = utcNow
+  storedToken.UsedAt = utcNow
+  revoke other active verification tokens for the same user
+  write EMAIL_VERIFIED audit log
+  return current user response
+```
 
 endpoint:
 
@@ -154,6 +194,23 @@ Content-Type: application/json
 
 flow ลืมรหัสผ่าน:
 
+```mermaid
+sequenceDiagram
+    participant User
+    participant AuthApi
+    participant TokenStore
+    participant EmailSender
+    participant RefreshTokens
+
+    User->>AuthApi: POST /api/auth/forgot-password
+    AuthApi->>TokenStore: store reset token hash
+    AuthApi->>EmailSender: send reset link
+    User->>AuthApi: POST /api/auth/reset-password
+    AuthApi->>TokenStore: consume reset token
+    AuthApi->>RefreshTokens: revoke all sessions
+    AuthApi-->>User: password reset completed
+```
+
 1. user ส่ง email มาที่ `forgot-password`
 2. server ตอบ `204 No Content` เสมอ
 3. ถ้ามี user active จริง server สร้าง reset token
@@ -166,6 +223,25 @@ flow ลืมรหัสผ่าน:
 10. server reset `AccessFailedCount` และ `LockoutEnd`
 11. server revoke refresh token ทั้งหมดของ user
 12. mark reset token ว่าใช้แล้ว และ revoke reset token อื่นของ user
+
+```text
+ResetPassword(rawToken, newPassword):
+  tokenHash = Hash(rawToken)
+  storedToken = find active reset token by tokenHash
+
+  if token is missing, used, revoked, or expired:
+    return 401
+
+  user.PasswordHash = HashPassword(newPassword)
+  user.PasswordChangedAt = utcNow
+  user.AccessFailedCount = 0
+  user.LockoutEnd = null
+  storedToken.UsedAt = utcNow
+  revoke other active reset tokens for the same user
+  revoke every active refresh token for the same user
+  write PASSWORD_RESET_COMPLETED audit log
+  return 204
+```
 
 endpoint:
 

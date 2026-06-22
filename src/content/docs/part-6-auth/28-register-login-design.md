@@ -7,6 +7,29 @@ description: วาง contract ของ Auth API และสร้าง DTO 
 
 ในหนังสือนี้เราจะแยก endpoint auth ออกจาก user management ชัดเจน
 
+## ก่อนเริ่มบทนี้
+
+ให้ตรวจว่าตอนนี้โปรเจกต์มี CRUD user ที่ใช้ database แล้ว และ `User` entity มี field สำหรับ auth ขั้นต้น เช่น `Email`, `PasswordHash`, `Role` และ `IsActive`
+
+บทนี้ยังไม่ hash password และยังไม่สร้าง JWT จริง เราจะเริ่มจาก contract และ DTO ก่อน เพื่อให้บทถัดไปต่อยอดได้เป็นขั้นตอน
+
+## คำศัพท์ในบทนี้
+
+`Contract` คือข้อตกลงระหว่าง client กับ API ว่า endpoint รับ request รูปแบบไหน และตอบ response รูปแบบไหน
+
+`DTO` หรือ Data Transfer Object คือ class ที่ใช้รับ/ส่งข้อมูลผ่าน API โดยแยกจาก entity ใน database เพื่อไม่ให้ response หลุด field ที่ไม่ควรส่ง เช่น `PasswordHash`
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Dtos/Auth/RegisterRequest.cs
+Dtos/Auth/LoginRequest.cs
+Dtos/Auth/LoginResponse.cs
+Dtos/Auth/CurrentUserResponse.cs
+```
+
+หลังจบบทนี้ยังไม่มี endpoint auth ที่ทำงานจริงครบ เราแค่เตรียม request/response model ให้พร้อมสำหรับบท hash password, login และ JWT
+
 ## Endpoint ที่ต้องมี
 
 ```text

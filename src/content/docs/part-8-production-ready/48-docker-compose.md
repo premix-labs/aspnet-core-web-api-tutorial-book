@@ -7,6 +7,17 @@ Docker Compose ใช้รันหลาย container พร้อมกัน
 
 บทนี้จะสร้าง `docker-compose.yml` สำหรับรัน Backend API กับ SQL Server ในเครื่อง local
 
+ภาพรวม container ที่ Compose จะสร้าง:
+
+```mermaid
+flowchart LR
+    Browser["Browser / REST Client"] --> HostPort["localhost:18080"]
+    HostPort --> Api["api container<br/>ASP.NET Core"]
+    Api --> DbHost["db:1433"]
+    DbHost --> Sql["SQL Server container"]
+    Sql --> Volume["sqlserver-data volume"]
+```
+
 ## สร้าง docker-compose.yml
 
 สร้างไฟล์

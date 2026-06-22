@@ -5,6 +5,28 @@ description: "แยกการตรวจว่า process ยังอยู
 
 Health check สำหรับ production ไม่ควรมีแค่ endpoint เดียว เพราะคำว่า healthy มีหลายระดับ
 
+ภาพรวมการตัดสินใจของ health checks:
+
+```mermaid
+flowchart TD
+    Platform["Docker / Kubernetes / Load balancer"] --> Live["GET /health/live"]
+    Platform --> Ready["GET /health/ready"]
+    Live --> Process{"Process running?"}
+    Ready --> Database{"Database reachable?"}
+    Process -- "No" --> Restart["Restart container/process"]
+    Process -- "Yes" --> KeepRunning["Keep process running"]
+    Database -- "No" --> StopTraffic["Stop sending traffic"]
+    Database -- "Yes" --> SendTraffic["Send traffic to API"]
+```
+
+## Implementation map ใน final example
+
+| Feature | Files | Tests |
+| --- | --- | --- |
+| Liveness endpoint | `examples/final-backend-api/Backend.Api/Program.cs` | `examples/final-backend-api/Backend.Api.Tests/ProductionHardeningIntegrationTests.cs` |
+| Readiness endpoint ที่ตรวจ database | `examples/final-backend-api/Backend.Api/Program.cs`<br/>`examples/final-backend-api/Backend.Api/Data/AppDbContext.cs` | `examples/final-backend-api/Backend.Api.Tests/ProductionHardeningIntegrationTests.cs` |
+| Docker Compose และ startup migration/seed สำหรับ local production-like run | `examples/final-backend-api/docker-compose.yml`<br/>`examples/final-backend-api/Backend.Api/Dockerfile`<br/>`examples/final-backend-api/Backend.Api/Program.cs` | `examples/final-backend-api/README.md` |
+
 ## Liveness
 
 ใช้ตอบคำถามว่า process ยังทำงานอยู่ไหม

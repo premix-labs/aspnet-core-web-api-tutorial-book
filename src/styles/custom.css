@@ -33,3 +33,19 @@
 		padding-inline-start: 1.25rem;
 	}
 }
+
+.sl-markdown-content .mermaid {
+	max-width: 100%;
+	overflow-x: auto;
+	padding: 1rem;
+	border: 1px solid var(--sl-color-gray-5);
+	border-radius: 0.5rem;
+	background: var(--sl-color-bg-nav);
+}
+
+.sl-markdown-content .mermaid svg {
+	display: block;
+	max-width: 100%;
+	height: auto;
+	margin-inline: auto;
+}

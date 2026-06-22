@@ -7,6 +7,47 @@ Integration test ใช้ตรวจว่า endpoint, routing, middleware, D
 
 ใน ASP.NET Core เราสามารถใช้ `WebApplicationFactory<Program>` เพื่อสร้าง test server และยิง HTTP request เข้า API ได้โดยไม่ต้องเปิด server จริงแยกเอง
 
+ภาพรวม integration test ด้วย `WebApplicationFactory`:
+
+```mermaid
+flowchart LR
+    Test["xUnit test"] --> Factory["WebApplicationFactory<Program>"]
+    Factory --> TestServer["In-memory test server"]
+    TestServer --> Pipeline["ASP.NET Core pipeline"]
+    Pipeline --> Controller["Controller / middleware / DI"]
+    Controller --> Response["HTTP response"]
+    Response --> Assert["Assert status/body/headers"]
+```
+
+## ก่อนเริ่มบทนี้
+
+ให้ตรวจว่าคุณมี test project จากบทก่อนหน้าแล้ว:
+
+```text
+Backend.Api/
+Backend.Api.Tests/
+Backend.Api.slnx หรือ Backend.Api.sln
+```
+
+คำสั่งในบทนี้ให้รันจาก root ของ solution คือโฟลเดอร์ที่มี `Backend.Api` และ `Backend.Api.Tests` อยู่ข้างกัน
+
+## คำศัพท์ในบทนี้
+
+`Integration test` คือ test ที่รันหลายส่วนของระบบร่วมกัน เช่น routing, middleware, DI และ controller ไม่ใช่ทดสอบ method เดี่ยวแบบ unit test
+
+`WebApplicationFactory<Program>` คือ helper ที่สร้าง test server จาก `Program.cs` ของ API เพื่อให้ test ยิง HTTP request เข้า application pipeline จริงได้
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Backend.Api/Program.cs
+Backend.Api.Tests/Backend.Api.Tests.csproj
+Backend.Api.Tests/TestApiFactory.cs
+Backend.Api.Tests/AuthIntegrationTests.cs
+```
+
+หลังจบบทนี้ควรมี integration test อย่างน้อยหนึ่งตัวที่รันด้วย `dotnet test` ได้โดยไม่ต้องเปิด API server แยกเอง
+
 ## ติดตั้ง package
 
 ที่ test project ให้รัน

@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import mermaid from 'astro-mermaid';
 import starlight from '@astrojs/starlight';
 
 const site = process.env.SITE ?? 'http://localhost:4321';
@@ -10,6 +11,18 @@ export default defineConfig({
 	...(base ? { base } : {}),
 	output: 'static',
 	integrations: [
+		mermaid({
+			autoTheme: true,
+			enableLog: false,
+			mermaidConfig: {
+				flowchart: {
+					curve: 'basis',
+				},
+				sequence: {
+					mirrorActors: false,
+				},
+			},
+		}),
 		starlight({
 			title: 'ASP.NET Core Web API Tutorial Book',
 			description:

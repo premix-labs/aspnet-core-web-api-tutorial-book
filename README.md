@@ -19,6 +19,7 @@ aspnet-core-web-api-tutorial-book
 - xUnit และ integration tests
 - Docker Compose
 - Astro/Starlight สำหรับเว็บไซต์หนังสือ
+- Mermaid diagrams สำหรับอธิบาย flow สำคัญ
 
 ## คำสั่ง
 

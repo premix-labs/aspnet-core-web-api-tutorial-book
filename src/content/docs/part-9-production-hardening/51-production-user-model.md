@@ -12,6 +12,43 @@ User model สำหรับ production ต้องเก็บมากกว
 - refresh token ใดถูก revoke หรือ rotate แล้ว
 - update ชนกันจากหลาย request หรือหลาย admin หรือไม่
 
+## ก่อนเริ่มบทนี้
+
+ให้ถือว่าคุณมี project จากภาค 1-8 ที่ build/test ผ่านแล้ว และมี baseline เหล่านี้:
+
+- `User.Id` ยังเป็น `int`
+- response หลายตัวใช้ `CreatedAtUtc` และ `UpdatedAtUtc`
+- JWT subject และ `CurrentUserService.UserId` ยังอ่าน user id เป็น `int`
+- admin user list, audit log และ repository ทำงานกับ model เดิม
+
+บทนี้เป็นจุดเริ่มต้นของ production hardening ไม่ใช่บทที่ให้คัดลอก class เดียวแล้วจบ การเปลี่ยน user model ต้องปรับทั้ง data model, DTO, service, controller, token claim, migration และ tests ไปพร้อมกัน
+
+## หลังจบบทนี้ ไฟล์ที่มักเปลี่ยนใน final project
+
+```text
+Models/User.cs
+Data/AppDbContext.cs
+Migrations/*
+Dtos/Auth/*
+Dtos/Admin/*
+Dtos/Users/*
+Services/CurrentUserService.cs
+Services/AuthService.cs
+Repositories/UserRepository.cs
+Controllers/*
+Backend.Api.Tests/*
+```
+
+ในหนังสือบทนี้จะอธิบาย design และ migration risk ส่วน implementation ครบให้เทียบกับ `examples/final-backend-api`
+
+## Implementation map ใน final example
+
+| Feature | Files | Tests |
+| --- | --- | --- |
+| Production user fields, relation และ EF mapping | `examples/final-backend-api/Backend.Api/Models/User.cs`<br/>`examples/final-backend-api/Backend.Api/Data/AppDbContext.cs` | `examples/final-backend-api/Backend.Api.Tests/DatabaseModelTests.cs` |
+| Migration สำหรับ hardening และ query index | `examples/final-backend-api/Backend.Api/Migrations/20260618020604_ProductionHardening.cs`<br/>`examples/final-backend-api/Backend.Api/Migrations/20260619074554_AddProductionQueryIndexes.cs` | `examples/final-backend-api/Backend.Api.Tests/DatabaseModelTests.cs` |
+| Code ที่ต้องตาม `Guid UserId`, normalized email และ timestamp ใหม่ | `examples/final-backend-api/Backend.Api/Services/AuthService.cs`<br/>`examples/final-backend-api/Backend.Api/Services/CurrentUserService.cs`<br/>`examples/final-backend-api/Backend.Api/Repositories/UserRepository.cs` | `examples/final-backend-api/Backend.Api.Tests/AuthIntegrationTests.cs` |
+
 ใน final project เราปรับ `User` ให้มี field สำคัญเพิ่ม เช่น `NormalizedEmail`, `IsEmailVerified`, `AccessFailedCount`, `LockoutEnd`, `LastLoginAt`, `PasswordChangedAt`, `RowVersion` และ relation ไปยัง `RefreshTokens`
 
 จุดสำคัญคือ model ในภาคนี้ไม่ใช่การคัดลอกทับ `User` จากบท 17 แบบตรง ๆ เพราะบทก่อนหน้านี้ยังใช้ `int Id`, `CreatedAtUtc` และ `UpdatedAtUtc` อยู่ ส่วน final project ยกระดับเป็น `Guid Id`, `DateTimeOffset` และชื่อ field แบบ production เช่น `CreatedAt` การเปลี่ยนนี้ต้องทำพร้อม repository, DTO, controller, current user claim, audit log และ migration ไม่เช่นนั้น project จะ compile ไม่ผ่าน
