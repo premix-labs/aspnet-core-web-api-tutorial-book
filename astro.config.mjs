@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import { unified } from '@astrojs/markdown-remark';
 import mermaid from 'astro-mermaid';
 import starlight from '@astrojs/starlight';
 
@@ -10,6 +11,9 @@ export default defineConfig({
 	site,
 	...(base ? { base } : {}),
 	output: 'static',
+	markdown: {
+		processor: unified(),
+	},
 	integrations: [
 		mermaid({
 			autoTheme: true,
