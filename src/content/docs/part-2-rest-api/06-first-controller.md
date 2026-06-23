@@ -7,6 +7,12 @@ Controller คือ class ที่รับ HTTP request แล้วส่ง
 
 บทนี้เราจะสร้าง `UsersController` ตัวแรก แล้วทดสอบ `GET /api/users`
 
+## วิธีเรียนบทนี้
+
+บทนี้ให้ทำแค่ endpoint เดียวก่อนคือ `GET /api/users`
+
+อย่าเพิ่งเพิ่ม `POST`, `PUT` หรือ `DELETE` เองในบทนี้ เป้าหมายคือเข้าใจว่า Controller หนึ่งตัวกลายเป็น URL ได้อย่างไร และรู้ว่าต้องทดสอบ endpoint จาก browser หรือ REST Client อย่างไร
+
 ## ตรวจว่าโปรเจกต์ใช้ Controller แล้ว
 
 เปิด `Program.cs` แล้วตรวจว่ามีสองส่วนนี้

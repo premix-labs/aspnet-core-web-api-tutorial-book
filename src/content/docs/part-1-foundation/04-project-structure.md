@@ -7,6 +7,12 @@ description: อธิบายไฟล์สำคัญใน ASP.NET Core We
 
 บทนี้ยังไม่แก้ code เยอะ แต่จะอ่านโครงสร้างให้เข้าใจก่อน
 
+## วิธีเรียนบทนี้
+
+บทนี้เป็นบทอ่านไฟล์ ไม่ใช่บทให้จำทุกบรรทัดของ `Program.cs`
+
+ให้เปิดโปรเจกต์จริงของคุณเทียบกับรูปโครงสร้างในบทนี้ แล้วจดว่าไฟล์ไหนใช้ทำอะไร ถ้าไฟล์บางไฟล์มี port หรือ package version ไม่ตรงกับตัวอย่าง ถือว่าเป็นเรื่องปกติ
+
 ## โครงสร้างเริ่มต้น
 
 โปรเจกต์ที่สร้างด้วย `--use-controllers` จะมีไฟล์หลักประมาณนี้
@@ -45,7 +51,9 @@ Backend.Api/
 | `app.MapControllers()` | map request ไปยัง Controller action |
 | `app.Run()` | เริ่มรัน web application |
 
-ตัวอย่าง code ที่มักเจอ:
+ให้มอง `Program.cs` เป็นสองส่วนหลัก อย่าอ่านทั้งไฟล์เป็นก้อนเดียว
+
+ส่วนแรกคือการสร้าง builder และลงทะเบียน service:
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
@@ -57,7 +65,11 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+```
 
+ส่วนที่สองคือการตั้งค่า request pipeline และเริ่ม application:
+
+```csharp
 // Only expose OpenAPI while developing locally.
 if (app.Environment.IsDevelopment())
 {
@@ -211,6 +223,8 @@ dotnet add package Microsoft.EntityFrameworkCore.SqlServer
 ```
 
 ไฟล์นี้มีผลกับการรันในเครื่อง development เป็นหลัก ไม่ใช่ไฟล์ที่ใช้ตั้งค่า production
+
+เลข port ในไฟล์นี้เป็นตัวอย่างจาก template เท่านั้น เครื่องของคุณอาจเป็นเลขอื่น เช่น `http://localhost:5156` หรือ `https://localhost:7127` ให้ยึด URL ที่ `dotnet run` หรือ Visual Studio แสดงจริงเสมอ
 
 ## Backend.Api.http
 

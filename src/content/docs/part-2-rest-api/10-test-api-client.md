@@ -7,6 +7,16 @@ description: ทดสอบ endpoint ด้วยเครื่องมือ
 
 บทนี้ใช้ REST Client ใน Visual Studio Code เป็นหลัก เพราะเก็บ request ไว้ใน repository ได้ง่าย แต่ถ้าคุณถนัด Postman ก็ใช้หลักการเดียวกัน
 
+## วิธีเรียนบทนี้
+
+บทนี้ให้ทดสอบ endpoint ตามลำดับ อย่ากด request สุ่ม เพราะข้อมูลยังอยู่ใน memory และเปลี่ยนตาม request ที่ยิงไป
+
+ถ้าผลลัพธ์ไม่ตรง ให้ดูสามอย่างก่อน:
+
+1. API ยังรันอยู่หรือไม่
+2. `baseUrl` ใช้ port ตรงกับ terminal หรือไม่
+3. ก่อนหน้านี้คุณลบหรือแก้ user ไปแล้วหรือยัง
+
 ## เตรียม API ให้รันอยู่
 
 เปิด terminal ที่โฟลเดอร์โปรเจกต์ `Backend.Api`
@@ -175,12 +185,18 @@ DELETE {{baseUrl}}/api/users/1
 
 ## ไฟล์ Backend.Api.http แบบเต็ม
 
-คุณสามารถใช้ไฟล์นี้เป็นจุดเริ่มต้น
+ส่วนนี้ให้ประกอบไฟล์จาก block ย่อยด้านล่าง ไม่ต้องคัดลอกเป็นก้อนเดียว ถ้าไฟล์ของคุณมี request บางส่วนอยู่แล้ว ให้เพิ่มเฉพาะส่วนที่ยังขาด
+
+ส่วนที่ 1: ตัวแปร URL หลัก
 
 ```http
 # Base URL for the API. Change the port to match dotnet run.
 @baseUrl = http://localhost:5156
+```
 
+ส่วนที่ 2: request สำหรับอ่านข้อมูล
+
+```http
 ### Get all users
 GET {{baseUrl}}/api/users
 Accept: application/json
@@ -194,7 +210,11 @@ Accept: application/json
 # id 999 should not exist, so this request should return 404.
 GET {{baseUrl}}/api/users/999
 Accept: application/json
+```
 
+ส่วนที่ 3: request สำหรับสร้างข้อมูล
+
+```http
 ### Create user
 POST {{baseUrl}}/api/users
 Content-Type: application/json
@@ -203,7 +223,11 @@ Content-Type: application/json
 {
   "email": "new-user@example.com"
 }
+```
 
+ส่วนที่ 4: request สำหรับแก้ไขและลบข้อมูล
+
+```http
 ### Update user
 PUT {{baseUrl}}/api/users/1
 Content-Type: application/json
@@ -217,6 +241,8 @@ Content-Type: application/json
 # A successful delete should return 204 No Content.
 DELETE {{baseUrl}}/api/users/1
 ```
+
+หลังเพิ่มครบแล้ว ให้เริ่มทดสอบจาก `GET /api/users` ก่อนเสมอ เพื่อดูว่าข้อมูลเริ่มต้นยังอยู่ครบหรือไม่
 
 ## Postman ใช้ยังไง
 
@@ -247,32 +273,22 @@ DELETE {{baseUrl}}/api/users/1
 
 ถ้าใช้ HTTPS แล้ว REST Client error เรื่อง certificate ให้ใช้ URL แบบ `http` ก่อน หรือ trust development certificate ด้วย `dotnet dev-certs https --trust`
 
-## แบบฝึกหัดปิดภาค
+## ตรวจไฟล์ .http ก่อนปิดภาค
 
-ลองเพิ่ม request ในไฟล์ `.http` สำหรับกรณีเหล่านี้:
+ก่อนเข้าสู่ภาค Architecture ให้เปิด `Backend.Api.http` แล้วตรวจว่า request หลักมีครบ ไม่ต้องเพิ่มซ้ำถ้าคุณมีอยู่แล้ว:
 
-```http
-### Update missing user
-PUT {{baseUrl}}/api/users/999
-Content-Type: application/json
-
-{
-  "email": "missing@example.com"
-}
-
-### Delete missing user
-DELETE {{baseUrl}}/api/users/999
+```text
+GET all users
+GET user by id
+GET missing user
+POST create user
+PUT update user
+PUT missing user
+DELETE missing user
+DELETE user
 ```
 
-ผลลัพธ์ที่คาดหวังคือทั้งสอง request ควรได้ `404 Not Found`
-
-ถ้าคุณทำแบบฝึกหัด `GET /api/users/by-email/{email}` จากบท CRUD ให้เพิ่ม request นี้ด้วย:
-
-```http
-### Get user by email
-GET {{baseUrl}}/api/users/by-email/admin@example.com
-Accept: application/json
-```
+กรณี `GET missing user`, `PUT missing user` และ `DELETE missing user` ใช้ตรวจว่า API ตอบ `404 Not Found` ถูกต้องเมื่อ id ไม่มีอยู่จริง
 
 ## Checklist ปิดภาค
 

@@ -7,6 +7,17 @@ Web API สื่อสารผ่าน HTTP ดังนั้นก่อน
 
 ถ้าเข้าใจบทนี้ บท Controller และ CRUD จะง่ายขึ้นมาก
 
+## วิธีเรียนบทนี้
+
+บทนี้มีคำศัพท์เยอะ ให้จำเป็นคู่แทนการท่องแยก:
+
+- request คู่กับ response
+- method คู่กับ route
+- body คู่กับ `Content-Type`
+- status code คู่กับผลลัพธ์ของ API
+
+ยังไม่ต้องสร้าง endpoint ใหม่ ให้ฝึกอ่านตัวอย่าง HTTP ให้เข้าใจก่อนว่าข้อมูลแต่ละส่วนอยู่ตรงไหน
+
 ## HTTP Request
 
 Request คือข้อมูลที่ client ส่งมาหา server โดยทั่วไปประกอบด้วย method, URL, header และ body

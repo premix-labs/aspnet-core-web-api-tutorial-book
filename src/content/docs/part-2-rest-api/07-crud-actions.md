@@ -14,6 +14,21 @@ Update  แก้ไขข้อมูล
 Delete  ลบข้อมูล
 ```
 
+## วิธีเรียนบทนี้
+
+บทนี้เป็นบทแรกที่ code เยอะขึ้น ให้ทำทีละ step และรันตรวจหลังจบ action สำคัญ อย่าคัดลอกไฟล์เต็มรวดเดียว
+
+ลำดับที่แนะนำ:
+
+1. เพิ่ม DTO และ list ใน memory
+2. ทำ `GET` ให้ผ่านก่อน
+3. เพิ่ม `POST`
+4. เพิ่ม `PUT`
+5. เพิ่ม `DELETE`
+6. ค่อยตรวจไฟล์รวมท้ายบท
+
+ถ้า build พัง ให้แก้ error แรกก่อน อย่าแก้หลายจุดพร้อมกัน
+
 ## สิ่งที่จะใช้ในบทนี้
 
 ก่อนเขียน code ให้รู้จัก attribute และ helper method ที่จะใช้ก่อน
@@ -107,39 +122,32 @@ private static readonly List<UserDto> Users =
 
 คำว่า `static` ทำให้ list นี้อยู่ร่วมกันระหว่าง request ต่าง ๆ ระหว่างที่ application ยังรันอยู่
 
-ตอนนี้โครงไฟล์ควรหน้าตาประมาณนี้:
+ตอนนี้อย่าตรวจทั้งไฟล์เป็นก้อน ให้ตรวจทีละส่วน:
+
+ส่วนที่ 1: ด้านบนไฟล์ควรมี `using`, `namespace` และ DTO ทั้ง 3 ตัว
+
+```text
+using Microsoft.AspNetCore.Mvc;
+namespace Backend.Api.Controllers;
+UserDto
+CreateUserRequest
+UpdateUserRequest
+```
+
+ส่วนที่ 2: ใน class `UsersController` ควรมี list ชื่อ `Users`
+
+```text
+private static readonly List<UserDto> Users = ...
+```
+
+ส่วนที่ 3: action `GET /api/users` จากบทก่อนควรยังอยู่
 
 ```csharp
-using Microsoft.AspNetCore.Mvc;
-
-namespace Backend.Api.Controllers;
-
-// Response DTO returned to the client.
-public record UserDto(int Id, string Email);
-
-// Request body for POST /api/users.
-public record CreateUserRequest(string Email);
-
-// Request body for PUT /api/users/{id}.
-public record UpdateUserRequest(string Email);
-
-[ApiController]
-[Route("api/[controller]")]
-public class UsersController : ControllerBase
+[HttpGet]
+public IActionResult GetUsers()
 {
-    // Temporary in-memory data. It resets when the app restarts.
-    private static readonly List<UserDto> Users =
-    [
-        new(1, "admin@example.com"),
-        new(2, "user@example.com")
-    ];
-
-    [HttpGet]
-    public IActionResult GetUsers()
-    {
-        // Return all users with 200 OK.
-        return Ok(Users);
-    }
+    // Return all users with 200 OK.
+    return Ok(Users);
 }
 ```
 
@@ -340,108 +348,38 @@ DELETE /api/users/1
 
 ## ไฟล์เต็มหลังจบบท
 
-ใช้ไฟล์นี้ตรวจเทียบหลังทำครบทุก step:
+ส่วนนี้ไม่ใช่ code ให้คัดลอกใหม่ทั้งไฟล์ แต่เป็น checklist สำหรับตรวจว่าไฟล์ของคุณมีชิ้นส่วนครบหลังทำทีละ step แล้ว
 
-```csharp
+ตรวจด้านบนของไฟล์:
+
+```text
 using Microsoft.AspNetCore.Mvc;
-
 namespace Backend.Api.Controllers;
-
-// Response DTO returned to the client.
-public record UserDto(int Id, string Email);
-
-// Request body for POST /api/users.
-public record CreateUserRequest(string Email);
-
-// Request body for PUT /api/users/{id}.
-public record UpdateUserRequest(string Email);
-
-[ApiController]
-[Route("api/[controller]")]
-public class UsersController : ControllerBase
-{
-    // Temporary in-memory data. It resets when the app restarts.
-    private static readonly List<UserDto> Users =
-    [
-        new(1, "admin@example.com"),
-        new(2, "user@example.com")
-    ];
-
-    [HttpGet]
-    public IActionResult GetUsers()
-    {
-        // Return all users with 200 OK.
-        return Ok(Users);
-    }
-
-    [HttpGet("{id:int}")]
-    public IActionResult GetUserById(int id)
-    {
-        // Find the first user with a matching id, or null when not found.
-        var user = Users.FirstOrDefault(user => user.Id == id);
-
-        if (user is null)
-        {
-            // Translate missing data to 404 Not Found.
-            return NotFound();
-        }
-
-        // Return the matched user with 200 OK.
-        return Ok(user);
-    }
-
-    [HttpPost]
-    public IActionResult CreateUser(CreateUserRequest request)
-    {
-        // Generate a simple next id for the in-memory list.
-        var nextId = Users.Count == 0 ? 1 : Users.Max(user => user.Id) + 1;
-        var user = new UserDto(nextId, request.Email);
-
-        // Save the new user in memory.
-        Users.Add(user);
-
-        // Return 201 Created and point to the GET endpoint for this new user.
-        return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
-    }
-
-    [HttpPut("{id:int}")]
-    public IActionResult UpdateUser(int id, UpdateUserRequest request)
-    {
-        // Find the index so we can replace the existing item in the list.
-        var index = Users.FindIndex(user => user.Id == id);
-
-        if (index == -1)
-        {
-            // No user with this id exists.
-            return NotFound();
-        }
-
-        var updatedUser = new UserDto(id, request.Email);
-        // Replace the old user at the same position.
-        Users[index] = updatedUser;
-
-        return Ok(updatedUser);
-    }
-
-    [HttpDelete("{id:int}")]
-    public IActionResult DeleteUser(int id)
-    {
-        // Find the user before removing it.
-        var user = Users.FirstOrDefault(user => user.Id == id);
-
-        if (user is null)
-        {
-            // Cannot delete a user that does not exist.
-            return NotFound();
-        }
-
-        Users.Remove(user);
-
-        // Delete succeeded and there is no response body.
-        return NoContent();
-    }
-}
+UserDto
+CreateUserRequest
+UpdateUserRequest
 ```
+
+ตรวจใน class `UsersController`:
+
+```text
+Users list
+GetUsers()
+GetUserById(id)
+CreateUser(request)
+UpdateUser(id, request)
+DeleteUser(id)
+```
+
+ถ้าขาดส่วนไหน ให้ย้อนกลับไป step ของส่วนนั้นในบทนี้ แล้วค่อยเพิ่มเฉพาะ method ที่ขาด ไม่ต้องลบไฟล์แล้วเริ่มใหม่
+
+หลังตรวจครบ ให้รัน:
+
+```powershell
+dotnet build
+```
+
+ถ้า build ผ่าน แปลว่าโครงสร้าง code ถูกต้องพอที่จะเริ่มทดสอบ endpoint ได้
 
 ## ลำดับการทดสอบที่แนะนำ
 
