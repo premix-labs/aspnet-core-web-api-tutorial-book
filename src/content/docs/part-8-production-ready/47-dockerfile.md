@@ -1,4 +1,4 @@
-﻿---
+---
 title: 47 - Dockerfile
 description: สร้าง Docker image สำหรับ ASP.NET Core Web API ด้วย multi-stage build
 ---
@@ -7,17 +7,60 @@ Dockerfile ใช้กำหนดขั้นตอน build และ run API
 
 สำหรับ ASP.NET Core เราจะใช้ multi-stage build โดยใช้ image `sdk` สำหรับ build/publish และใช้ image `aspnet` สำหรับ runtime
 
-## สร้าง .dockerignore
+## วิธีเรียนบทนี้
 
-ในบทนี้ให้สร้างไฟล์ Docker สำหรับ API project โดยตรง ดังนั้นไฟล์ `.dockerignore` และ `Dockerfile` จะอยู่ในโฟลเดอร์ `Backend.Api/`
+บทนี้จะสร้าง image สำหรับ API project:
 
-สร้างไฟล์
+1. เข้าใจ build stage และ runtime stage
+2. สร้าง `.dockerignore`
+3. สร้าง `Dockerfile`
+4. build image
+5. run container ด้วย environment variables
+6. ตรวจว่า container ไม่รันด้วย root user
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| Dockerfile | recipe สำหรับ build image |
+| `.dockerignore` | รายการไฟล์ที่ไม่ส่งเข้า Docker build context |
+| multi-stage build | build ด้วย SDK image แล้วรันด้วย runtime image |
+| `mcr.microsoft.com/dotnet/sdk` | image ที่มี .NET SDK สำหรับ restore/publish |
+| `mcr.microsoft.com/dotnet/aspnet` | image runtime สำหรับรัน ASP.NET Core |
+| `USER` | กำหนด user ที่ process ใน container ใช้รัน |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Backend.Api/.dockerignore
+Backend.Api/Dockerfile
+```
+
+## ขั้นที่ 1: สร้าง .dockerignore
+
+ในบทนี้ให้สร้างไฟล์ Docker สำหรับ API project โดยตรง ดังนั้น `.dockerignore` และ `Dockerfile` จะอยู่ในโฟลเดอร์ `Backend.Api/`
+
+รันจาก root ของ solution
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Force -Path Backend.Api/.dockerignore
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Backend.Api/.dockerignore
+```
+
+เปิดไฟล์:
 
 ```text
 Backend.Api/.dockerignore
 ```
 
-เพิ่มรายการนี้
+เพิ่มรายการนี้:
 
 ```text
 bin/
@@ -33,15 +76,29 @@ publish/
 
 ไฟล์นี้ช่วยลด build context ไม่ให้ Docker copy ไฟล์ที่ไม่จำเป็นเข้าไปตอน build image
 
-## สร้าง Dockerfile
+## ขั้นที่ 2: สร้าง Dockerfile
 
-สร้างไฟล์
+รันจาก root ของ solution
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Force -Path Backend.Api/Dockerfile
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Backend.Api/Dockerfile
+```
+
+เปิดไฟล์:
 
 ```text
 Backend.Api/Dockerfile
 ```
 
-เพิ่ม code นี้
+เริ่มจาก build stage:
 
 ```dockerfile
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
@@ -52,7 +109,15 @@ RUN dotnet restore
 
 COPY . ./
 RUN dotnet publish Backend.Api.csproj -c Release -o /app/publish --no-restore
+```
 
+stage นี้ใช้ SDK เพราะต้อง restore และ publish project
+
+## ขั้นที่ 3: เพิ่ม runtime stage
+
+เพิ่มต่อจาก build stage:
+
+```dockerfile
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
@@ -60,39 +125,52 @@ COPY --from=build /app/publish ./
 
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
+```
 
+runtime stage ใช้ `aspnet` image เพราะตอนรันไม่ต้องมี SDK แล้ว
+
+## ขั้นที่ 4: ตั้ง user และ entrypoint
+
+เพิ่มท้าย Dockerfile:
+
+```dockerfile
 USER 1654
 
 ENTRYPOINT ["dotnet", "Backend.Api.dll"]
 ```
 
-## อธิบายแต่ละ stage
+`USER 1654` ทำให้ container runtime ไม่รันด้วย root user ลดผลกระทบถ้า process ถูกเจาะ
 
-`build` stage ใช้ `mcr.microsoft.com/dotnet/sdk:10.0` เพราะต้องใช้ SDK สำหรับ restore, build และ publish
+ให้ตั้ง `USER` หลัง `COPY --from=build` เพื่อให้ขั้นตอน copy ยังทำงานได้ตามปกติ และแอปต้องไม่พึ่งการเขียนไฟล์ลง `/app` ตอน runtime
 
-`runtime` stage ใช้ `mcr.microsoft.com/dotnet/aspnet:10.0` เพราะตอนรันต้องการแค่ ASP.NET Core runtime ไม่ต้องมี SDK
+## ขั้นที่ 5: Build image
 
-การแยก stage ทำให้ final image เล็กลงและเหมาะกับการ deploy มากกว่าเอา SDK image ไปรัน production
-
-`USER 1654` ทำให้ container runtime ไม่รันด้วย root user ลดผลกระทบถ้า process ถูกเจาะ สำคัญคือต้องตั้งหลัง `COPY --from=build` เพื่อให้ build stage ยังทำงานได้ตามปกติ และแอปต้องไม่พึ่งการเขียนไฟล์ลง `/app` ตอน runtime
-
-## Build image
-
-รันคำสั่งจากโฟลเดอร์ `Backend.Api`
+รันจาก root ของ solution:
 
 ```powershell
-cd Backend.Api
-docker build -t backend-api:dev .
+docker build -t backend-api:dev .\Backend.Api
 ```
 
-## Run container
+บน macOS/Linux:
 
-ถ้ายังไม่เชื่อม database ให้ลองรันเพื่อดูว่า app start ได้หรือไม่
+```bash
+docker build -t backend-api:dev ./Backend.Api
+```
+
+ถ้า build fail ให้ดูว่า `Dockerfile` อยู่ใน `Backend.Api/` และคำสั่ง build ใช้ context เป็นโฟลเดอร์ `Backend.Api`
+
+## ขั้นที่ 6: Run container บน Windows
+
+ตั้งค่า environment variables:
 
 ```powershell
 $env:LOCAL_SQL_PASSWORD="Replace_With_Strong_Local_Password_123!"
 $env:JWT_SIGNING_KEY="replace-with-local-development-signing-key-at-least-32-bytes"
+```
 
+run container:
+
+```powershell
 docker run --rm -p 18080:8080 `
   -e ASPNETCORE_ENVIRONMENT=Production `
   -e "ConnectionStrings__DefaultConnection=Server=host.docker.internal,1433;Database=BackendApiDb;User Id=sa;Password=$($env:LOCAL_SQL_PASSWORD);TrustServerCertificate=True;" `
@@ -101,12 +179,46 @@ docker run --rm -p 18080:8080 `
   -e Jwt__Audience=Backend.ApiClient `
   -e "Jwt__SigningKey=$env:JWT_SIGNING_KEY" `
   -e Jwt__ExpirationMinutes=60 `
+  -e Cors__AllowedOrigins__0=http://localhost:3000 `
   backend-api:dev
 ```
 
-ตัวอย่างนี้ปิด `DataSeeding` เพราะยังไม่ได้รัน migration และยังไม่มี SQL Server ใน container ชุดเดียวกัน จุดประสงค์คือทดสอบว่า image start ได้ก่อน
+## ขั้นที่ 7: Run container บน macOS/Linux
 
-ถ้า application ต้องเชื่อม database จริง ให้ใช้ Docker Compose ในบทถัดไป เพราะต้องมีทั้ง API และ SQL Server
+ตั้งค่า environment variables:
+
+```bash
+export LOCAL_SQL_PASSWORD='Replace_With_Strong_Local_Password_123!'
+export JWT_SIGNING_KEY='replace-with-local-development-signing-key-at-least-32-bytes'
+```
+
+run container:
+
+```bash
+docker run --rm -p 18080:8080 \
+  -e ASPNETCORE_ENVIRONMENT=Production \
+  -e "ConnectionStrings__DefaultConnection=Server=host.docker.internal,1433;Database=BackendApiDb;User Id=sa;Password=${LOCAL_SQL_PASSWORD};TrustServerCertificate=True;" \
+  -e DataSeeding__Enabled=false \
+  -e Jwt__Issuer=Backend.Api \
+  -e Jwt__Audience=Backend.ApiClient \
+  -e "Jwt__SigningKey=${JWT_SIGNING_KEY}" \
+  -e Jwt__ExpirationMinutes=60 \
+  -e Cors__AllowedOrigins__0=http://localhost:3000 \
+  backend-api:dev
+```
+
+`host.docker.internal` ใช้เรียก service บนเครื่อง host จากใน container ถ้า Linux environment ของคุณไม่รองรับชื่อนี้ ให้ใช้ Docker Compose ในบทถัดไปแทน เพราะ Compose จะให้ API เรียก SQL Server ผ่าน service name `db`
+
+## ขั้นที่ 8: ตรวจ container
+
+ถ้า container รันได้ ให้เปิดอีก terminal แล้วลอง:
+
+```powershell
+docker ps
+docker logs --tail 50 <container-id>
+```
+
+ถ้า app start ไม่ผ่าน ส่วนใหญ่เกิดจาก config สำคัญหาย เช่น `ConnectionStrings__DefaultConnection` หรือ `Jwt__SigningKey`
 
 ## Checkpoint
 

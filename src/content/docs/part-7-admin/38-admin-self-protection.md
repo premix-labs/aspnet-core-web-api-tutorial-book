@@ -1,4 +1,4 @@
-﻿---
+---
 title: 38 - ป้องกันไม่ให้ Admin ลบตัวเองผิดพลาด
 description: เพิ่ม business rule เพื่อป้องกัน Admin ทำ action อันตรายกับบัญชีตัวเอง
 ---
@@ -7,27 +7,56 @@ description: เพิ่ม business rule เพื่อป้องกัน 
 
 ในบทนี้เราจะเพิ่ม rule สำคัญก่อนทำ audit log
 
+## วิธีเรียนบทนี้
+
+ให้เพิ่ม rule ทีละข้อ:
+
+1. ให้ repository นับ active admin ได้
+2. ให้ `AdminUserService` อ่าน current admin id
+3. กัน admin ลด role ตัวเอง
+4. กัน admin ปิดบัญชีตัวเอง
+5. กันระบบเหลือ active admin เป็นศูนย์
+
 ## Rule ที่ต้องมี
 
 - Admin ห้าม deactivate บัญชีตัวเอง
 - Admin ห้ามลด role ตัวเอง
 - ระบบไม่ควรเหลือ active admin เป็นศูนย์
 
-## เพิ่ม method นับ active admin ใน Repository
+## สิ่งที่จะใช้ในบทนี้
 
-เปิด `IUserRepository.cs` แล้วเพิ่ม method
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `CountActiveAdminsAsync()` | นับ admin ที่ยัง active อยู่ |
+| `CurrentUserService` | อ่าน id ของ admin ที่กำลังเรียก endpoint |
+| `ForbiddenException` | ใช้กับ action ที่รู้ผู้ใช้แล้วแต่ไม่อนุญาต |
+| `ADMIN_SELF_DEMOTE_NOT_ALLOWED` | error code เมื่อ admin ลด role ตัวเอง |
+| `ADMIN_SELF_DEACTIVATE_NOT_ALLOWED` | error code เมื่อ admin ปิดบัญชีตัวเอง |
+| `LAST_ACTIVE_ADMIN_REQUIRED` | error code เมื่อ action จะทำให้ไม่มี admin active |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Repositories/IUserRepository.cs
+Repositories/UserRepository.cs
+Services/AdminUserService.cs
+```
+
+## ขั้นที่ 1: เพิ่ม method นับ active admin ใน Repository
+
+เปิด `Repositories/IUserRepository.cs` แล้วเพิ่ม method:
 
 ```csharp
 Task<int> CountActiveAdminsAsync();
 ```
 
-เปิด `UserRepository.cs` แล้วเพิ่ม using
+เปิด `Repositories/UserRepository.cs` แล้วเพิ่ม using:
 
 ```csharp
 using Backend.Api.Constants;
 ```
 
-เพิ่ม implementation
+เพิ่ม implementation:
 
 ```csharp
 public Task<int> CountActiveAdminsAsync()
@@ -38,9 +67,11 @@ public Task<int> CountActiveAdminsAsync()
 }
 ```
 
-## Inject CurrentUserService เข้า AdminUserService
+method นี้ใช้ตรวจว่า action ที่กำลังทำจะทำให้ระบบไม่มี admin active เหลืออยู่หรือไม่
 
-เปิด `AdminUserService.cs` แล้วแก้ constructor
+## ขั้นที่ 2: Inject CurrentUserService เข้า AdminUserService
+
+เปิด `Services/AdminUserService.cs` แล้วแก้ constructor:
 
 ```csharp
 public class AdminUserService(
@@ -48,13 +79,14 @@ public class AdminUserService(
     CurrentUserService currentUserService)
 ```
 
-เพิ่ม using
+ตรวจว่ามี using เหล่านี้:
 
 ```csharp
 using Backend.Api.Constants;
+using Backend.Api.Exceptions;
 ```
 
-## เพิ่ม helper ตรวจ current user
+## ขั้นที่ 3: เพิ่ม helper อ่าน current admin id
 
 เพิ่ม method นี้ใน `AdminUserService`
 
@@ -70,103 +102,129 @@ private int GetCurrentAdminId()
 }
 ```
 
-## ปรับ UpdateRoleAsync
+เราต้องรู้ว่า admin ที่กำลังเรียก endpoint คือใคร เพื่อกันไม่ให้จัดการบัญชีตัวเองผิดพลาด
 
-แก้ `UpdateRoleAsync` ให้ป้องกันการลด role ตัวเอง
+## ขั้นที่ 4: กัน self-demote ใน UpdateRoleAsync
+
+ใน `UpdateRoleAsync` ให้เริ่ม method ด้วย current admin id:
 
 ```csharp
-public async Task<AdminUserResponse> UpdateRoleAsync(
-    int id,
-    UpdateUserRoleRequest request)
+var currentAdminId = GetCurrentAdminId();
+```
+
+หลังหา user และ normalize role แล้ว เพิ่ม rule นี้:
+
+```csharp
+var nextRole = Roles.Normalize(request.Role);
+
+if (user.Id == currentAdminId && nextRole != Roles.Admin)
 {
-    var currentAdminId = GetCurrentAdminId();
-    var user = await userRepository.GetByIdAsync(id);
-
-    if (user is null)
-    {
-        throw new NotFoundException("User not found", "USER_NOT_FOUND");
-    }
-
-    var nextRole = Roles.Normalize(request.Role);
-
-    if (user.Id == currentAdminId && nextRole != Roles.Admin)
-    {
-        throw new ForbiddenException(
-            "Admin cannot demote own account",
-            "ADMIN_SELF_DEMOTE_NOT_ALLOWED");
-    }
-
-    var activeAdminCount = await userRepository.CountActiveAdminsAsync();
-
-    if (user.Role == Roles.Admin &&
-        nextRole != Roles.Admin &&
-        user.IsActive &&
-        activeAdminCount <= 1)
-    {
-        throw new ForbiddenException(
-            "Cannot remove the last active admin",
-            "LAST_ACTIVE_ADMIN_REQUIRED");
-    }
-
-    user.Role = nextRole;
-
-    await userRepository.UpdateAsync(user);
-
-    return ToResponse(user);
+    throw new ForbiddenException(
+        "Admin cannot demote own account",
+        "ADMIN_SELF_DEMOTE_NOT_ALLOWED");
 }
 ```
 
-## ปรับ UpdateStatusAsync
+ถ้า admin กำลังแก้บัญชีตัวเองและ role ใหม่ไม่ใช่ `Admin` ให้ปฏิเสธทันที
 
-แก้ `UpdateStatusAsync` ให้ป้องกัน admin ปิดบัญชีตัวเอง และป้องกันการปิด admin คนสุดท้าย
+## ขั้นที่ 5: กัน last active admin ตอนเปลี่ยน role
+
+เพิ่ม rule นี้ก่อนบันทึก role:
 
 ```csharp
-public async Task<AdminUserResponse> UpdateStatusAsync(
-    int id,
-    UpdateUserStatusRequest request)
+var activeAdminCount = await userRepository.CountActiveAdminsAsync();
+
+if (user.Role == Roles.Admin &&
+    nextRole != Roles.Admin &&
+    user.IsActive &&
+    activeAdminCount <= 1)
 {
-    var currentAdminId = GetCurrentAdminId();
-    var user = await userRepository.GetByIdAsync(id);
-
-    if (user is null)
-    {
-        throw new NotFoundException("User not found", "USER_NOT_FOUND");
-    }
-
-    var nextIsActive = request.IsActive!.Value;
-
-    if (user.Id == currentAdminId && !nextIsActive)
-    {
-        throw new ForbiddenException(
-            "Admin cannot deactivate own account",
-            "ADMIN_SELF_DEACTIVATE_NOT_ALLOWED");
-    }
-
-    var activeAdminCount = await userRepository.CountActiveAdminsAsync();
-
-    if (user.Role == Roles.Admin &&
-        user.IsActive &&
-        !nextIsActive &&
-        activeAdminCount <= 1)
-    {
-        throw new ForbiddenException(
-            "Cannot deactivate the last active admin",
-            "LAST_ACTIVE_ADMIN_REQUIRED");
-    }
-
-    user.IsActive = nextIsActive;
-
-    await userRepository.UpdateAsync(user);
-
-    return ToResponse(user);
+    throw new ForbiddenException(
+        "Cannot remove the last active admin",
+        "LAST_ACTIVE_ADMIN_REQUIRED");
 }
 ```
 
-## ทดสอบ self-protection
+rule นี้กันกรณี admin คนสุดท้ายถูกลด role ทำให้ระบบไม่มี admin active เหลือ
 
-login ด้วย admin แล้วลองปิดบัญชีตัวเอง
+หลังผ่าน guard แล้วค่อยบันทึก:
+
+```csharp
+user.Role = nextRole;
+
+await userRepository.UpdateAsync(user);
+
+return ToResponse(user);
+```
+
+## ขั้นที่ 6: กัน self-deactivate ใน UpdateStatusAsync
+
+ใน `UpdateStatusAsync` ให้เริ่มด้วย current admin id:
+
+```csharp
+var currentAdminId = GetCurrentAdminId();
+```
+
+หลังหา user แล้ว อ่าน status ใหม่:
+
+```csharp
+var nextIsActive = request.IsActive!.Value;
+```
+
+เพิ่ม rule กันปิดบัญชีตัวเอง:
+
+```csharp
+if (user.Id == currentAdminId && !nextIsActive)
+{
+    throw new ForbiddenException(
+        "Admin cannot deactivate own account",
+        "ADMIN_SELF_DEACTIVATE_NOT_ALLOWED");
+}
+```
+
+## ขั้นที่ 7: กัน last active admin ตอนเปลี่ยน status
+
+เพิ่ม rule นี้ก่อนบันทึก status:
+
+```csharp
+var activeAdminCount = await userRepository.CountActiveAdminsAsync();
+
+if (user.Role == Roles.Admin &&
+    user.IsActive &&
+    !nextIsActive &&
+    activeAdminCount <= 1)
+{
+    throw new ForbiddenException(
+        "Cannot deactivate the last active admin",
+        "LAST_ACTIVE_ADMIN_REQUIRED");
+}
+```
+
+หลังผ่าน guard แล้วค่อยบันทึก:
+
+```csharp
+user.IsActive = nextIsActive;
+
+await userRepository.UpdateAsync(user);
+
+return ToResponse(user);
+```
+
+## ตรวจ build และทดสอบ
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+```powershell
+dotnet build
+```
+
+login ด้วย admin แล้วลองปิดบัญชีตัวเอง:
 
 ```http
+@baseUrl = http://localhost:5156
+@adminToken = paste-admin-token-here
+
+### Admin self deactivate
 PUT {{baseUrl}}/api/admin/users/1/status
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -176,7 +234,7 @@ Content-Type: application/json
 }
 ```
 
-ผลลัพธ์ที่คาดหวังคือ `403 Forbidden`
+ผลลัพธ์ที่คาดหวังคือ `403 Forbidden` พร้อม code:
 
 ```json
 {
@@ -186,9 +244,10 @@ Content-Type: application/json
 }
 ```
 
-ลองลด role ตัวเอง
+ลองลด role ตัวเอง:
 
 ```http
+### Admin self demote
 PUT {{baseUrl}}/api/admin/users/1/role
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json

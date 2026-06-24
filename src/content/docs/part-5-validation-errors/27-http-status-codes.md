@@ -7,6 +7,27 @@ Status code คือภาษากลางของ HTTP ที่บอก c
 
 ถ้าใช้ status code ถูก frontend, mobile app, automated test และ monitoring จะทำงานง่ายขึ้นมาก
 
+## วิธีเรียนบทนี้
+
+บทนี้เป็นบทสรุปภาค ให้เปิด `.http` แล้วเทียบทีละ request ว่า:
+
+1. request สำเร็จหรือผิดพลาด
+2. ถ้าผิดพลาด เป็น input validation, resource not found, conflict หรือ server error
+3. response body เป็น DTO, `ProblemDetails` หรือ `ValidationProblemDetails`
+4. status code ตรงกับความหมายจริงหรือไม่
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `2xx` | request สำเร็จ |
+| `4xx` | client ส่ง request ที่ระบบปฏิเสธได้อย่างคาดการณ์ได้ |
+| `5xx` | server มีปัญหาที่ไม่คาดคิด |
+| `400` | validation หรือ request format ผิด |
+| `404` | resource ที่ขอไม่มีอยู่ |
+| `409` | request ชนกับ state ปัจจุบันของระบบ |
+| `500` | unexpected server error |
+
 ## Status code ที่ใช้ในโปรเจกต์นี้
 
 ```text
@@ -23,17 +44,17 @@ Status code คือภาษากลางของ HTTP ที่บอก c
 
 ## CRUD ควรตอบอะไร
 
-```text
-GET /api/users             -> 200 OK
-GET /api/users/{id} พบ     -> 200 OK
-GET /api/users/{id} ไม่พบ  -> 404 Not Found
-POST /api/users สำเร็จ     -> 201 Created
-POST /api/users email ซ้ำ  -> 409 Conflict
-PUT /api/users/{id} สำเร็จ -> 200 OK
-PUT /api/users/{id} ไม่พบ  -> 404 Not Found
-DELETE /api/users/{id} สำเร็จ -> 204 No Content
-DELETE /api/users/{id} ไม่พบ  -> 404 Not Found
-```
+| Endpoint | สถานการณ์ | Status code | Body |
+| --- | --- | --- | --- |
+| `GET /api/users` | อ่านรายการสำเร็จ | `200 OK` | list ของ `UserResponse` |
+| `GET /api/users/{id}` | พบ user | `200 OK` | `UserResponse` |
+| `GET /api/users/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
+| `POST /api/users` | สร้างสำเร็จ | `201 Created` | `UserResponse` |
+| `POST /api/users` | email ซ้ำ | `409 Conflict` | `ProblemDetails` |
+| `PUT /api/users/{id}` | แก้ไขสำเร็จ | `200 OK` | `UserResponse` |
+| `PUT /api/users/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
+| `DELETE /api/users/{id}` | ลบสำเร็จ | `204 No Content` | ไม่มี body |
+| `DELETE /api/users/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
 
 ## Validation ใช้ 400
 
@@ -85,6 +106,8 @@ DELETE /api/users/{id} ไม่พบ  -> 404 Not Found
 เพิ่ม request เหล่านี้ลงใน `Backend.Api.http`
 
 ```http
+@baseUrl = http://localhost:5156
+
 ### Validation failed
 POST {{baseUrl}}/api/users
 Content-Type: application/json
@@ -105,6 +128,22 @@ Content-Type: application/json
   "email": "demo-user@example.com"
 }
 ```
+
+ให้ใช้ `baseUrl` ตาม port จริงของเครื่อง ถ้าเครื่องคุณรัน HTTPS ที่ `https://localhost:7127` และ certificate พร้อมแล้ว จะใช้ HTTPS ก็ได้
+
+## วิธีอ่านผลลัพธ์หลังทดสอบ
+
+หลังยิง request ให้ตรวจทั้ง status และ body:
+
+| Test | Status ที่ควรได้ | สิ่งที่ต้องเห็นใน body |
+| --- | --- | --- |
+| Validation failed | `400` | `code = VALIDATION_FAILED` และ `errors.Email` |
+| User not found | `404` | `code = USER_NOT_FOUND` |
+| Email conflict | `409` | `code = EMAIL_ALREADY_EXISTS` |
+
+ถ้า status ถูกแต่ body คนละ format ให้กลับไปตรวจบท 26
+
+ถ้า body ถูกแต่ status เป็น `500` ให้กลับไปตรวจว่า service โยน `NotFoundException` หรือ `ConflictException` ไม่ใช่ exception ทั่วไป
 
 ## Checkpoint
 

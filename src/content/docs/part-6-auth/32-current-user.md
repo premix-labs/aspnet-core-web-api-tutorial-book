@@ -1,4 +1,4 @@
-﻿---
+---
 title: 32 - อ่านข้อมูลผู้ใช้ปัจจุบันจาก Token
 description: ดึง user id, email และ role จาก claims ใน JWT
 ---
@@ -18,9 +18,38 @@ flowchart LR
     AuthController --> Response["CurrentUserResponse"]
 ```
 
+## วิธีเรียนบทนี้
+
+ให้ทำตามลำดับนี้:
+
+1. เข้าใจรูปแบบ `Authorization` header
+2. สร้าง `CurrentUserService`
+3. ลงทะเบียน `HttpContextAccessor`
+4. เพิ่ม `GET /api/auth/me`
+5. ทดสอบด้วย token และไม่ส่ง token
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `Authorization` header | header ที่ client ใช้ส่ง token |
+| `Bearer` | scheme ของ access token |
+| `ClaimsPrincipal` | object ที่แทนผู้ใช้หลัง token ถูก validate |
+| `FindFirstValue(...)` | อ่านค่า claim ตามชื่อ |
+| `IHttpContextAccessor` | service ที่ช่วยอ่าน `HttpContext` ใน service |
+| `[Authorize]` | บังคับให้ endpoint ต้องมี token ที่ valid |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Services/CurrentUserService.cs
+Controllers/AuthController.cs
+Program.cs
+```
+
 ## รูปแบบ Authorization header
 
-client ต้องส่ง header แบบนี้
+client ต้องส่ง header แบบนี้:
 
 ```http
 Authorization: Bearer jwt-token-here
@@ -28,15 +57,29 @@ Authorization: Bearer jwt-token-here
 
 คำว่า `Bearer` ต้องมี และต้องมีช่องว่างก่อน token
 
-## สร้าง CurrentUserService
+## ขั้นที่ 1: สร้าง CurrentUserService
 
-สร้างไฟล์
+รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Path Services/CurrentUserService.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Services/CurrentUserService.cs
+```
+
+เปิดไฟล์:
 
 ```text
 Services/CurrentUserService.cs
 ```
 
-เพิ่ม code นี้
+เริ่มจาก using และ class:
 
 ```csharp
 using System.IdentityModel.Tokens.Jwt;
@@ -47,31 +90,57 @@ namespace Backend.Api.Services;
 public class CurrentUserService(IHttpContextAccessor httpContextAccessor)
 {
     private ClaimsPrincipal? User => httpContextAccessor.HttpContext?.User;
-
-    public bool IsAuthenticated =>
-        User?.Identity?.IsAuthenticated == true;
-
-    public int? UserId
-    {
-        get
-        {
-            var value = User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-            return int.TryParse(value, out var userId) ? userId : null;
-        }
-    }
-
-    public string? Email =>
-        User?.FindFirstValue(JwtRegisteredClaimNames.Email);
-
-    public string? Role =>
-        User?.FindFirstValue("role");
 }
 ```
 
-## ลงทะเบียน CurrentUserService
+`HttpContext.User` คือผู้ใช้ที่ authentication middleware สร้างจาก JWT
 
-เปิด `Program.cs` แล้วเพิ่ม
+## ขั้นที่ 2: เพิ่ม IsAuthenticated
+
+เพิ่ม property นี้ใน class:
+
+```csharp
+public bool IsAuthenticated =>
+    User?.Identity?.IsAuthenticated == true;
+```
+
+property นี้ใช้เช็กว่ามี user ที่ผ่าน authentication แล้วหรือไม่
+
+## ขั้นที่ 3: อ่าน user id จาก sub claim
+
+เพิ่ม property นี้:
+
+```csharp
+public int? UserId
+{
+    get
+    {
+        var value = User?.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        return int.TryParse(value, out var userId) ? userId : null;
+    }
+}
+```
+
+`sub` เป็น claim มาตรฐานที่เราใช้เก็บ user id ตอนสร้าง JWT
+
+## ขั้นที่ 4: อ่าน email และ role
+
+เพิ่ม property เหล่านี้:
+
+```csharp
+public string? Email =>
+    User?.FindFirstValue(JwtRegisteredClaimNames.Email);
+
+public string? Role =>
+    User?.FindFirstValue("role");
+```
+
+ชื่อ claim ต้องตรงกับตอนสร้าง token ใน `JwtTokenService`
+
+## ขั้นที่ 5: ลงทะเบียน CurrentUserService
+
+เปิด `Program.cs` แล้วเพิ่มก่อน `builder.Build()`:
 
 ```csharp
 builder.Services.AddHttpContextAccessor();
@@ -80,9 +149,11 @@ builder.Services.AddScoped<CurrentUserService>();
 
 `AddHttpContextAccessor()` ทำให้ service อ่าน `HttpContext` ปัจจุบันได้
 
-## เพิ่ม endpoint GET /api/auth/me
+## ขั้นที่ 6: เพิ่ม CurrentUserService เข้า AuthController
 
-แก้ constructor ของ `AuthController`
+เปิด `Controllers/AuthController.cs`
+
+แก้ constructor:
 
 ```csharp
 public class AuthController(
@@ -90,13 +161,16 @@ public class AuthController(
     CurrentUserService currentUserService) : ControllerBase
 ```
 
-เพิ่ม using
+เพิ่ม using:
 
 ```csharp
 using Microsoft.AspNetCore.Authorization;
+using Backend.Api.Exceptions;
 ```
 
-เพิ่ม action นี้
+## ขั้นที่ 7: เพิ่ม endpoint GET /api/auth/me
+
+เพิ่ม action นี้ใน `AuthController`
 
 ```csharp
 [Authorize]
@@ -112,7 +186,11 @@ public IActionResult Me()
             "Invalid token",
             "INVALID_TOKEN");
     }
+```
 
+ต่อด้วย response:
+
+```csharp
     return Ok(new CurrentUserResponse
     {
         Id = currentUserService.UserId.Value,
@@ -122,10 +200,20 @@ public IActionResult Me()
 }
 ```
 
-อย่าลืมเพิ่ม using สำหรับ exception ถ้ายังไม่มี
+`[Authorize]` ทำให้ action นี้ถูกเรียกเฉพาะ request ที่มี token valid แล้ว
+
+## ตรวจ build
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+```powershell
+dotnet build
+```
+
+ถ้า build error ว่าไม่รู้จัก `[Authorize]` ให้ตรวจ using นี้:
 
 ```csharp
-using Backend.Api.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 ```
 
 ## ทดสอบ endpoint me
@@ -133,15 +221,16 @@ using Backend.Api.Exceptions;
 เรียก login ก่อน แล้ว copy token จาก `accessToken`
 
 ```http
-@baseUrl = https://localhost:7001
+@baseUrl = http://localhost:5156
 @token = paste-token-here
 
+### Me
 GET {{baseUrl}}/api/auth/me
 Authorization: Bearer {{token}}
 Accept: application/json
 ```
 
-ผลลัพธ์ที่คาดหวังคือข้อมูลผู้ใช้ที่อยู่ใน token
+ผลลัพธ์ที่คาดหวังคือข้อมูลผู้ใช้ที่อยู่ใน token:
 
 ```json
 {
@@ -153,7 +242,7 @@ Accept: application/json
 
 ## ถ้าไม่ได้ส่ง token
 
-ลองเรียก endpoint เดิมโดยไม่ส่ง Authorization header
+ลองเรียก endpoint เดิมโดยไม่ส่ง Authorization header:
 
 ```http
 GET {{baseUrl}}/api/auth/me

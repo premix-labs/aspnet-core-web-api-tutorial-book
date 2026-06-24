@@ -1,26 +1,76 @@
-﻿---
+---
 title: 37 - เปลี่ยน Role หรือสถานะผู้ใช้
 description: สร้าง endpoint ให้ Admin เปลี่ยน role และเปิดปิดบัญชีผู้ใช้
 ---
 
 Admin มักต้องจัดการผู้ใช้ เช่นเปลี่ยน role จาก `User` เป็น `Admin` หรือปิดบัญชีที่ไม่ควรใช้งานต่อ
 
-บทนี้จะเพิ่ม endpoint สองตัว
+บทนี้จะเพิ่ม endpoint สองตัว:
 
 ```text
 PUT /api/admin/users/{id}/role
 PUT /api/admin/users/{id}/status
 ```
 
-## สร้าง UpdateUserRoleRequest
+## วิธีเรียนบทนี้
 
-สร้างไฟล์
+ให้ทำตามลำดับนี้:
+
+1. สร้าง request DTO สำหรับเปลี่ยน role
+2. สร้าง request DTO สำหรับเปลี่ยน status
+3. เพิ่ม method ใน `AdminUserService`
+4. เพิ่ม action ใน `AdminUsersController`
+5. ทดสอบ validation และผลลัพธ์
+
+บทนี้ยังไม่ป้องกัน admin ทำ action กับบัญชีตัวเอง เรื่องนั้นจะเพิ่มในบทถัดไป
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `UpdateUserRoleRequest` | request body สำหรับเปลี่ยน role |
+| `UpdateUserStatusRequest` | request body สำหรับเปิด/ปิดบัญชี |
+| `IValidatableObject` | ใช้ตรวจ role จาก `Roles.All` |
+| `bool?` | nullable bool เพื่อแยก “ไม่ส่ง field” จาก `false` |
+| `Roles.Normalize(...)` | บันทึก role เป็นค่ามาตรฐาน |
+| `NotFoundException` | ใช้เมื่อไม่พบ user ตาม id |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Dtos/Admin/UpdateUserRoleRequest.cs
+Dtos/Admin/UpdateUserStatusRequest.cs
+Services/AdminUserService.cs
+Controllers/AdminUsersController.cs
+```
+
+## ขั้นที่ 1: สร้างไฟล์ request DTO
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Path Dtos/Admin/UpdateUserRoleRequest.cs
+New-Item -ItemType File -Path Dtos/Admin/UpdateUserStatusRequest.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Dtos/Admin/UpdateUserRoleRequest.cs
+touch Dtos/Admin/UpdateUserStatusRequest.cs
+```
+
+## ขั้นที่ 2: สร้าง UpdateUserRoleRequest
+
+เปิดไฟล์:
 
 ```text
 Dtos/Admin/UpdateUserRoleRequest.cs
 ```
 
-เพิ่ม code นี้
+เพิ่ม code นี้:
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -32,30 +82,34 @@ public class UpdateUserRoleRequest : IValidatableObject
 {
     [Required]
     public string Role { get; set; } = string.Empty;
+}
+```
 
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+จากนั้นเพิ่ม custom validation:
+
+```csharp
+public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+{
+    if (!Roles.IsValid(Role))
     {
-        if (!Roles.IsValid(Role))
-        {
-            yield return new ValidationResult(
-                "Role is invalid.",
-                [nameof(Role)]);
-        }
+        yield return new ValidationResult(
+            "Role is invalid.",
+            [nameof(Role)]);
     }
 }
 ```
 
 ใช้ `IValidatableObject` เพราะ role ที่อนุญาตมาจากระบบของเรา ไม่ใช่ validation attribute สำเร็จรูป
 
-## สร้าง UpdateUserStatusRequest
+## ขั้นที่ 3: สร้าง UpdateUserStatusRequest
 
-สร้างไฟล์
+เปิดไฟล์:
 
 ```text
 Dtos/Admin/UpdateUserStatusRequest.cs
 ```
 
-เพิ่ม code นี้
+เพิ่ม code นี้:
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -71,15 +125,18 @@ public class UpdateUserStatusRequest
 
 ใช้ `bool?` เพราะถ้าใช้ `bool` ธรรมดา ค่า default จะเป็น `false` ทำให้แยกไม่ได้ว่า client ตั้งใจส่ง `false` หรือไม่ได้ส่ง field นี้มา
 
-## เพิ่ม method ใน AdminUserService
+## ขั้นที่ 4: เตรียม AdminUserService
 
-เปิด `AdminUserService.cs` แล้วเพิ่ม using
+เปิด `Services/AdminUserService.cs` แล้วเพิ่ม using:
 
 ```csharp
+using Backend.Api.Constants;
 using Backend.Api.Exceptions;
 ```
 
-เพิ่ม method เปลี่ยน role
+## ขั้นที่ 5: เพิ่ม UpdateRoleAsync
+
+เพิ่ม method นี้ใน `AdminUserService`
 
 ```csharp
 public async Task<AdminUserResponse> UpdateRoleAsync(
@@ -92,7 +149,11 @@ public async Task<AdminUserResponse> UpdateRoleAsync(
     {
         throw new NotFoundException("User not found", "USER_NOT_FOUND");
     }
+```
 
+ต่อด้วยการ normalize และ save:
+
+```csharp
     user.Role = Roles.Normalize(request.Role);
 
     await userRepository.UpdateAsync(user);
@@ -103,7 +164,9 @@ public async Task<AdminUserResponse> UpdateRoleAsync(
 
 ถึงแม้ `Roles.IsValid()` จะตรวจแบบไม่สนตัวพิมพ์เล็กใหญ่ แต่ตอนบันทึกควรใช้ `Roles.Normalize()` เพื่อเก็บค่าเป็น `Admin` หรือ `User` ตามที่ระบบกำหนดเสมอ
 
-เพิ่ม method เปลี่ยนสถานะ
+## ขั้นที่ 6: เพิ่ม UpdateStatusAsync
+
+เพิ่ม method นี้ต่อจาก `UpdateRoleAsync`
 
 ```csharp
 public async Task<AdminUserResponse> UpdateStatusAsync(
@@ -116,7 +179,11 @@ public async Task<AdminUserResponse> UpdateStatusAsync(
     {
         throw new NotFoundException("User not found", "USER_NOT_FOUND");
     }
+```
 
+ต่อด้วยการเปลี่ยน status และ save:
+
+```csharp
     user.IsActive = request.IsActive!.Value;
 
     await userRepository.UpdateAsync(user);
@@ -127,15 +194,15 @@ public async Task<AdminUserResponse> UpdateStatusAsync(
 
 เครื่องหมาย `!` หลัง `IsActive` ใช้บอก compiler ว่า validation ผ่านแล้วจึงไม่เป็น null
 
-## เพิ่ม endpoint ใน AdminUsersController
+## ขั้นที่ 7: เพิ่ม endpoint ใน AdminUsersController
 
-เปิด `AdminUsersController.cs` แล้วเพิ่ม using
+เปิด `Controllers/AdminUsersController.cs` แล้วตรวจ using:
 
 ```csharp
 using Backend.Api.Dtos.Admin;
 ```
 
-เพิ่ม action เปลี่ยน role
+เพิ่ม action เปลี่ยน role:
 
 ```csharp
 [HttpPut("{id:int}/role")]
@@ -149,7 +216,7 @@ public async Task<IActionResult> UpdateRole(
 }
 ```
 
-เพิ่ม action เปลี่ยนสถานะ
+เพิ่ม action เปลี่ยนสถานะ:
 
 ```csharp
 [HttpPut("{id:int}/status")]
@@ -163,9 +230,21 @@ public async Task<IActionResult> UpdateStatus(
 }
 ```
 
-## ทดสอบเปลี่ยน role
+## ตรวจ build และทดสอบ
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+```powershell
+dotnet build
+```
+
+ทดสอบเปลี่ยน role:
 
 ```http
+@baseUrl = http://localhost:5156
+@adminToken = paste-admin-token-here
+
+### Change role
 PUT {{baseUrl}}/api/admin/users/2/role
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
@@ -175,7 +254,7 @@ Content-Type: application/json
 }
 ```
 
-ถ้าส่ง role ที่ไม่อยู่ใน `Roles.All`
+ถ้าส่ง role ที่ไม่อยู่ใน `Roles.All`:
 
 ```json
 {
@@ -185,9 +264,10 @@ Content-Type: application/json
 
 ควรได้ `400 Bad Request` จาก validation
 
-## ทดสอบปิดบัญชีผู้ใช้
+ทดสอบปิดบัญชีผู้ใช้:
 
 ```http
+### Change status
 PUT {{baseUrl}}/api/admin/users/2/status
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json

@@ -1,4 +1,4 @@
-﻿---
+---
 title: 25 - Global Exception Handler
 description: จัดการ exception แบบรวมศูนย์ด้วย IExceptionHandler และ ProblemDetails
 ---
@@ -19,40 +19,76 @@ flowchart LR
     Problem --> Client
 ```
 
-## คำศัพท์ในบทนี้
+## วิธีเรียนบทนี้
 
-`Middleware` คือส่วนหนึ่งของ HTTP pipeline ที่ทำงานก่อนหรือหลัง Controller ได้ เช่น exception handler middleware จะดัก exception แล้วแปลงเป็น response แทนที่จะปล่อย stack trace ออกไปหา client
+บทนี้มีหลายไฟล์ ให้ทำทีละรอบ:
 
-`ProblemDetails` คือรูปแบบ response สำหรับ error ตามมาตรฐาน RFC 7807 ทำให้ client เห็น field พื้นฐาน เช่น `title`, `status` และรายละเอียดอื่นที่เราเพิ่มเอง เช่น `code`
+1. สร้าง exception base class
+2. สร้าง exception เฉพาะกรณี
+3. สร้าง `GlobalExceptionHandler`
+4. ลงทะเบียน handler ใน `Program.cs`
+5. ปรับ service ให้ throw exception
+6. ลบ `try-catch` ที่ไม่จำเป็นออกจาก Controller
+7. ทดสอบ `404`, `409`, และ `500`
 
-## เป้าหมายของบทนี้
+## สิ่งที่จะใช้ในบทนี้
 
-หลังจบบทนี้ error ที่เกิดใน service จะถูกแปลงเป็น response รูปแบบเดียวกัน เช่น
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `IExceptionHandler` | interface สำหรับเขียน global exception handler |
+| `ProblemDetails` | response format มาตรฐานสำหรับ error |
+| `IProblemDetailsService` | service ที่ช่วยเขียน `ProblemDetails` ออก response |
+| `ApiException` | exception ที่ระบบเราตั้งใจโยนเอง |
+| `NotFoundException` | exception สำหรับ `404 Not Found` |
+| `ConflictException` | exception สำหรับ `409 Conflict` |
+| `UseExceptionHandler()` | middleware ที่เปิดใช้ exception handler |
 
-```json
-{
-  "type": "https://httpstatuses.com/409",
-  "title": "Email already exists",
-  "status": 409,
-  "code": "EMAIL_ALREADY_EXISTS"
-}
-```
-
-## สร้าง ApiException
-
-สร้างโฟลเดอร์
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
 
 ```text
-Exceptions/
+Exceptions/ApiException.cs
+Exceptions/NotFoundException.cs
+Exceptions/ConflictException.cs
+Exceptions/GlobalExceptionHandler.cs
+Services/IUserService.cs
+Services/UserService.cs
+Controllers/UsersController.cs
+Program.cs
 ```
 
-สร้างไฟล์
+## สร้างโฟลเดอร์ Exceptions
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path Exceptions
+New-Item -ItemType File -Path Exceptions/ApiException.cs
+New-Item -ItemType File -Path Exceptions/NotFoundException.cs
+New-Item -ItemType File -Path Exceptions/ConflictException.cs
+New-Item -ItemType File -Path Exceptions/GlobalExceptionHandler.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+mkdir -p Exceptions
+touch Exceptions/ApiException.cs
+touch Exceptions/NotFoundException.cs
+touch Exceptions/ConflictException.cs
+touch Exceptions/GlobalExceptionHandler.cs
+```
+
+## ขั้นที่ 1: สร้าง ApiException
+
+เปิดไฟล์:
 
 ```text
 Exceptions/ApiException.cs
 ```
 
-เพิ่ม code นี้
+เพิ่ม code นี้:
 
 ```csharp
 namespace Backend.Api.Exceptions;
@@ -71,18 +107,17 @@ public class ApiException : Exception
 }
 ```
 
-`ApiException` คือ exception ที่เราตั้งใจโยนเอง และมีข้อมูลพอสำหรับแปลงเป็น HTTP response
+`ApiException` คือ exception ที่เราตั้งใจโยนเอง และมีข้อมูลพอสำหรับแปลงเป็น HTTP response ได้แก่ message, code และ status code
 
-## สร้าง exception เฉพาะกรณี
+## ขั้นที่ 2: สร้าง exception เฉพาะกรณี
 
-สร้างไฟล์
+เปิดไฟล์:
 
 ```text
-Exceptions\NotFoundException.cs
-Exceptions\ConflictException.cs
+Exceptions/NotFoundException.cs
 ```
 
-เพิ่ม code ใน `NotFoundException.cs`
+เพิ่ม code นี้:
 
 ```csharp
 using Microsoft.AspNetCore.Http;
@@ -93,7 +128,13 @@ public class NotFoundException(string message, string code)
     : ApiException(message, code, StatusCodes.Status404NotFound);
 ```
 
-เพิ่ม code ใน `ConflictException.cs`
+เปิดไฟล์:
+
+```text
+Exceptions/ConflictException.cs
+```
+
+เพิ่ม code นี้:
 
 ```csharp
 using Microsoft.AspNetCore.Http;
@@ -104,18 +145,21 @@ public class ConflictException(string message, string code)
     : ApiException(message, code, StatusCodes.Status409Conflict);
 ```
 
-## สร้าง GlobalExceptionHandler
+การมี class เฉพาะทำให้ service อ่านง่ายขึ้น เช่น `throw new NotFoundException(...)` สื่อเจตนาชัดกว่าโยน `Exception` ทั่วไป
 
-สร้างไฟล์
+## ขั้นที่ 3: เริ่มสร้าง GlobalExceptionHandler
+
+เปิดไฟล์:
 
 ```text
 Exceptions/GlobalExceptionHandler.cs
 ```
 
-เพิ่ม code นี้
+เริ่มจาก using และ class:
 
 ```csharp
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Exceptions;
@@ -124,82 +168,114 @@ public class GlobalExceptionHandler(
     ILogger<GlobalExceptionHandler> logger,
     IProblemDetailsService problemDetailsService) : IExceptionHandler
 {
-    public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext,
-        Exception exception,
-        CancellationToken cancellationToken)
-    {
-        if (exception is ApiException apiException)
-        {
-            httpContext.Response.StatusCode = apiException.StatusCode;
-
-            var problemDetails = new ProblemDetails
-            {
-                Status = apiException.StatusCode,
-                Title = apiException.Message,
-                Type = $"https://httpstatuses.com/{apiException.StatusCode}"
-            };
-
-            problemDetails.Extensions["code"] = apiException.Code;
-
-            await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-            {
-                HttpContext = httpContext,
-                ProblemDetails = problemDetails,
-                Exception = exception
-            });
-
-            return true;
-        }
-
-        logger.LogError(exception, "Unhandled exception occurred");
-
-        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
-
-        var internalProblemDetails = new ProblemDetails
-        {
-            Status = StatusCodes.Status500InternalServerError,
-            Title = "Unexpected error",
-            Type = "https://httpstatuses.com/500"
-        };
-
-        internalProblemDetails.Extensions["code"] = "INTERNAL_ERROR";
-
-        await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
-        {
-            HttpContext = httpContext,
-            ProblemDetails = internalProblemDetails,
-            Exception = exception
-        });
-
-        return true;
-    }
 }
 ```
 
-## ลงทะเบียน Exception Handler
+`logger` ใช้บันทึก unexpected error ส่วน `problemDetailsService` ใช้เขียน `ProblemDetails` เป็น response
 
-เปิด `Program.cs` แล้วเพิ่ม using
+## ขั้นที่ 4: เพิ่ม TryHandleAsync
+
+เพิ่ม method นี้ใน class `GlobalExceptionHandler`
+
+```csharp
+public async ValueTask<bool> TryHandleAsync(
+    HttpContext httpContext,
+    Exception exception,
+    CancellationToken cancellationToken)
+{
+    var problemDetails = exception is ApiException apiException
+        ? CreateApiProblemDetails(apiException)
+        : CreateInternalProblemDetails(exception);
+
+    httpContext.Response.StatusCode =
+        problemDetails.Status ?? StatusCodes.Status500InternalServerError;
+```
+
+ต่อด้วยการเขียน response:
+
+```csharp
+    await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
+    {
+        HttpContext = httpContext,
+        ProblemDetails = problemDetails,
+        Exception = exception
+    });
+
+    return true;
+}
+```
+
+method นี้รับ exception ทุกตัวที่หลุดขึ้นมาจาก pipeline แล้วตัดสินใจว่าจะตอบ error แบบไหน
+
+## ขั้นที่ 5: เพิ่ม method สำหรับ ApiException
+
+เพิ่ม method นี้ใน class เดียวกัน:
+
+```csharp
+private static ProblemDetails CreateApiProblemDetails(ApiException exception)
+{
+    var problemDetails = new ProblemDetails
+    {
+        Status = exception.StatusCode,
+        Title = exception.Message,
+        Type = $"https://httpstatuses.com/{exception.StatusCode}"
+    };
+
+    problemDetails.Extensions["code"] = exception.Code;
+
+    return problemDetails;
+}
+```
+
+กรณีนี้ใช้ `exception.Message` ได้ เพราะเป็น exception ที่ระบบเราตั้งใจโยนเองและควบคุมข้อความแล้ว
+
+## ขั้นที่ 6: เพิ่ม method สำหรับ unexpected error
+
+เพิ่ม method นี้ต่อจาก `CreateApiProblemDetails`
+
+```csharp
+private ProblemDetails CreateInternalProblemDetails(Exception exception)
+{
+    logger.LogError(exception, "Unhandled exception occurred");
+
+    var problemDetails = new ProblemDetails
+    {
+        Status = StatusCodes.Status500InternalServerError,
+        Title = "Unexpected error",
+        Type = "https://httpstatuses.com/500"
+    };
+
+    problemDetails.Extensions["code"] = "INTERNAL_ERROR";
+
+    return problemDetails;
+}
+```
+
+สำหรับ error ที่ไม่คาดคิด เรา log รายละเอียดไว้ที่ server แต่ตอบ client ด้วยข้อความกลาง ๆ เพื่อไม่ให้ข้อมูลภายในรั่ว
+
+## ขั้นที่ 7: ลงทะเบียน Exception Handler
+
+เปิด `Program.cs` แล้วเพิ่ม using:
 
 ```csharp
 using Backend.Api.Exceptions;
 ```
 
-เพิ่ม service registration
+เพิ่ม service registration ก่อน `builder.Build()`:
 
 ```csharp
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 ```
 
-หลัง `var app = builder.Build();` ให้เพิ่ม middleware
+หลัง `var app = builder.Build();` ให้เพิ่ม middleware ก่อน `app.MapControllers()`:
 
 ```csharp
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 ```
 
-ตำแหน่งโดยรวมควรอยู่ก่อน `app.MapControllers()`
+ตำแหน่งโดยรวมควรเป็นแบบนี้:
 
 ```csharp
 var app = builder.Build();
@@ -211,23 +287,19 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
-app.UseHttpsRedirection();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();
 ```
 
-## ปรับ UserService ให้โยน exception
+`UseExceptionHandler()` ต้องอยู่ก่อน endpoint mapping เพื่อให้ดัก exception ที่เกิดระหว่าง request ได้
 
-เปิด `UserService.cs` แล้วเพิ่ม using
+## ขั้นที่ 8: ปรับ IUserService
 
-```csharp
-using Backend.Api.Exceptions;
+เปิดไฟล์:
+
+```text
+Services/IUserService.cs
 ```
 
-จากนั้นปรับ `IUserService` ให้ method ที่ไม่พบข้อมูลโยน exception แทนการคืน `null` หรือ `false`
+เปลี่ยน method ที่เคยคืน `null` หรือ `false` ให้โยน exception แทน:
 
 ```csharp
 using Backend.Api.Dtos.Users;
@@ -244,7 +316,17 @@ public interface IUserService
 }
 ```
 
-ปรับ method `GetUserByIdAsync`
+หลังขั้นนี้ `UserService` และ `UsersController` จะยัง compile ไม่ผ่านจนกว่าจะปรับ method ให้ตรงกัน
+
+## ขั้นที่ 9: ปรับ UserService ให้โยน exception
+
+เปิด `UserService.cs` แล้วเพิ่ม using:
+
+```csharp
+using Backend.Api.Exceptions;
+```
+
+ปรับ `GetUserByIdAsync`:
 
 ```csharp
 public async Task<UserResponse> GetUserByIdAsync(int id)
@@ -260,53 +342,25 @@ public async Task<UserResponse> GetUserByIdAsync(int id)
 }
 ```
 
-ปรับ `CreateUserAsync`
+ปรับ email ซ้ำใน `CreateUserAsync`:
 
 ```csharp
-public async Task<UserResponse> CreateUserAsync(CreateUserRequest request)
+if (existingUser is not null)
 {
-    var existingUser = await userRepository.GetByEmailAsync(request.Email);
-
-    if (existingUser is not null)
-    {
-        throw new ConflictException("Email already exists", "EMAIL_ALREADY_EXISTS");
-    }
-
-    var user = new User
-    {
-        Email = request.Email,
-        PasswordHash = "pending-auth",
-        Role = "User",
-        IsActive = true
-    };
-
-    var createdUser = await userRepository.CreateAsync(user);
-
-    return ToResponse(createdUser);
+    throw new ConflictException("Email already exists", "EMAIL_ALREADY_EXISTS");
 }
 ```
 
-ปรับ `UpdateUserAsync`
+ปรับ `UpdateUserAsync` เมื่อไม่พบ user:
 
 ```csharp
-public async Task<UserResponse> UpdateUserAsync(int id, UpdateUserRequest request)
+if (user is null)
 {
-    var user = await userRepository.GetByIdAsync(id);
-
-    if (user is null)
-    {
-        throw new NotFoundException("User not found", "USER_NOT_FOUND");
-    }
-
-    user.Email = request.Email;
-
-    await userRepository.UpdateAsync(user);
-
-    return ToResponse(user);
+    throw new NotFoundException("User not found", "USER_NOT_FOUND");
 }
 ```
 
-ปรับ `DeleteUserAsync`
+ปรับ `DeleteUserAsync`:
 
 ```csharp
 public async Task DeleteUserAsync(int id)
@@ -322,11 +376,13 @@ public async Task DeleteUserAsync(int id)
 }
 ```
 
-เมื่อ service โยน exception แล้ว Controller ไม่ต้องรับมือทุกกรณีเอง
+ตอนนี้ service เป็นคนบอกว่า error มีความหมายอะไร ส่วน handler เป็นคนแปลงความหมายนั้นเป็น HTTP response
 
-## ปรับ Controller ให้บางลง
+## ขั้นที่ 10: ปรับ Controller ให้บางลง
 
-ตัวอย่าง `GET /api/users/{id}`
+เมื่อ service โยน exception แล้ว Controller ไม่ต้อง `try-catch` ทุกกรณีเอง
+
+ตัวอย่าง `GET /api/users/{id}`:
 
 ```csharp
 [HttpGet("{id:int}")]
@@ -338,7 +394,7 @@ public async Task<IActionResult> GetUserById(int id)
 }
 ```
 
-ตัวอย่าง `POST /api/users`
+ตัวอย่าง `POST /api/users`:
 
 ```csharp
 [HttpPost]
@@ -350,7 +406,7 @@ public async Task<IActionResult> CreateUser(CreateUserRequest request)
 }
 ```
 
-ตัวอย่าง `DELETE /api/users/{id}`
+ตัวอย่าง `DELETE /api/users/{id}`:
 
 ```csharp
 [HttpDelete("{id:int}")]
@@ -362,33 +418,41 @@ public async Task<IActionResult> DeleteUser(int id)
 }
 ```
 
-ตัวอย่าง `PUT /api/users/{id}`
+## ตรวจ build
 
-```csharp
-[HttpPut("{id:int}")]
-public async Task<IActionResult> UpdateUser(int id, UpdateUserRequest request)
-{
-    var user = await userService.UpdateUserAsync(id, request);
+รันจากโฟลเดอร์ `Backend.Api`
 
-    return Ok(user);
-}
+```powershell
+dotnet build
 ```
+
+ถ้า build error หลังแก้ interface ให้ตรวจชื่อ method ใน Controller เช่น `DeleteUserAsync` ตอนนี้คืน `Task` ไม่ใช่ `Task<bool>` แล้ว
 
 ## ทดสอบ Global Exception Handler
 
-เรียก user id ที่ไม่มีอยู่
+รัน API:
+
+```powershell
+dotnet run
+```
+
+ใช้ `baseUrl` ตาม port จริง:
 
 ```http
-GET https://localhost:7001/api/users/999999
+@baseUrl = http://localhost:5156
+
+### User not found
+GET {{baseUrl}}/api/users/999999
 Accept: application/json
 ```
 
 ควรได้ `404 Not Found` พร้อม `code` เป็น `USER_NOT_FOUND`
 
-ลองสร้าง email ซ้ำ
+ลองสร้าง email ซ้ำ:
 
 ```http
-POST https://localhost:7001/api/users
+### Email conflict
+POST {{baseUrl}}/api/users
 Content-Type: application/json
 
 {
@@ -413,5 +477,5 @@ Content-Type: application/json
 - มี `ApiException`, `NotFoundException`, `ConflictException`
 - มี `GlobalExceptionHandler`
 - `Program.cs` เรียก `AddProblemDetails`, `AddExceptionHandler`, `UseExceptionHandler`
-- `UserService` โยน exception แทนการคืน `null` ใน business error
+- `UserService` โยน exception แทนการคืน `null` หรือ `false` ใน business error
 - Controller บางลงและไม่มี `try-catch` ซ้ำ

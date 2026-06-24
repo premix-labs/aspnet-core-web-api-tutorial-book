@@ -7,6 +7,30 @@ Entity คือ class ที่แทนข้อมูลหลักในร
 
 ในโปรเจกต์นี้ entity แรกคือ `User` เพราะระบบของเราจะต่อยอดไปเป็น register, login, JWT และ admin user management
 
+## วิธีเรียนบทนี้
+
+บทนี้ให้แก้จาก `User` model เดิมที่เคยใช้ในภาค Architecture แล้วค่อยเพิ่ม field สำหรับ database ทีละกลุ่ม
+
+อย่าเพิ่งคิดเรื่อง login ในบทนี้ ให้โฟกัสว่า table `Users` ต้องมี column พื้นฐานอะไรบ้างเพื่อรองรับระบบ auth ในภาคถัดไป
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `class User` | entity ภายในระบบ ใช้เป็นต้นแบบของ table `Users` |
+| `Id` | primary key แบบตัวเลขในช่วงเรียนพื้นฐาน |
+| `PasswordHash` | พื้นที่เก็บรหัสผ่านที่ถูก hash แล้ว ไม่ใช่ password ดิบ |
+| `Role` | ใช้แยกสิทธิ์ เช่น `User` หรือ `Admin` |
+| `IsActive` | ใช้ปิดบัญชีโดยไม่ลบข้อมูล |
+| `CreatedAtUtc` | เวลาสร้างข้อมูลแบบ UTC |
+| `DateTime?` | nullable DateTime แปลว่าอาจยังไม่มีค่า |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Models/User.cs
+```
+
 ## สร้างโฟลเดอร์ Models
 
 ที่ root ของโปรเจกต์ `Backend.Api` ให้สร้างโฟลเดอร์นี้
@@ -15,7 +39,23 @@ Entity คือ class ที่แทนข้อมูลหลักในร
 Models/
 ```
 
-จากนั้นสร้างไฟล์
+ให้รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path Models
+New-Item -ItemType File -Path Models/User.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+mkdir -p Models
+touch Models/User.cs
+```
+
+จากนั้นเปิดไฟล์
 
 ```text
 Models/User.cs
@@ -23,17 +63,27 @@ Models/User.cs
 
 ## เขียน User entity
 
+ถ้าคุณมี `User` เดิมจากบทก่อน ให้แทนที่เนื้อหาในไฟล์นี้ด้วย code ด้านล่าง
+
 ```csharp
 namespace Backend.Api.Models;
 
+// Entity that EF Core will map to the Users table.
 public class User
 {
     public int Id { get; set; }
+
     public string Email { get; set; } = string.Empty;
+
+    // Store only a password hash, never a plain text password.
     public string PasswordHash { get; set; } = string.Empty;
+
     public string Role { get; set; } = "User";
+
     public bool IsActive { get; set; } = true;
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+
     public DateTime? UpdatedAtUtc { get; set; }
 }
 ```
@@ -52,6 +102,8 @@ public class User
 
 `CreatedAtUtc` และ `UpdatedAtUtc` ใช้เก็บเวลาสร้างและแก้ไขข้อมูล โดยใช้ UTC เพื่อให้ระบบไม่ผูกกับ timezone ของเครื่อง server
 
+`DateTime?` ใน `UpdatedAtUtc` แปลว่า field นี้เป็น nullable เพราะ user ที่เพิ่งถูกสร้างอาจยังไม่เคยถูกแก้ไข
+
 ## ทำไมยังมี PasswordHash ทั้งที่ยังไม่ได้ทำ Login
 
 แม้ระบบ login จะอยู่ในภาค 6 แต่เราใส่ `PasswordHash` ตั้งแต่ตอนออกแบบ entity เพื่อให้ schema ของ table `Users` รองรับระบบ auth ตั้งแต่แรก
@@ -68,10 +120,21 @@ public string Password { get; set; } = string.Empty;
 
 ถ้า API ต้องรับ password จาก request ให้สร้าง DTO แยก เช่น `RegisterRequest` ในภาค Authentication
 
+## ตรวจหลังเขียน Entity
+
+รันคำสั่งนี้จากโฟลเดอร์ `Backend.Api`
+
+```powershell
+dotnet build
+```
+
+ถ้า build ไม่ผ่าน ให้ตรวจชื่อ namespace และชื่อไฟล์ก่อน จุดที่พบบ่อยคือสร้างไฟล์ผิดโฟลเดอร์หรือ namespace ไม่ใช่ `Backend.Api.Models`
+
 ## Checkpoint
 
 ก่อนอ่านบทต่อไป ให้ตรวจว่าทำได้ครบตามนี้
 
 - มีไฟล์ `Models/User.cs`
 - `User` มี `Id`, `Email`, `PasswordHash`, `Role`, `IsActive`
+- `CreatedAtUtc` ใช้ค่าเริ่มต้นเป็น `DateTime.UtcNow`
 - ไม่มี property ชื่อ `Password` สำหรับเก็บรหัสผ่านดิบ

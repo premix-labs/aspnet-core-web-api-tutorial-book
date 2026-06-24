@@ -7,6 +7,18 @@ description: ใช้ Entity Framework Core เชื่อมต่อ SQL Ser
 
 จุดสำคัญของภาคนี้คือผู้อ่านต้องเข้าใจ flow ครบตั้งแต่ติดตั้ง package, สร้าง entity, สร้าง `DbContext`, ตั้งค่า connection string, สร้าง migration, update database, ทำ CRUD ผ่าน repository และ seed ข้อมูลเริ่มต้น
 
+## วิธีเรียนภาคนี้
+
+ภาคนี้เป็นจุดเปลี่ยนจาก code ที่เก็บข้อมูลใน memory ไปเป็น code ที่คุยกับ database จริง อย่าคัดลอก code ยาวทีเดียวแล้วค่อย test ให้ทำตามลำดับนี้:
+
+1. อ่านก่อนว่า class หรือ method ใหม่ทำหน้าที่อะไร
+2. สร้างโฟลเดอร์และไฟล์ด้วยคำสั่งที่ให้ไว้
+3. เพิ่ม code ทีละขั้นตามบท
+4. รัน `dotnet build` หลังจบบทสำคัญ
+5. รัน migration และทดสอบ API ด้วย `.http`
+
+ถ้าเครื่องของคุณใช้ port ไม่ตรงกับตัวอย่าง ให้ใช้ port ที่ `dotnet run` หรือ Visual Studio แสดงจริง เช่น `http://localhost:5156` หรือ `https://localhost:7127`
+
 ## บทในภาคนี้
 
 - บทที่ 16: ติดตั้ง Entity Framework Core
@@ -25,6 +37,17 @@ description: ใช้ Entity Framework Core เชื่อมต่อ SQL Ser
 - สร้างและรัน migration ได้
 - CRUD API ใช้ database จริง ไม่ใช่ in-memory list
 - มี seed data สำหรับทดสอบระบบฐานข้อมูล
+
+## ภาพรวม flow หลังจบภาคนี้
+
+```mermaid
+flowchart LR
+    Client["HTTP Client"] --> Controller["UsersController"]
+    Controller --> Service["UserService"]
+    Service --> Repository["UserRepository"]
+    Repository --> DbContext["AppDbContext"]
+    DbContext --> Database["SQL Server"]
+```
 
 ## ข้อควรรู้ก่อนเริ่ม
 

@@ -204,7 +204,7 @@ dotnet add package Microsoft.EntityFrameworkCore.SqlServer
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://localhost:5000",
+      "applicationUrl": "http://localhost:5156",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -213,7 +213,7 @@ dotnet add package Microsoft.EntityFrameworkCore.SqlServer
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:7001;http://localhost:5000",
+      "applicationUrl": "https://localhost:7127;http://localhost:5156",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

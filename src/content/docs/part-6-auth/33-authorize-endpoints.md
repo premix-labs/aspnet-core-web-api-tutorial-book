@@ -1,4 +1,4 @@
-﻿---
+---
 title: "33 - ป้องกัน API ด้วย [Authorize]"
 description: ใช้ Authorize attribute เพื่อบังคับให้ endpoint ต้อง login และเตรียม role สำหรับภาค Admin
 ---
@@ -23,17 +23,46 @@ flowchart TD
     HasRole -- "Yes" --> Controller
 ```
 
-## ป้องกัน UsersController
+## วิธีเรียนบทนี้
+
+บทนี้เป็นบทปิดภาค ให้ทำตามลำดับ:
+
+1. ป้องกัน endpoint ที่ไม่ควร public
+2. เข้าใจว่า register/login ยังต้อง public
+3. ทดสอบ request ไม่มี token
+4. ทดสอบ request มี token
+5. เตรียมแนวคิด role-based authorization สำหรับภาค Admin
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `[Authorize]` | บังคับให้ request ต้องผ่าน authentication |
+| `[AllowAnonymous]` | เปิดบาง action ให้ public แม้ controller ถูก authorize |
+| `[Authorize(Roles = "Admin")]` | บังคับทั้ง login และต้องมี role ที่กำหนด |
+| `401 Unauthorized` | ไม่มี token หรือ token ไม่ถูกต้อง |
+| `403 Forbidden` | token ถูกต้องแต่สิทธิ์ไม่พอ |
+| `Authorization: Bearer ...` | header ที่ client ใช้ส่ง JWT |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Controllers/UsersController.cs
+Controllers/AuthController.cs
+Backend.Api.http
+```
+
+## ขั้นที่ 1: ป้องกัน UsersController
 
 หลังมีระบบ register แล้ว endpoint สร้างผู้ใช้แบบ public ไม่ควรอยู่ที่ `POST /api/users` อีกต่อไป
 
-ให้เปิด `UsersController.cs` แล้วเพิ่ม using
+เปิด `Controllers/UsersController.cs` แล้วเพิ่ม using:
 
 ```csharp
 using Microsoft.AspNetCore.Authorization;
 ```
 
-จากนั้นใส่ `[Authorize]` ที่ระดับ Controller
+จากนั้นใส่ `[Authorize]` ที่ระดับ Controller:
 
 ```csharp
 [Authorize]
@@ -41,25 +70,41 @@ using Microsoft.AspNetCore.Authorization;
 [Route("api/[controller]")]
 public class UsersController(IUserService userService) : ControllerBase
 {
-    // actions
+    // Actions
 }
 ```
 
 เมื่อใส่ `[Authorize]` ที่ controller ทุก action ใน controller นี้ต้อง login ก่อน
 
+ถ้าโปรเจกต์ของคุณใช้ route แบบ versioned เช่น `[Route("api/v1/[controller]")]` ให้ใช้ route เดิมของโปรเจกต์ต่อไป จุดสำคัญคือเพิ่ม `[Authorize]`
+
 ## ควรทำอย่างไรกับ POST /api/users
 
-ในภาคนี้แนะนำให้ลบหรือปิด endpoint `POST /api/users` ชั่วคราว เพราะ public register ถูกย้ายไปที่ `POST /api/auth/register` แล้ว
+ในภาคนี้แนะนำให้ป้องกัน `UsersController` ทั้งตัวด้วย `[Authorize]` เพราะ public register ถูกย้ายไปที่ `POST /api/auth/register` แล้ว
 
-ถ้ายังเก็บ endpoint นี้ไว้ ให้ถือว่าเป็น endpoint ที่ต้อง login และในภาค Admin เราจะย้าย logic การสร้าง user โดย admin ไปไว้ที่ admin controller แยก
+ในภาค Admin เราจะย้าย logic การสร้าง user โดย admin ไปไว้ที่ admin controller แยก
 
 ใน end-state แบบ production-grade ถ้ายังเหลือ `UsersController` จากบท CRUD เดิม ให้จำกัดทั้ง controller เป็น `Admin` หรือถอดออกจาก production API เพื่อป้องกัน user ปกติอ่านหรือแก้ไขข้อมูลผู้ใช้อื่น
+
+## ขั้นที่ 2: ตรวจ AuthController
+
+`AuthController` ไม่ควรใส่ `[Authorize]` ที่ระดับ controller เพราะ register และ login ต้องเป็น public
+
+สิ่งที่ควรเป็น:
+
+```text
+POST /api/auth/register  public
+POST /api/auth/login     public
+GET  /api/auth/me        protected with [Authorize]
+```
+
+ดังนั้นให้ใส่ `[Authorize]` เฉพาะ action `me` ตามบทก่อน
 
 ## AllowAnonymous ใช้เมื่อไหร่
 
 ถ้า controller ทั้งตัวถูกใส่ `[Authorize]` แต่บาง action ต้องเปิด public ให้ใช้ `[AllowAnonymous]`
 
-ตัวอย่าง
+ตัวอย่าง:
 
 ```csharp
 [Authorize]
@@ -76,19 +121,19 @@ public class ExampleController : ControllerBase
 }
 ```
 
-ใน `AuthController` ของเราไม่จำเป็นต้องใส่ `[Authorize]` ที่ระดับ controller เพราะ register และ login ต้องเป็น public อยู่แล้ว เราใส่ `[Authorize]` เฉพาะ action `me`
+ใน `AuthController` ของเราไม่จำเป็นต้องใช้ `[AllowAnonymous]` เพราะไม่ได้ใส่ `[Authorize]` ที่ระดับ controller
 
 ## เตรียม role-based authorization
 
 ตอนสร้าง token เราใส่ claim ชื่อ `role` แล้ว และตั้งค่า `RoleClaimType = "role"` ใน `TokenValidationParameters`
 
-ดังนั้นในภาค Admin เราจะใช้ attribute แบบนี้ได้
+ดังนั้นในภาค Admin เราจะใช้ attribute แบบนี้ได้:
 
 ```csharp
 [Authorize(Roles = "Admin")]
 ```
 
-ตัวอย่าง endpoint ที่ต้องเป็น Admin
+ตัวอย่าง endpoint ที่ต้องเป็น Admin:
 
 ```csharp
 [Authorize(Roles = "Admin")]
@@ -101,20 +146,26 @@ public IActionResult AdminOnly()
 
 ถ้า user login แล้วแต่ role ไม่ใช่ `Admin` API จะตอบ `403 Forbidden`
 
-## ทดสอบ endpoint ที่ถูกป้องกัน
+## ขั้นที่ 3: ทดสอบ endpoint ที่ถูกป้องกัน
 
-เรียก endpoint โดยไม่ส่ง token
+เรียก endpoint โดยไม่ส่ง token:
 
 ```http
+@baseUrl = http://localhost:5156
+
+### Protected users endpoint without token
 GET {{baseUrl}}/api/users
 Accept: application/json
 ```
 
 ควรได้ `401 Unauthorized`
 
-จากนั้นใส่ token
+จากนั้นใส่ token:
 
 ```http
+@token = paste-token-here
+
+### Protected users endpoint with token
 GET {{baseUrl}}/api/users
 Authorization: Bearer {{token}}
 Accept: application/json
@@ -124,8 +175,10 @@ Accept: application/json
 
 ## เพิ่ม request ใน Backend.Api.http
 
+ใช้ชุดนี้เป็น checkpoint หลังจบภาค 6:
+
 ```http
-@baseUrl = https://localhost:7001
+@baseUrl = http://localhost:5156
 @token = paste-token-here
 
 ### Register
@@ -156,6 +209,8 @@ GET {{baseUrl}}/api/users
 Authorization: Bearer {{token}}
 Accept: application/json
 ```
+
+ถ้าเครื่องคุณใช้ HTTPS ได้ ให้เปลี่ยน `baseUrl` เป็น port HTTPS จริงของเครื่อง เช่น `https://localhost:7127`
 
 ## Checkpoint
 

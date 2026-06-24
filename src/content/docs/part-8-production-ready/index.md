@@ -1,4 +1,4 @@
-﻿---
+---
 title: ภาค 8 - เตรียมโปรเจกต์ให้พร้อมใช้งานจริง
 description: Logging, configuration, OpenAPI, testing, Docker และ deployment checklist
 ---
@@ -6,6 +6,23 @@ description: Logging, configuration, OpenAPI, testing, Docker และ deployme
 ภาคนี้ทำให้โปรเจกต์พร้อมส่งงานหรือ deploy มากขึ้น โดยเพิ่ม logging, configuration, OpenAPI, automated tests, Docker และ checklist ก่อน deploy
 
 คำว่า production ready ในหนังสือนี้ไม่ได้แปลว่าระบบพร้อมรับ traffic ระดับใหญ่ทันที แต่หมายถึงโปรเจกต์มีพื้นฐานที่ดีพอสำหรับส่งงานจริง พัฒนาในทีมได้ และต่อยอดสู่ production ได้อย่างมีทิศทาง
+
+## วิธีเรียนภาคนี้
+
+ภาคนี้ไม่ได้เพิ่ม feature ให้ผู้ใช้โดยตรง แต่เพิ่มเครื่องมือรอบระบบให้ project น่าเชื่อถือขึ้น ให้เรียนตามลำดับนี้:
+
+1. ทำให้ระบบมี log ที่อ่านและค้นต่อได้
+2. แยก configuration และ secret ออกจาก source code
+3. แยกค่าแต่ละ environment ให้ชัด
+4. เปิด OpenAPI เป็น contract ของ API
+5. เพิ่ม unit test สำหรับ logic เล็ก
+6. เพิ่ม integration test สำหรับ HTTP pipeline
+7. สร้าง Docker image
+8. รัน API กับ SQL Server ด้วย Docker Compose
+9. ตรวจ build, test, publish และ smoke test
+10. ใช้ checklist ก่อน deploy
+
+หลังจบแต่ละบทให้รันคำสั่งตรวจที่บทนั้นกำหนด เช่น `dotnet test`, `dotnet publish` หรือ `docker compose config`
 
 ## บทในภาคนี้
 
@@ -30,3 +47,26 @@ description: Logging, configuration, OpenAPI, testing, Docker และ deployme
 - API และ SQL Server รันด้วย Docker Compose ได้
 - publish output และ Docker image ถูกตรวจได้ก่อน deploy
 - มี checklist ปิดงานก่อนส่งขึ้น production
+
+## ภาพรวมหลังจบภาคนี้
+
+```mermaid
+flowchart LR
+    Code["Source code"] --> Build["dotnet build"]
+    Build --> Test["dotnet test"]
+    Test --> Publish["dotnet publish"]
+    Publish --> Image["Docker image"]
+    Image --> Compose["Docker Compose"]
+    Compose --> Smoke["Smoke test"]
+    Smoke --> Checklist["Deploy checklist"]
+```
+
+## ข้อควรจำ
+
+Production ready ไม่ใช่เรื่องเดียว แต่เป็นชุดนิสัย:
+
+- config สำคัญต้องมาจาก environment หรือ secret store
+- log ต้องช่วย debug ได้แต่ไม่รั่ว secret
+- test ต้องจับ regression พื้นฐานได้
+- container ต้องรันซ้ำได้ด้วยคำสั่งชัดเจน
+- ก่อน deploy ต้องมี checklist ที่ตรวจซ้ำได้

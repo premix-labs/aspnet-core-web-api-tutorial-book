@@ -1,4 +1,4 @@
-﻿---
+---
 title: 28 - ออกแบบ Register และ Login
 description: วาง contract ของ Auth API และสร้าง DTO สำหรับ register, login และ current user
 ---
@@ -7,17 +7,30 @@ description: วาง contract ของ Auth API และสร้าง DTO 
 
 ในหนังสือนี้เราจะแยก endpoint auth ออกจาก user management ชัดเจน
 
+## วิธีเรียนบทนี้
+
+บทนี้ยังไม่ hash password และยังไม่สร้าง JWT จริง ให้ทำแค่ 2 เรื่อง:
+
+1. ออกแบบ endpoint ที่ auth ต้องมี
+2. สร้าง DTO สำหรับ request/response
+
+เมื่อจบบทนี้ project ควร build ผ่าน แต่ยังไม่มี auth endpoint ที่ทำงานครบจนกว่าจะทำบทถัดไป
+
 ## ก่อนเริ่มบทนี้
 
 ให้ตรวจว่าตอนนี้โปรเจกต์มี CRUD user ที่ใช้ database แล้ว และ `User` entity มี field สำหรับ auth ขั้นต้น เช่น `Email`, `PasswordHash`, `Role` และ `IsActive`
 
-บทนี้ยังไม่ hash password และยังไม่สร้าง JWT จริง เราจะเริ่มจาก contract และ DTO ก่อน เพื่อให้บทถัดไปต่อยอดได้เป็นขั้นตอน
+## สิ่งที่จะใช้ในบทนี้
 
-## คำศัพท์ในบทนี้
-
-`Contract` คือข้อตกลงระหว่าง client กับ API ว่า endpoint รับ request รูปแบบไหน และตอบ response รูปแบบไหน
-
-`DTO` หรือ Data Transfer Object คือ class ที่ใช้รับ/ส่งข้อมูลผ่าน API โดยแยกจาก entity ใน database เพื่อไม่ให้ response หลุด field ที่ไม่ควรส่ง เช่น `PasswordHash`
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| contract | ข้อตกลงว่า endpoint รับและตอบข้อมูลรูปแบบไหน |
+| request DTO | object ที่รับข้อมูลจาก client |
+| response DTO | object ที่ API ส่งกลับไปหา client |
+| `RegisterRequest` | request สำหรับสมัครสมาชิก |
+| `LoginRequest` | request สำหรับ login |
+| `LoginResponse` | response หลัง login สำเร็จ |
+| `CurrentUserResponse` | response ของผู้ใช้ปัจจุบัน |
 
 ## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
 
@@ -27,8 +40,6 @@ Dtos/Auth/LoginRequest.cs
 Dtos/Auth/LoginResponse.cs
 Dtos/Auth/CurrentUserResponse.cs
 ```
-
-หลังจบบทนี้ยังไม่มี endpoint auth ที่ทำงานจริงครบ เราแค่เตรียม request/response model ให้พร้อมสำหรับบท hash password, login และ JWT
 
 ## Endpoint ที่ต้องมี
 
@@ -46,30 +57,43 @@ GET  /api/auth/me
 
 ## ทำไมไม่ใช้ POST /api/users สำหรับ register
 
-ก่อนหน้านี้เราใช้ `POST /api/users` เพื่อเรียน CRUD กับ database แต่หลังเข้าสู่ระบบ auth แล้ว การสร้าง user สาธารณะควรอยู่ที่ `POST /api/auth/register`
+ก่อนหน้านี้เราใช้ `POST /api/users` เพื่อเรียน CRUD กับ database แต่หลังเข้าสู่ระบบ auth แล้ว การสมัครสมาชิกสาธารณะควรอยู่ที่ `POST /api/auth/register`
 
 ส่วน `POST /api/users` จะค่อยถูกปรับให้เป็นงานของ admin ในภาคถัดไป
 
 ## สร้างโฟลเดอร์ DTO
 
-สร้างโฟลเดอร์นี้
+รันจากโฟลเดอร์ `Backend.Api`
 
-```text
-Dtos/Auth/
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path Dtos/Auth
+New-Item -ItemType File -Path Dtos/Auth/RegisterRequest.cs
+New-Item -ItemType File -Path Dtos/Auth/LoginRequest.cs
+New-Item -ItemType File -Path Dtos/Auth/LoginResponse.cs
+New-Item -ItemType File -Path Dtos/Auth/CurrentUserResponse.cs
 ```
 
-จากนั้นสร้างไฟล์
+macOS/Linux Bash:
+
+```bash
+mkdir -p Dtos/Auth
+touch Dtos/Auth/RegisterRequest.cs
+touch Dtos/Auth/LoginRequest.cs
+touch Dtos/Auth/LoginResponse.cs
+touch Dtos/Auth/CurrentUserResponse.cs
+```
+
+## ขั้นที่ 1: สร้าง RegisterRequest
+
+เปิดไฟล์:
 
 ```text
 Dtos/Auth/RegisterRequest.cs
-Dtos/Auth/LoginRequest.cs
-Dtos/Auth/LoginResponse.cs
-Dtos/Auth/CurrentUserResponse.cs
 ```
 
-## RegisterRequest
-
-เพิ่ม code นี้ใน `Dtos/Auth/RegisterRequest.cs`
+เพิ่ม code นี้:
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -90,9 +114,17 @@ public class RegisterRequest
 }
 ```
 
-## LoginRequest
+`Password` อยู่ใน request DTO ได้ เพราะ client ต้องส่ง password เข้ามาตอนสมัคร แต่ห้ามส่ง password หรือ password hash กลับไปใน response
 
-เพิ่ม code นี้ใน `Dtos/Auth/LoginRequest.cs`
+## ขั้นที่ 2: สร้าง LoginRequest
+
+เปิดไฟล์:
+
+```text
+Dtos/Auth/LoginRequest.cs
+```
+
+เพิ่ม code นี้:
 
 ```csharp
 using System.ComponentModel.DataAnnotations;
@@ -111,11 +143,17 @@ public class LoginRequest
 }
 ```
 
-ใน `LoginRequest` เราไม่จำเป็นต้องใช้ `[MinLength(8)]` เพราะถ้ารหัสผ่านสั้นเกินไปก็จะ login ไม่ผ่านอยู่แล้ว การบอก validation ละเอียดเกินไปใน login อาจช่วยผู้โจมตีเดา rule ได้ง่ายขึ้น
+ใน `LoginRequest` เราไม่ใส่ `[MinLength(8)]` เพราะถ้ารหัสผ่านสั้นเกินไปก็จะ login ไม่ผ่านอยู่แล้ว การบอก validation ละเอียดเกินไปใน login อาจช่วยผู้โจมตีเดา rule ได้ง่ายขึ้น
 
-## LoginResponse
+## ขั้นที่ 3: สร้าง LoginResponse
 
-เพิ่ม code นี้ใน `Dtos/Auth/LoginResponse.cs`
+เปิดไฟล์:
+
+```text
+Dtos/Auth/LoginResponse.cs
+```
+
+เพิ่ม code นี้:
 
 ```csharp
 namespace Backend.Api.Dtos.Auth;
@@ -130,9 +168,15 @@ public class LoginResponse
 
 `ExpiresIn` ใช้หน่วยวินาที เพื่อให้ client รู้ว่า token จะหมดอายุเมื่อไหร่
 
-## CurrentUserResponse
+## ขั้นที่ 4: สร้าง CurrentUserResponse
 
-เพิ่ม code นี้ใน `Dtos/Auth/CurrentUserResponse.cs`
+เปิดไฟล์:
+
+```text
+Dtos/Auth/CurrentUserResponse.cs
+```
+
+เพิ่ม code นี้:
 
 ```csharp
 namespace Backend.Api.Dtos.Auth;
@@ -145,9 +189,11 @@ public class CurrentUserResponse
 }
 ```
 
+response นี้ใช้กับ `GET /api/auth/me` เพื่อให้ client รู้ว่าตอนนี้ token เป็นของ user คนไหน
+
 ## Contract ที่คาดหวัง
 
-Register request
+Register request:
 
 ```json
 {
@@ -156,7 +202,7 @@ Register request
 }
 ```
 
-Register response
+Register response จะคืนข้อมูล user ที่สร้างแล้ว แต่ต้องไม่มี password หรือ password hash:
 
 ```json
 {
@@ -169,7 +215,7 @@ Register response
 }
 ```
 
-Login response
+Login response:
 
 ```json
 {
@@ -177,6 +223,20 @@ Login response
   "tokenType": "Bearer",
   "expiresIn": 3600
 }
+```
+
+## ตรวจ build
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+```powershell
+dotnet build
+```
+
+ถ้า build error ว่าไม่รู้จัก `[Required]` หรือ `[EmailAddress]` ให้ตรวจว่า request DTO มี using นี้:
+
+```csharp
+using System.ComponentModel.DataAnnotations;
 ```
 
 ## Checkpoint

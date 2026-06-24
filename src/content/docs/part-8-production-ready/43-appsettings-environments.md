@@ -1,4 +1,4 @@
-﻿---
+---
 title: 43 - appsettings หลาย environment
 description: ใช้ appsettings.Development และ appsettings.Production ให้ถูกหน้าที่
 ---
@@ -6,6 +6,27 @@ description: ใช้ appsettings.Development และ appsettings.Production 
 ASP.NET Core รองรับ configuration แยกตาม environment เช่น Development, Staging และ Production
 
 แนวทางนี้ช่วยให้เราแยกค่าที่ใช้ตอนพัฒนาออกจากค่าที่ใช้ตอน deploy จริง
+
+## วิธีเรียนบทนี้
+
+บทนี้จะจัดไฟล์ config ให้แยกหน้าที่:
+
+1. เข้าใจลำดับการอ่าน config
+2. สร้าง `appsettings.Development.json`
+3. สร้าง `appsettings.Production.json`
+4. ตั้ง `ASPNETCORE_ENVIRONMENT`
+5. ตรวจว่า environment ถูกใช้งานจริง
+6. แยกสิ่งที่ไม่ควรอยู่ใน appsettings
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `appsettings.json` | ค่า default กลาง |
+| `appsettings.Development.json` | ค่า override ตอน development |
+| `appsettings.Production.json` | ค่า override ตอน production |
+| `ASPNETCORE_ENVIRONMENT` | ชื่อ environment ที่ app ใช้เลือก config |
+| `app.Environment.IsDevelopment()` | ตรวจ environment ใน code |
 
 ## ไฟล์ที่ใช้บ่อย
 
@@ -15,15 +36,39 @@ appsettings.Development.json
 appsettings.Production.json
 ```
 
-`appsettings.json` เก็บค่ากลาง
+ลำดับแนวคิด:
 
-`appsettings.Development.json` override ค่าตอน development
+- `appsettings.json` เก็บค่ากลาง
+- `appsettings.Development.json` override ค่าตอน development
+- `appsettings.Production.json` ใช้ค่าที่เหมาะกับ production
 
-`appsettings.Production.json` ใช้ค่าที่เหมาะกับ production แต่ยังไม่ควรใส่ secret จริงลงไป
+connection string, JWT signing key, SMTP password และ API key ไม่ควรอยู่ในไฟล์ appsettings ที่ commit ให้ส่งผ่าน user secrets, environment variables หรือ secret manager แทน
 
-connection string, JWT signing key, SMTP password และ API key ไม่ควรอยู่ใน `appsettings.json`, `appsettings.Development.json` หรือ `appsettings.Production.json` ของ repository ให้ส่งผ่าน user secrets, environment variables หรือ secret manager แทน
+## ขั้นที่ 1: สร้างไฟล์ environment config
 
-## ตัวอย่าง appsettings.Development.json
+รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Force -Path appsettings.Development.json
+New-Item -ItemType File -Force -Path appsettings.Production.json
+```
+
+macOS/Linux Bash:
+
+```bash
+touch appsettings.Development.json
+touch appsettings.Production.json
+```
+
+ถ้าไฟล์มีอยู่แล้ว ให้เปิดไฟล์เดิมและปรับเนื้อหา ไม่ต้องลบ
+
+## ขั้นที่ 2: ตั้งค่า appsettings.Development.json
+
+เปิด `appsettings.Development.json`
+
+ใส่ค่าที่เหมาะกับ development:
 
 ```json
 {
@@ -33,18 +78,17 @@ connection string, JWT signing key, SMTP password และ API key ไม่ค
       "Microsoft.AspNetCore": "Warning",
       "Microsoft.EntityFrameworkCore.Database.Command": "Information"
     }
-  },
-  "Jwt": {
-    "Issuer": "Backend.Api",
-    "Audience": "Backend.ApiClient",
-    "ExpirationMinutes": 60
   }
 }
 ```
 
-Development อาจเปิด EF Core SQL command เป็น `Information` เพื่อ debug query
+Development อาจเปิด EF Core SQL command เป็น `Information` เพื่อ debug query แต่ไม่ควรเปิดละเอียดแบบนี้ใน production
 
-## ตัวอย่าง appsettings.Production.json
+## ขั้นที่ 3: ตั้งค่า appsettings.Production.json
+
+เปิด `appsettings.Production.json`
+
+ใส่ค่าที่เหมาะกับ production:
 
 ```json
 {
@@ -63,27 +107,45 @@ Development อาจเปิด EF Core SQL command เป็น `Information`
 }
 ```
 
-Production ลด token lifetime และลด log ที่ละเอียดเกินไป
+Production ลด token lifetime และลด log ที่ละเอียดเกินไป แต่ยังไม่ใส่ `Jwt:SigningKey` จริงลงไฟล์
 
-## ตั้งค่า environment
+## ขั้นที่ 4: ตั้งค่า environment บน Windows
 
-ใน PowerShell ตั้งค่า environment ชั่วคราว
+ใน Windows PowerShell:
 
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT="Development"
 dotnet run
 ```
 
-ถ้ารันใน container ให้ตั้งผ่าน `docker-compose.yml` หรือ platform ที่ deploy
+ถ้าต้องการทดสอบ production config ในเครื่อง:
 
-```yaml
-environment:
-  ASPNETCORE_ENVIRONMENT: Production
+```powershell
+$env:ASPNETCORE_ENVIRONMENT="Production"
+dotnet run
 ```
 
-## ตรวจ environment ใน Program.cs
+## ขั้นที่ 5: ตั้งค่า environment บน macOS/Linux
 
-ตัวอย่างที่เราใช้กับ OpenAPI
+ใน Bash:
+
+```bash
+export ASPNETCORE_ENVIRONMENT=Development
+dotnet run
+```
+
+ถ้าต้องการทดสอบ production config:
+
+```bash
+export ASPNETCORE_ENVIRONMENT=Production
+dotnet run
+```
+
+ตอน deploy จริง host หรือ container platform จะเป็นคนตั้งค่า environment ให้
+
+## ขั้นที่ 6: ตรวจ environment ใน Program.cs
+
+ตัวอย่างที่เราใช้กับ OpenAPI:
 
 ```csharp
 if (app.Environment.IsDevelopment())
@@ -94,7 +156,7 @@ if (app.Environment.IsDevelopment())
 
 ใน production ไม่ควรเปิดทุกอย่างเหมือน development โดยไม่คิด เช่น OpenAPI public, SQL verbose log หรือ developer exception page
 
-## launchSettings.json ใช้เฉพาะ local
+## ขั้นที่ 7: เข้าใจ launchSettings.json
 
 ไฟล์ `Properties/launchSettings.json` ใช้ช่วยรัน local ใน Visual Studio หรือ `dotnet run`
 

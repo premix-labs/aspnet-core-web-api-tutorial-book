@@ -1,4 +1,4 @@
-﻿---
+---
 title: 46 - Integration Test
 description: ทดสอบ API ผ่าน HTTP pipeline จริงด้วย WebApplicationFactory
 ---
@@ -12,12 +12,24 @@ Integration test ใช้ตรวจว่า endpoint, routing, middleware, D
 ```mermaid
 flowchart LR
     Test["xUnit test"] --> Factory["WebApplicationFactory<Program>"]
-    Factory --> TestServer["In-memory test server"]
-    TestServer --> Pipeline["ASP.NET Core pipeline"]
+    Factory --> Server["In-memory test server"]
+    Server --> Pipeline["ASP.NET Core pipeline"]
     Pipeline --> Controller["Controller / middleware / DI"]
     Controller --> Response["HTTP response"]
-    Response --> Assert["Assert status/body/headers"]
+    Response --> Assert["Assert status/body"]
 ```
+
+## วิธีเรียนบทนี้
+
+บทนี้จะเริ่มจาก integration test ที่ไม่ต้องใช้ database จริงก่อน:
+
+1. ติดตั้ง `Microsoft.AspNetCore.Mvc.Testing`
+2. เปิด `Program` ให้ test project เข้าถึง
+3. ทำให้ seeding ปิดได้ตอน test
+4. สร้าง `TestApiFactory`
+5. สร้าง test `GET /api/auth/me` แบบไม่ส่ง token
+6. เพิ่ม validation test ที่ไม่ต้องเข้า database
+7. รัน `dotnet test`
 
 ## ก่อนเริ่มบทนี้
 
@@ -31,11 +43,15 @@ Backend.Api.slnx หรือ Backend.Api.sln
 
 คำสั่งในบทนี้ให้รันจาก root ของ solution คือโฟลเดอร์ที่มี `Backend.Api` และ `Backend.Api.Tests` อยู่ข้างกัน
 
-## คำศัพท์ในบทนี้
+## สิ่งที่จะใช้ในบทนี้
 
-`Integration test` คือ test ที่รันหลายส่วนของระบบร่วมกัน เช่น routing, middleware, DI และ controller ไม่ใช่ทดสอบ method เดี่ยวแบบ unit test
-
-`WebApplicationFactory<Program>` คือ helper ที่สร้าง test server จาก `Program.cs` ของ API เพื่อให้ test ยิง HTTP request เข้า application pipeline จริงได้
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| integration test | test ที่รันหลายส่วนร่วมกัน เช่น middleware, DI และ controller |
+| `WebApplicationFactory<Program>` | helper ที่สร้าง test server จาก `Program.cs` |
+| `HttpClient` | client ที่ test ใช้ยิง request เข้า test server |
+| `IClassFixture<T>` | xUnit fixture ที่ reuse object ร่วมกันใน class test |
+| `DataSeeding:Enabled` | config ที่ใช้ปิด seed data ตอน test |
 
 ## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
 
@@ -46,19 +62,29 @@ Backend.Api.Tests/TestApiFactory.cs
 Backend.Api.Tests/AuthIntegrationTests.cs
 ```
 
-หลังจบบทนี้ควรมี integration test อย่างน้อยหนึ่งตัวที่รันด้วย `dotnet test` ได้โดยไม่ต้องเปิด API server แยกเอง
+## ขั้นที่ 1: ติดตั้ง package
 
-## ติดตั้ง package
+รันจาก root ของ solution
 
-ที่ test project ให้รัน
+Windows PowerShell:
 
 ```powershell
 dotnet add Backend.Api.Tests\Backend.Api.Tests.csproj package Microsoft.AspNetCore.Mvc.Testing
 ```
 
-## เปิด Program ให้ test project เข้าถึง
+macOS/Linux Bash:
 
-เปิด `Program.cs` ของ API แล้วเพิ่มท้ายไฟล์
+```bash
+dotnet add Backend.Api.Tests/Backend.Api.Tests.csproj package Microsoft.AspNetCore.Mvc.Testing
+```
+
+package นี้ให้ `WebApplicationFactory<Program>` สำหรับรัน ASP.NET Core ใน test server
+
+## ขั้นที่ 2: เปิด Program ให้ test project เข้าถึง
+
+เปิด `Backend.Api/Program.cs`
+
+เพิ่มท้ายไฟล์:
 
 ```csharp
 public partial class Program { }
@@ -66,13 +92,19 @@ public partial class Program { }
 
 เพราะ top-level statements จะสร้าง `Program` class ให้แบบ implicit การเพิ่ม partial class ทำให้ test project reference ได้ง่าย
 
-## ควบคุม database seeding ตอน test
+## ขั้นที่ 3: ควบคุม database seeding ตอน test
 
 ถ้าโปรเจกต์มี `DataSeeder` ที่รันตอน application start ให้ปรับ `Program.cs` ให้ปิด seeding ได้ผ่าน configuration
 
 ```csharp
-var seedDatabase = app.Configuration.GetValue("DataSeeding:Enabled", true);
+var seedDatabase = app.Configuration.GetValue(
+    "DataSeeding:Enabled",
+    true);
+```
 
+จากนั้นครอบ seeding logic:
+
+```csharp
 if (seedDatabase)
 {
     using var scope = app.Services.CreateScope();
@@ -81,17 +113,31 @@ if (seedDatabase)
 }
 ```
 
-ตอน integration test เราจะตั้ง `DataSeeding__Enabled=false` เพื่อให้ test แรกไม่ต้องใช้ SQL Server จริง
+ตอน integration test เราจะตั้ง `DataSeeding__Enabled=false` เพื่อให้ test แรกไม่ต้อง seed database จริง
 
-## เขียน test สำหรับ protected endpoint
+## ขั้นที่ 4: สร้าง TestApiFactory.cs
 
-สร้างไฟล์
+รันจาก root ของ solution
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Force -Path Backend.Api.Tests/TestApiFactory.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Backend.Api.Tests/TestApiFactory.cs
+```
+
+เปิดไฟล์:
 
 ```text
 Backend.Api.Tests/TestApiFactory.cs
 ```
 
-เพิ่ม code นี้
+เริ่มด้วย using และ class:
 
 ```csharp
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -100,49 +146,102 @@ namespace Backend.Api.Tests;
 
 public class TestApiFactory : WebApplicationFactory<Program>
 {
-    private readonly Dictionary<string, string?> previousValues = [];
-
-    public TestApiFactory()
-    {
-        SetEnvironmentVariable(
-            "ConnectionStrings__DefaultConnection",
-            "Server=localhost,1433;Database=BackendApiTests;User Id=sa;Password=Test_Local_Password_123!;TrustServerCertificate=True;");
-        SetEnvironmentVariable("Jwt__Issuer", "Backend.Api");
-        SetEnvironmentVariable("Jwt__Audience", "Backend.ApiClient");
-        SetEnvironmentVariable(
-            "Jwt__SigningKey",
-            "test-signing-key-at-least-32-characters");
-        SetEnvironmentVariable("Jwt__ExpirationMinutes", "60");
-        SetEnvironmentVariable("DataSeeding__Enabled", "false");
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        foreach (var (key, value) in previousValues)
-        {
-            Environment.SetEnvironmentVariable(key, value);
-        }
-
-        base.Dispose(disposing);
-    }
-
-    private void SetEnvironmentVariable(string key, string value)
-    {
-        previousValues[key] = Environment.GetEnvironmentVariable(key);
-        Environment.SetEnvironmentVariable(key, value);
-    }
 }
 ```
 
-สาเหตุที่ใช้ environment variable คือโปรเจกต์นี้ validate config ตั้งแต่ startup ถ้าใช้ `ConfigureAppConfiguration` ใน test factory ค่าอาจมาช้าเกินไปสำหรับ code ที่อ่าน config ช่วงต้น `Program.cs`
+## ขั้นที่ 5: เพิ่มตัวเก็บค่า environment เดิม
 
-จากนั้นสร้างไฟล์
+เพิ่ม field นี้ใน class:
+
+```csharp
+private readonly Dictionary<string, string?> previousValues = [];
+```
+
+เราจะเก็บค่าเดิมไว้เพื่อ restore หลัง test จบ ไม่ให้ environment variable จาก test ไปรบกวน terminal หรือ test อื่น
+
+## ขั้นที่ 6: ตั้งค่า config สำหรับ test
+
+เพิ่ม constructor:
+
+```csharp
+public TestApiFactory()
+{
+    SetEnvironmentVariable("DataSeeding__Enabled", "false");
+    SetEnvironmentVariable("Jwt__Issuer", "Backend.Api");
+    SetEnvironmentVariable("Jwt__Audience", "Backend.ApiClient");
+    SetEnvironmentVariable("Jwt__ExpirationMinutes", "60");
+}
+```
+
+เพิ่ม JWT signing key:
+
+```csharp
+SetEnvironmentVariable(
+    "Jwt__SigningKey",
+    "test-signing-key-at-least-32-characters");
+```
+
+เพิ่ม connection string สำหรับ test database:
+
+```csharp
+SetEnvironmentVariable(
+    "ConnectionStrings__DefaultConnection",
+    "Server=localhost,1433;Database=BackendApiTests;User Id=sa;Password=Test_Local_Password_123!;TrustServerCertificate=True;");
+```
+
+เหตุผลที่ใช้ environment variable คือ project นี้ validate config ตั้งแต่ startup ถ้าค่า config มาช้าเกินไป app อาจ start ไม่ผ่าน
+
+## ขั้นที่ 7: เพิ่ม helper restore environment
+
+เพิ่ม `Dispose`:
+
+```csharp
+protected override void Dispose(bool disposing)
+{
+    foreach (var (key, value) in previousValues)
+    {
+        Environment.SetEnvironmentVariable(key, value);
+    }
+
+    base.Dispose(disposing);
+}
+```
+
+เพิ่ม helper สำหรับ set ค่า:
+
+```csharp
+private void SetEnvironmentVariable(string key, string value)
+{
+    previousValues[key] = Environment.GetEnvironmentVariable(key);
+    Environment.SetEnvironmentVariable(key, value);
+}
+```
+
+ตอนนี้ `TestApiFactory` พร้อมสร้าง test server แล้ว
+
+## ขั้นที่ 8: สร้าง AuthIntegrationTests.cs
+
+รันจาก root ของ solution
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Force -Path Backend.Api.Tests/AuthIntegrationTests.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Backend.Api.Tests/AuthIntegrationTests.cs
+```
+
+เปิดไฟล์:
 
 ```text
 Backend.Api.Tests/AuthIntegrationTests.cs
 ```
 
-เพิ่ม code นี้
+เพิ่ม using และ class:
 
 ```csharp
 using System.Net;
@@ -150,44 +249,52 @@ using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Backend.Api.Tests;
 
-public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestApiFactory>
+public class AuthIntegrationTests(TestApiFactory factory)
+    : IClassFixture<TestApiFactory>
 {
-    [Fact]
-    public async Task Me_WhenNoToken_ReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync("/api/auth/me");
-
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-    }
-
-    private HttpClient CreateClient()
-    {
-        return factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            BaseAddress = new Uri("https://localhost")
-        });
-    }
 }
 ```
 
-## ระวังเรื่อง database ใน integration test
+## ขั้นที่ 9: เพิ่ม test protected endpoint
 
-ถ้า application start แล้วต้องเชื่อม SQL Server จริง test อาจ fail เมื่อไม่มี database
+เพิ่ม test นี้ใน class:
 
-แนวทางที่ทำได้มีหลายแบบ
+```csharp
+[Fact]
+public async Task Me_WhenNoToken_ReturnsUnauthorized()
+{
+    var client = CreateClient();
 
-- ใช้ SQL Server container สำหรับ test
-- override connection string ไปที่ test database
-- ใช้ SQLite in-memory สำหรับบาง scenario
-- แยก startup logic ที่ seed database ให้ควบคุมได้ใน test
+    var response = await client.GetAsync("/api/auth/me");
 
-สำหรับมือใหม่ ให้เริ่มจาก test endpoint ที่ไม่ต้องใช้ database ก่อน เช่น `GET /api/auth/me` แบบไม่ส่ง token เพราะ authentication middleware ตอบ `401` ก่อนเข้าถึง database
+    Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+}
+```
 
-## เพิ่ม test validation
+เพิ่ม helper สร้าง client:
 
-เพิ่ม test register validation ได้โดยไม่ต้องมี database จริง เพราะ invalid model จะถูกตอบ `400` ก่อนเข้า service ที่คุยกับ database
+```csharp
+private HttpClient CreateClient()
+{
+    return factory.CreateClient(
+        new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost")
+        });
+}
+```
+
+test นี้ไม่ต้องใช้ database เพราะ authentication middleware ตอบ `401` ก่อนเข้า service
+
+## ขั้นที่ 10: เพิ่ม validation test
+
+เพิ่ม using:
+
+```csharp
+using System.Net.Http.Json;
+```
+
+เพิ่ม test register validation:
 
 ```csharp
 [Fact]
@@ -205,19 +312,30 @@ public async Task Register_WhenEmailInvalid_ReturnsBadRequest()
 }
 ```
 
-ต้องเพิ่ม using
+invalid model จะถูกตอบ `400` ก่อนเข้า service ที่คุยกับ database
 
-```csharp
-using System.Net.Http.Json;
-```
+## ขั้นที่ 11: รัน integration test
 
-## รัน integration test
+รันจาก root ของ solution
 
 ```powershell
 dotnet test
 ```
 
 ถ้า test fail ตั้งแต่ application start ให้ดู error จาก configuration หรือ database ก่อน เพราะ integration test ใช้ startup path ใกล้เคียงของจริง
+
+## ระวังเรื่อง database ใน integration test
+
+ถ้า application start แล้วต้องเชื่อม SQL Server จริง test อาจ fail เมื่อไม่มี database
+
+แนวทางที่ทำได้มีหลายแบบ:
+
+- ใช้ SQL Server container สำหรับ test
+- override connection string ไปที่ test database
+- ใช้ SQLite in-memory สำหรับบาง scenario
+- แยก startup logic ที่ seed database ให้ควบคุมได้ใน test
+
+สำหรับมือใหม่ ให้เริ่มจาก endpoint ที่ไม่ต้องใช้ database ก่อน แล้วค่อยเพิ่ม test ที่ต้องใช้ test database ชัดเจน
 
 ## Checkpoint
 
@@ -228,5 +346,6 @@ dotnet test
 - seeding database ถูกควบคุมได้ด้วย `DataSeeding:Enabled`
 - มี `TestApiFactory` ที่ตั้งค่า connection string, JWT และปิด seeding สำหรับ test
 - มี integration test สำหรับ `GET /api/auth/me` แบบไม่ส่ง token
-- รัน `dotnet test` ผ่านอย่างน้อยหนึ่ง integration test
+- มี validation test ที่ตอบ `400`
+- รัน `dotnet test` ผ่าน
 - เข้าใจว่าการ test database ต้องจัด test database ให้ชัดเจน

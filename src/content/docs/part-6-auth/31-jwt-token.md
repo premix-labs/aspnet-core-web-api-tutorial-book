@@ -1,11 +1,11 @@
-﻿---
+---
 title: 31 - สร้าง JWT Token
 description: สร้าง access token พร้อม claims และตั้งค่า JWT Bearer authentication
 ---
 
 JWT คือ token ที่ client แนบมากับ request เพื่อบอก API ว่าผู้ใช้คือใครและมี role อะไร
 
-บทนี้เราจะทำสองเรื่องพร้อมกัน
+บทนี้เราจะทำสองเรื่องพร้อมกัน:
 
 - สร้าง JWT token ตอน login สำเร็จ
 - ตั้งค่า ASP.NET Core ให้ validate token ที่ client ส่งกลับมา
@@ -28,17 +28,33 @@ sequenceDiagram
     ProtectedApi-->>Client: protected response
 ```
 
+## วิธีเรียนบทนี้
+
+บทนี้มีหลายชิ้น ให้ทำทีละรอบ:
+
+1. ติดตั้ง JWT Bearer package
+2. เพิ่ม config `Jwt` ใน `appsettings.json`
+3. สร้าง `JwtOptions`
+4. สร้าง `JwtTokenService`
+5. ให้ `AuthService` ใช้ token service
+6. ตั้งค่า authentication middleware
+7. ทดสอบ login ว่าได้ JWT จริง
+
 ## ก่อนเริ่มบทนี้
 
 ให้ตรวจว่าคุณมี `AuthService.LoginAsync` ที่ตรวจ email/password ได้แล้ว และตอนนี้ยังคืน temporary token จากบทก่อนหน้า
 
-บทนี้ต้องแก้ทั้ง `AuthService`, เพิ่ม `JwtTokenService`, เพิ่ม config ใน `appsettings.json` และตั้งค่า authentication middleware ใน `Program.cs`
+## สิ่งที่จะใช้ในบทนี้
 
-## คำศัพท์ในบทนี้
-
-`Claim` คือข้อมูลชิ้นเล็ก ๆ ใน token เช่น user id, email หรือ role ฝั่ง API จะอ่าน claim เพื่อรู้ว่า request นี้มาจากผู้ใช้คนไหน
-
-`Middleware` คือ code ใน HTTP pipeline ที่ทำงานระหว่างรับ request และส่ง response เช่น authentication middleware จะอ่าน `Authorization` header แล้ว validate token ก่อน request ไปถึง controller ที่ถูกป้องกัน
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| JWT | token ที่บรรจุ claims และถูก sign ด้วย key |
+| claim | ข้อมูลชิ้นเล็กใน token เช่น user id, email, role |
+| issuer | ระบบที่ออก token |
+| audience | client หรือ API ที่ token นี้ตั้งใจให้ใช้ |
+| signing key | secret key ที่ใช้ sign token |
+| `JwtBearer` | authentication handler สำหรับอ่าน Bearer token |
+| `TokenValidationParameters` | rules สำหรับ validate token |
 
 ## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
 
@@ -53,7 +69,7 @@ Program.cs
 
 เมื่อจบบทนี้ login จะได้ JWT จริง แต่ endpoint อื่นจะยังไม่ถูกบังคับ login จนกว่าจะเพิ่ม `[Authorize]` ในบทถัดไป
 
-## ติดตั้ง JWT Bearer package
+## ขั้นที่ 1: ติดตั้ง JWT Bearer package
 
 รันคำสั่งนี้ที่ root ของโปรเจกต์ `Backend.Api`
 
@@ -63,7 +79,7 @@ dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer --version 10.0.
 
 package นี้ใช้สำหรับ validate JWT bearer token ใน ASP.NET Core
 
-## เพิ่ม JWT configuration
+## ขั้นที่ 2: เพิ่ม JWT configuration
 
 เปิด `appsettings.json` แล้วเพิ่ม section `Jwt`
 
@@ -78,25 +94,35 @@ package นี้ใช้สำหรับ validate JWT bearer token ใน AS
 }
 ```
 
-ถ้าไฟล์มี key อื่นอยู่แล้ว ให้รวม `Jwt` เข้าไปใน object เดิม
+ถ้าไฟล์มี key อื่นอยู่แล้ว ให้รวม `Jwt` เข้าไปใน object เดิม ไม่ต้องสร้าง JSON ซ้อนสองชุด
 
 `SigningKey` ต้องยาวพอและต้องเก็บเป็น secret ใน production อย่าใช้ค่าตัวอย่างนี้ในระบบจริง
 
-## สร้าง JwtOptions
+## ขั้นที่ 3: สร้าง JwtOptions
 
-สร้างโฟลเดอร์
+รันจากโฟลเดอร์ `Backend.Api`
 
-```text
-Options/
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path Options
+New-Item -ItemType File -Path Options/JwtOptions.cs
 ```
 
-สร้างไฟล์
+macOS/Linux Bash:
+
+```bash
+mkdir -p Options
+touch Options/JwtOptions.cs
+```
+
+เปิดไฟล์:
 
 ```text
 Options/JwtOptions.cs
 ```
 
-เพิ่ม code นี้
+เพิ่ม code นี้:
 
 ```csharp
 namespace Backend.Api.Options;
@@ -110,15 +136,31 @@ public class JwtOptions
 }
 ```
 
-## สร้าง JwtTokenService
+class นี้ใช้ bind ค่า `Jwt` จาก `appsettings.json` ให้เป็น object ที่ code ใช้งานได้
 
-สร้างไฟล์
+## ขั้นที่ 4: สร้าง JwtTokenService
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Path Services/JwtTokenService.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Services/JwtTokenService.cs
+```
+
+เปิดไฟล์:
 
 ```text
 Services/JwtTokenService.cs
 ```
 
-เพิ่ม code นี้
+เริ่มจาก using และ class:
 
 ```csharp
 using System.IdentityModel.Tokens.Jwt;
@@ -134,47 +176,80 @@ namespace Backend.Api.Services;
 
 public class JwtTokenService(IOptions<JwtOptions> jwtOptions)
 {
-    public LoginResponse GenerateLoginResponse(User user)
-    {
-        var options = jwtOptions.Value;
-        var expiresAtUtc = DateTime.UtcNow.AddMinutes(options.ExpirationMinutes);
-
-        var signingKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(options.SigningKey));
-
-        var credentials = new SigningCredentials(
-            signingKey,
-            SecurityAlgorithms.HmacSha256);
-
-        var claims = new List<Claim>
-        {
-            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Email),
-            new("role", user.Role)
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: options.Issuer,
-            audience: options.Audience,
-            claims: claims,
-            expires: expiresAtUtc,
-            signingCredentials: credentials);
-
-        var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
-
-        return new LoginResponse
-        {
-            AccessToken = accessToken,
-            TokenType = "Bearer",
-            ExpiresIn = options.ExpirationMinutes * 60
-        };
-    }
 }
 ```
 
-## ลงทะเบียน JwtOptions และ JwtTokenService
+## ขั้นที่ 5: เพิ่ม method GenerateLoginResponse
 
-เปิด `Program.cs` แล้วเพิ่ม using
+เพิ่ม method นี้ใน `JwtTokenService`
+
+```csharp
+public LoginResponse GenerateLoginResponse(User user)
+{
+    var options = jwtOptions.Value;
+    var expiresAtUtc = DateTime.UtcNow.AddMinutes(options.ExpirationMinutes);
+```
+
+เพิ่ม signing key และ credentials:
+
+```csharp
+    var signingKey = new SymmetricSecurityKey(
+        Encoding.UTF8.GetBytes(options.SigningKey));
+
+    var credentials = new SigningCredentials(
+        signingKey,
+        SecurityAlgorithms.HmacSha256);
+```
+
+`SymmetricSecurityKey` ใช้ secret key เดียวกันทั้งตอน sign และตอน validate token
+
+## ขั้นที่ 6: เพิ่ม claims
+
+เพิ่ม claims ใน method เดิม:
+
+```csharp
+    var claims = new List<Claim>
+    {
+        new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+        new(JwtRegisteredClaimNames.Email, user.Email),
+        new("role", user.Role)
+    };
+```
+
+claim ที่ใช้ในหนังสือนี้:
+
+- `sub` คือ user id
+- `email` คือ email ของ user
+- `role` คือ role สำหรับ authorization
+
+## ขั้นที่ 7: สร้าง token และ response
+
+เพิ่ม code นี้ต่อจาก claims:
+
+```csharp
+    var token = new JwtSecurityToken(
+        issuer: options.Issuer,
+        audience: options.Audience,
+        claims: claims,
+        expires: expiresAtUtc,
+        signingCredentials: credentials);
+
+    var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+
+    return new LoginResponse
+    {
+        AccessToken = accessToken,
+        TokenType = "Bearer",
+        ExpiresIn = options.ExpirationMinutes * 60
+    };
+}
+```
+
+`WriteToken` แปลง token object ให้เป็น string ที่ client เอาไปใส่ใน `Authorization: Bearer ...` ได้
+
+## ขั้นที่ 8: ลงทะเบียน JwtOptions และ JwtTokenService
+
+เปิด `Program.cs` แล้วเพิ่ม using:
 
 ```csharp
 using System.IdentityModel.Tokens.Jwt;
@@ -184,7 +259,7 @@ using Microsoft.IdentityModel.Tokens;
 using Backend.Api.Options;
 ```
 
-เพิ่ม code หลังสร้าง `builder`
+เพิ่ม code หลังสร้าง `builder`:
 
 ```csharp
 var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
@@ -195,14 +270,18 @@ if (string.IsNullOrWhiteSpace(jwtOptions.SigningKey) ||
 {
     throw new InvalidOperationException("Jwt signing key must be at least 32 characters.");
 }
+```
 
+จากนั้น bind options และลงทะเบียน service:
+
+```csharp
 builder.Services.Configure<JwtOptions>(
     builder.Configuration.GetSection("Jwt"));
 
 builder.Services.AddScoped<JwtTokenService>();
 ```
 
-## Inject JwtTokenService เข้า AuthService
+## ขั้นที่ 9: Inject JwtTokenService เข้า AuthService
 
 เปิด `AuthService.cs` แล้วแก้ constructor ให้รับ `JwtTokenService`
 
@@ -213,7 +292,7 @@ public class AuthService(
     JwtTokenService jwtTokenService)
 ```
 
-จากนั้นแก้ท้าย method `LoginAsync` จาก temporary token
+จากนั้นแก้ท้าย method `LoginAsync` จาก temporary token:
 
 ```csharp
 return new LoginResponse
@@ -224,13 +303,13 @@ return new LoginResponse
 };
 ```
 
-เป็น JWT response จริง
+เป็น JWT response จริง:
 
 ```csharp
 return jwtTokenService.GenerateLoginResponse(user);
 ```
 
-## ตั้งค่า Authentication
+## ขั้นที่ 10: ตั้งค่า Authentication
 
 เพิ่ม code นี้ใน `Program.cs`
 
@@ -259,13 +338,13 @@ builder.Services
 builder.Services.AddAuthorization();
 ```
 
-`MapInboundClaims = false` ทำให้ claim ที่เราใส่ไว้ เช่น `sub`, `email`, `role` ไม่ถูกแปลงชื่ออัตโนมัติ ทำให้เวลาอ่าน claim ในบทถัดไปตรงไปตรงมากว่า
+`MapInboundClaims = false` ทำให้ claim ที่เราใส่ไว้ เช่น `sub`, `email`, `role` ไม่ถูกแปลงชื่ออัตโนมัติ
 
 `RoleClaimType = "role"` ทำให้ `[Authorize(Roles = "Admin")]` ใช้ claim ชื่อ `role` ได้
 
-## เพิ่ม middleware
+## ขั้นที่ 11: เพิ่ม middleware
 
-หลัง `app.UseHttpsRedirection();` ให้เพิ่ม
+หลัง `app.UseHttpsRedirection();` ให้เพิ่ม:
 
 ```csharp
 app.UseAuthentication();
@@ -274,7 +353,7 @@ app.UseAuthorization();
 
 ลำดับต้องเป็น `UseAuthentication()` ก่อน `UseAuthorization()`
 
-ตำแหน่งโดยรวมจะประมาณนี้
+ตำแหน่งโดยรวมจะประมาณนี้:
 
 ```csharp
 app.UseHttpsRedirection();
@@ -285,18 +364,31 @@ app.UseAuthorization();
 app.MapControllers();
 ```
 
+## ตรวจ build
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+```powershell
+dotnet build
+```
+
+ถ้าได้ error เรื่อง signing key สั้นเกินไป ให้ตรวจค่า `Jwt:SigningKey` ใน `appsettings.json`
+
 ## ทดสอบ login
 
-รัน API
+รัน API:
 
 ```powershell
 dotnet run
 ```
 
-ส่ง request login ด้วย user จาก seed data
+ส่ง request login ด้วย user จาก seed data:
 
 ```http
-POST https://localhost:7001/api/auth/login
+@baseUrl = http://localhost:5156
+
+### Login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -305,13 +397,7 @@ Content-Type: application/json
 }
 ```
 
-ผลลัพธ์ที่คาดหวังคือ `200 OK` พร้อม `accessToken`
-
-## ถ้าได้ error signing key
-
-ถ้าเจอ error เรื่อง key สั้นเกินไป ให้ตรวจค่า `Jwt:SigningKey` ใน `appsettings.json`
-
-สำหรับ HMAC SHA-256 ควรใช้ key ที่ยาวพอ อย่างน้อย 32 characters สำหรับบทเรียนนี้
+ผลลัพธ์ที่คาดหวังคือ `200 OK` พร้อม `accessToken` ที่เป็น JWT จริง
 
 ## Checkpoint
 

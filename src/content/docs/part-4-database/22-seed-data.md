@@ -7,6 +7,33 @@ Seed data คือข้อมูลเริ่มต้นที่ applicati
 
 ในบทนี้เราจะ seed user ตัวอย่างสำหรับทดสอบ CRUD และฐานข้อมูล ส่วนการ seed admin ที่ login ได้จริงจะทำหลังจากเรียน password hashing ในภาค Authentication
 
+## วิธีเรียนบทนี้
+
+บทนี้ให้ทำ 3 ขั้นหลัก:
+
+1. สร้าง `DataSeeder`
+2. ลงทะเบียน `DataSeeder` ใน DI
+3. เรียก `SeedAsync()` ตอน application start
+
+หลังทำเสร็จให้รัน app สองครั้งเพื่อพิสูจน์ว่า seed data ไม่ถูกเพิ่มซ้ำ
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `AnyAsync()` | ตรวจว่ามีข้อมูลใน table แล้วหรือยัง |
+| `AddRange(...)` | เพิ่ม entity หลายตัวในครั้งเดียว |
+| `CreateScope()` | สร้าง DI scope เองตอน application start |
+| `GetRequiredService<T>()` | ขอ service จาก DI container ถ้าไม่มีให้ throw error |
+| `SeedAsync()` | method ที่ใช้เติมข้อมูลเริ่มต้น |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Data/DataSeeder.cs
+Program.cs
+```
+
 ## ทำไมยังไม่ seed admin login จริง
 
 Admin ที่ login ได้จริงต้องมี `PasswordHash` ที่ถูกสร้างด้วย password hasher
@@ -23,7 +50,23 @@ Admin ที่ login ได้จริงต้องมี `PasswordHash` ท
 Data/DataSeeder.cs
 ```
 
-เพิ่ม code นี้
+ถ้าโฟลเดอร์ `Data` มีอยู่แล้ว ไม่ต้องสร้างซ้ำ
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Path Data/DataSeeder.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Data/DataSeeder.cs
+```
+
+## ขั้นที่ 1: สร้าง class DataSeeder
+
+เริ่มจาก using, namespace และ class:
 
 ```csharp
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +74,62 @@ using Backend.Api.Models;
 
 namespace Backend.Api.Data;
 
+public class DataSeeder(AppDbContext db)
+{
+}
+```
+
+`AppDbContext db` คือ dependency ที่ DI จะส่งเข้ามาให้ seeder ใช้อ่าน/เขียน database
+
+## ขั้นที่ 2: ตรวจว่ามี user อยู่แล้วหรือไม่
+
+เพิ่ม method นี้ใน class `DataSeeder`
+
+```csharp
+    public async Task SeedAsync()
+    {
+        var hasUsers = await db.Users.AnyAsync();
+
+        if (hasUsers)
+        {
+            return;
+        }
+    }
+```
+
+`AnyAsync()` ใช้เช็กว่าตาราง `Users` มีข้อมูลแล้วหรือยัง ถ้ามีแล้วให้ `return` เพื่อไม่เพิ่มข้อมูลซ้ำทุกครั้งที่ app start
+
+## ขั้นที่ 3: เพิ่มข้อมูลตัวอย่าง
+
+เพิ่ม code นี้ต่อจาก `if (hasUsers) { return; }`
+
+```csharp
+db.Users.AddRange(
+    new User
+    {
+        Email = "demo-user@example.com",
+        PasswordHash = "pending-auth",
+        Role = "User",
+        IsActive = true
+    },
+    new User
+    {
+        Email = "inactive-user@example.com",
+        PasswordHash = "pending-auth",
+        Role = "User",
+        IsActive = false
+    });
+
+await db.SaveChangesAsync();
+```
+
+`AddRange(...)` ใช้เพิ่มหลาย record พร้อมกัน ส่วน `SaveChangesAsync()` คือจังหวะบันทึกลง database จริง
+
+## ตรวจภาพรวม DataSeeder
+
+หลังใส่ครบ ไฟล์ควรมีภาพรวมแบบนี้
+
+```csharp
 public class DataSeeder(AppDbContext db)
 {
     public async Task SeedAsync()
@@ -65,10 +164,16 @@ public class DataSeeder(AppDbContext db)
 
 ## ลงทะเบียน DataSeeder
 
-เปิด `Program.cs` แล้วเพิ่ม
+เปิด `Program.cs` แล้วเพิ่มก่อน `var app = builder.Build();`
 
 ```csharp
 builder.Services.AddScoped<DataSeeder>();
+```
+
+ถ้า `Program.cs` อยู่ใน namespace เดียวกับ top-level statements ปกติไม่ต้องเพิ่ม using เพิ่ม เพราะ `DataSeeder` อยู่ใน namespace `Backend.Api.Data` และบทก่อนเพิ่ม using นี้ไว้แล้ว:
+
+```csharp
+using Backend.Api.Data;
 ```
 
 ## เรียกใช้ DataSeeder ตอน application start
@@ -106,6 +211,8 @@ if (app.Environment.IsDevelopment())
 
 ตอน application start ยังไม่มี HTTP request scope ให้ใช้ เราจึงสร้าง scope เองด้วย `app.Services.CreateScope()`
 
+`GetRequiredService<DataSeeder>()` แปลว่า ขอ `DataSeeder` จาก DI container ถ้าลืมลงทะเบียนไว้ application จะ throw error ทันที ทำให้รู้ปัญหาเร็ว
+
 ## ระวังเรื่อง migration
 
 DataSeeder ต้องใช้ table ที่มีอยู่แล้ว ดังนั้นให้รัน migration ก่อน
@@ -115,6 +222,14 @@ dotnet tool run dotnet-ef database update
 ```
 
 ถ้า table ยังไม่ถูกสร้าง seeder จะ error ตอน query `db.Users.AnyAsync()`
+
+## ตรวจ build ก่อนรัน
+
+```powershell
+dotnet build
+```
+
+ถ้า error ว่าไม่รู้จัก `DataSeeder` ให้ตรวจว่าไฟล์อยู่ใน `Data/DataSeeder.cs` และ namespace เป็น `Backend.Api.Data`
 
 ## ทดสอบ seed data
 
@@ -133,6 +248,8 @@ GET /api/users
 ควรเห็น user ตัวอย่างสองรายการ
 
 ถ้ารัน application ซ้ำ user ไม่ควรถูกเพิ่มซ้ำ เพราะ seeder ตรวจ `AnyAsync()` ก่อนแล้ว
+
+ถ้าต้องการทดสอบใหม่ตั้งแต่ database ว่าง ให้ลบข้อมูลใน database ด้วยเครื่องมือจัดการ SQL Server หรือสร้าง database ใหม่ หลีกเลี่ยงการลบ migration เพื่อแค่ล้างข้อมูลทดสอบ
 
 ## Checkpoint
 

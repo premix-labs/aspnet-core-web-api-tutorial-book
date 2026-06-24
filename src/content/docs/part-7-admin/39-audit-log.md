@@ -1,4 +1,4 @@
-﻿---
+---
 title: 39 - ทำ Audit Log
 description: บันทึกเหตุการณ์สำคัญในระบบ admin เพื่อใช้ตรวจสอบย้อนหลัง
 ---
@@ -27,6 +27,18 @@ sequenceDiagram
     AdminUsersController-->>Admin: 200 OK
 ```
 
+## วิธีเรียนบทนี้
+
+ให้ทำตามลำดับ:
+
+1. สร้าง `AuditLog` entity
+2. เพิ่ม `DbSet` และ mapping
+3. สร้าง migration
+4. สร้าง `AuditLogService`
+5. inject เข้า `AdminUserService`
+6. log ตอนเปลี่ยน role/status สำเร็จ
+7. ตรวจข้อมูลใน database
+
 ## เหตุการณ์ที่ควร log ในภาคนี้
 
 - Admin เปลี่ยน role ผู้ใช้
@@ -35,15 +47,51 @@ sequenceDiagram
 
 บทนี้จะ log เฉพาะ action ที่สำเร็จก่อน
 
-## สร้าง AuditLog Entity
+## สิ่งที่จะใช้ในบทนี้
 
-สร้างไฟล์
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `AuditLog` | entity สำหรับบันทึกเหตุการณ์ |
+| `ActorUserId` | user id ของคนที่ทำ action |
+| `EntityName` | ชื่อ entity ที่ถูกกระทำ เช่น `User` |
+| `EntityId` | id ของ record ที่ถูกกระทำ |
+| `Detail` | ข้อความอธิบายเหตุการณ์ |
+| `AuditLogService` | service สำหรับเขียน audit log |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Models/AuditLog.cs
+Data/AppDbContext.cs
+Services/AuditLogService.cs
+Services/AdminUserService.cs
+Program.cs
+Migrations/
+```
+
+## ขั้นที่ 1: สร้าง AuditLog Entity
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Path Models/AuditLog.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Models/AuditLog.cs
+```
+
+เปิดไฟล์:
 
 ```text
 Models/AuditLog.cs
 ```
 
-เพิ่ม code นี้
+เพิ่ม code นี้:
 
 ```csharp
 namespace Backend.Api.Models;
@@ -61,23 +109,25 @@ public class AuditLog
 }
 ```
 
-`ActorUserId` คือ admin ที่ทำ action
+`ActorUserId` คือ admin ที่ทำ action ส่วน `EntityName` และ `EntityId` คือข้อมูลปลายทางที่ถูกกระทำ
 
-`EntityName` และ `EntityId` คือข้อมูลปลายทางที่ถูกกระทำ เช่น `User` และ id ของ user ที่ถูกเปลี่ยน role
+## ขั้นที่ 2: เพิ่ม DbSet ใน AppDbContext
 
-`Detail` ใช้เก็บรายละเอียดอ่านง่าย เช่น `Role changed from User to Admin`
-
-`IpAddress` ใช้ช่วยตรวจสอบย้อนหลังว่า request มาจากที่ใด ถ้า runtime ไม่มี IP เช่นตอน integration test สามารถเก็บ fallback เช่น `unknown` ได้
-
-## เพิ่ม DbSet ใน AppDbContext
-
-เปิด `Data/AppDbContext.cs` แล้วเพิ่ม
+เปิด `Data/AppDbContext.cs` แล้วเพิ่ม property:
 
 ```csharp
 public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 ```
 
-เพิ่ม mapping ใน `OnModelCreating`
+ถ้าไฟล์ยังไม่มี using ของ models ให้ตรวจว่ามี:
+
+```csharp
+using Backend.Api.Models;
+```
+
+## ขั้นที่ 3: เพิ่ม mapping ของ AuditLog
+
+ใน `OnModelCreating` เพิ่ม mapping สำหรับ `AuditLog`:
 
 ```csharp
 modelBuilder.Entity<AuditLog>(entity =>
@@ -86,42 +136,63 @@ modelBuilder.Entity<AuditLog>(entity =>
     entity.HasIndex(log => log.CreatedAt);
     entity.HasIndex(log => new { log.ActorUserId, log.CreatedAt });
     entity.HasIndex(log => new { log.EntityName, log.EntityId, log.CreatedAt });
-
-    entity.Property(log => log.Action)
-        .IsRequired()
-        .HasMaxLength(100);
-
-    entity.Property(log => log.Detail)
-        .HasMaxLength(1000);
-
-    entity.Property(log => log.IpAddress)
-        .HasMaxLength(45);
-
-    entity.Property(log => log.CreatedAt)
-        .IsRequired();
 });
 ```
 
-## สร้าง migration
+เพิ่ม property constraints:
 
-หลังเพิ่ม entity ให้สร้าง migration ใหม่
+```csharp
+entity.Property(log => log.Action)
+    .IsRequired()
+    .HasMaxLength(100);
+
+entity.Property(log => log.Detail)
+    .HasMaxLength(1000);
+
+entity.Property(log => log.IpAddress)
+    .HasMaxLength(45);
+
+entity.Property(log => log.CreatedAt)
+    .IsRequired();
+```
+
+index เหล่านี้ช่วย query log ล่าสุด, log ของ actor และ log ของ target entity ได้เร็วขึ้น
+
+## ขั้นที่ 4: สร้าง migration
+
+หลังเพิ่ม entity ให้สร้าง migration ใหม่:
 
 ```powershell
+dotnet build
 dotnet tool run dotnet-ef migrations add AddAuditLogs
 dotnet tool run dotnet-ef database update
 ```
 
-ถ้า `dotnet tool run dotnet-ef migrations add` error ให้รัน `dotnet build` ก่อนเพื่อดู compile error ที่ชัดกว่า
+ถ้า `migrations add` error ให้ดูผล `dotnet build` ก่อน เพราะ migration ต้อง compile project ได้
 
-## สร้าง AuditLogService
+## ขั้นที่ 5: สร้าง AuditLogService
 
-สร้างไฟล์
+รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Path Services/AuditLogService.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+touch Services/AuditLogService.cs
+```
+
+เปิดไฟล์:
 
 ```text
 Services/AuditLogService.cs
 ```
 
-เพิ่ม code นี้
+เพิ่ม using และ class:
 
 ```csharp
 using Backend.Api.Data;
@@ -131,40 +202,45 @@ namespace Backend.Api.Services;
 
 public class AuditLogService(AppDbContext db)
 {
-    public async Task LogAsync(
-        int? actorUserId,
-        string action,
-        string entityName,
-        string entityId,
-        string? ipAddress,
-        string? detail)
-    {
-        db.AuditLogs.Add(new AuditLog
-        {
-            ActorUserId = actorUserId,
-            Action = action,
-            EntityName = entityName,
-            EntityId = entityId,
-            IpAddress = ipAddress,
-            Detail = detail
-        });
-
-        await db.SaveChangesAsync();
-    }
 }
 ```
 
-## ลงทะเบียน AuditLogService
+## ขั้นที่ 6: เพิ่ม LogAsync
 
-เปิด `Program.cs` แล้วเพิ่ม
+เพิ่ม method นี้ใน `AuditLogService`
+
+```csharp
+public async Task LogAsync(
+    int? actorUserId,
+    string action,
+    string entityName,
+    string entityId,
+    string? ipAddress,
+    string? detail)
+{
+    db.AuditLogs.Add(new AuditLog
+    {
+        ActorUserId = actorUserId,
+        Action = action,
+        EntityName = entityName,
+        EntityId = entityId,
+        IpAddress = ipAddress,
+        Detail = detail
+    });
+
+    await db.SaveChangesAsync();
+}
+```
+
+## ขั้นที่ 7: ลงทะเบียนและ inject AuditLogService
+
+เปิด `Program.cs` แล้วเพิ่ม:
 
 ```csharp
 builder.Services.AddScoped<AuditLogService>();
 ```
 
-## Inject AuditLogService เข้า AdminUserService
-
-แก้ constructor
+เปิด `AdminUserService.cs` แล้วแก้ constructor:
 
 ```csharp
 public class AdminUserService(
@@ -173,16 +249,18 @@ public class AdminUserService(
     AuditLogService auditLogService)
 ```
 
-## Log ตอนเปลี่ยน role
+## ขั้นที่ 8: Log ตอนเปลี่ยน role
 
-ใน `UpdateRoleAsync` ให้เก็บค่าเดิมก่อนเปลี่ยน
+ใน `UpdateRoleAsync` ให้เก็บค่าเดิมก่อนเปลี่ยน:
 
 ```csharp
 var oldRole = user.Role;
-user.Role = Roles.Normalize(request.Role);
+user.Role = nextRole;
+```
 
-await userRepository.UpdateAsync(user);
+หลัง `await userRepository.UpdateAsync(user);` ให้ log:
 
+```csharp
 await auditLogService.LogAsync(
     currentAdminId,
     "USER_ROLE_CHANGED",
@@ -190,20 +268,20 @@ await auditLogService.LogAsync(
     user.Id.ToString(),
     null,
     $"Role changed from {oldRole} to {user.Role}");
-
-return ToResponse(user);
 ```
 
-## Log ตอนเปลี่ยนสถานะ
+## ขั้นที่ 9: Log ตอนเปลี่ยนสถานะ
 
-ใน `UpdateStatusAsync` ให้เก็บค่าเดิมก่อนเปลี่ยน
+ใน `UpdateStatusAsync` ให้เก็บค่าเดิมก่อนเปลี่ยน:
 
 ```csharp
 var oldIsActive = user.IsActive;
 user.IsActive = nextIsActive;
+```
 
-await userRepository.UpdateAsync(user);
+หลัง `await userRepository.UpdateAsync(user);` ให้ log:
 
+```csharp
 await auditLogService.LogAsync(
     currentAdminId,
     "USER_STATUS_CHANGED",
@@ -211,23 +289,19 @@ await auditLogService.LogAsync(
     user.Id.ToString(),
     null,
     $"IsActive changed from {oldIsActive} to {user.IsActive}");
-
-return ToResponse(user);
 ```
 
-## สร้าง endpoint ดู audit log แบบง่าย
+## ตรวจ audit log
 
-สำหรับช่วงเรียน ให้เพิ่ม endpoint แบบง่ายใน admin controller อีกตัว
-
-สร้าง service method สำหรับอ่าน log ล่าสุดอาจทำในภาค production ต่อ แต่ตอนนี้ให้ตรวจผ่าน database tool หรือ SQL query ก่อนก็พอ
-
-ตัวอย่าง SQL สำหรับตรวจ
+สำหรับช่วงเรียน ให้ตรวจผ่าน database tool หรือ SQL query ก่อน:
 
 ```sql
 SELECT TOP 20 *
 FROM AuditLogs
 ORDER BY CreatedAt DESC;
 ```
+
+หลังเปลี่ยน role หรือ status สำเร็จ ควรเห็น record ใหม่ใน `AuditLogs`
 
 ## Production-grade audit events
 
@@ -246,9 +320,7 @@ ORDER BY CreatedAt DESC;
 - `USER_ROLE_CHANGED`
 - `USER_STATUS_CHANGED`
 
-ใน final project และ validation project ล่าสุด เราเพิ่ม `AuditActions` เพื่อรวมชื่อ action ไว้ที่เดียว และเพิ่ม integration test ที่ยิง register, login, refresh token, forgot password และ reset password แล้วตรวจว่า records ถูกเขียนลง `AuditLogs` จริง
-
-เพราะ audit log จะโตต่อเนื่องตามจำนวน request สำคัญ final project จึงมี index สำหรับ query ที่ใช้บ่อย เช่นอ่าน log ล่าสุดด้วย `CreatedAt`, ไล่เหตุการณ์ของ user เดียวด้วย `EntityName + EntityId + CreatedAt` และไล่ action ของ actor ด้วย `ActorUserId + CreatedAt`
+ใน final project จะรวมชื่อ action ไว้ที่เดียวด้วย `AuditActions` และเพิ่ม test ตรวจว่า records ถูกเขียนลง `AuditLogs` จริง
 
 ## ข้อควรระวัง
 
