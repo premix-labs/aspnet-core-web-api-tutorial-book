@@ -5,7 +5,7 @@ description: "ทำระบบยืนยันอีเมลและลื
 
 ระบบ production ไม่ควรเชื่อ account ใหม่ทันทีจนกว่าจะยืนยันอีเมลแล้ว และต้องมี forgot/reset password ที่ไม่ทำให้ token หรือข้อมูล user รั่ว
 
-ในบทนี้ final project และ validation project ทำสอง flow นี้จริง:
+ในบทนี้เราจะทำ flow สำคัญเหล่านี้:
 
 - email verification
 - forgot password
@@ -17,15 +17,6 @@ description: "ทำระบบยืนยันอีเมลและลื
 - reset password แล้ว revoke refresh token ทั้งหมดของ user
 - ส่ง email ผ่าน `IEmailSender` เพื่อเปลี่ยนจาก log sender ไป SMTP หรือ provider จริงได้
 - มี integration test รองรับ flow สำคัญ
-
-## Implementation map ใน final example
-
-| Feature | Files | Tests |
-| --- | --- | --- |
-| Verification/reset token entity และ EF mapping | `examples/final-backend-api/Backend.Api/Models/EmailVerificationToken.cs`<br/>`examples/final-backend-api/Backend.Api/Models/PasswordResetToken.cs`<br/>`examples/final-backend-api/Backend.Api/Data/AppDbContext.cs` | `examples/final-backend-api/Backend.Api.Tests/DatabaseModelTests.cs` |
-| Verification flow และ token lifecycle | `examples/final-backend-api/Backend.Api/Services/EmailVerificationService.cs`<br/>`examples/final-backend-api/Backend.Api/Options/EmailVerificationOptions.cs` | `examples/final-backend-api/Backend.Api.Tests/AuthIntegrationTests.cs` |
-| Forgot/reset password และ revoke session หลัง reset | `examples/final-backend-api/Backend.Api/Services/PasswordResetService.cs`<br/>`examples/final-backend-api/Backend.Api/Services/RefreshTokenService.cs`<br/>`examples/final-backend-api/Backend.Api/Options/PasswordResetOptions.cs` | `examples/final-backend-api/Backend.Api.Tests/AuthIntegrationTests.cs`<br/>`examples/final-backend-api/Backend.Api.Tests/AuditLogIntegrationTests.cs` |
-| Email sender abstraction สำหรับ dev/test/SMTP | `examples/final-backend-api/Backend.Api/Services/IEmailSender.cs`<br/>`examples/final-backend-api/Backend.Api/Services/LoggingEmailSender.cs`<br/>`examples/final-backend-api/Backend.Api/Services/SmtpEmailSender.cs` | `examples/final-backend-api/Backend.Api.Tests/TestEmailSender.cs` |
 
 ## Model ที่เพิ่ม
 
@@ -277,7 +268,7 @@ Content-Type: application/json
 
 ## Test ที่ต้องมี
 
-integration test ในโปรเจกต์ครอบคลุม:
+integration test ควรครอบคลุม:
 
 - register แล้วส่ง verification email
 - register แล้ว database เก็บเฉพาะ token hash ไม่เก็บ raw token

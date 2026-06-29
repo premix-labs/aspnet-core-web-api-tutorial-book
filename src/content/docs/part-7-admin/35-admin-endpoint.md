@@ -112,9 +112,10 @@ app.MapControllers();
 
 ```http
 @baseUrl = http://localhost:5156
+@adminUsersPath = {{baseUrl}}/api/admin/users
 
 ### Admin ping without token
-GET {{baseUrl}}/api/admin/users/ping
+GET {{adminUsersPath}}/ping
 Accept: application/json
 ```
 
@@ -128,7 +129,7 @@ login ด้วย `demo-user@example.com` แล้วเอา token มาเ
 @userToken = paste-user-token-here
 
 ### Admin ping with user token
-GET {{baseUrl}}/api/admin/users/ping
+GET {{adminUsersPath}}/ping
 Authorization: Bearer {{userToken}}
 Accept: application/json
 ```
@@ -145,7 +146,7 @@ login ด้วย `admin@example.com` แล้วเอา token มาเร�
 @adminToken = paste-admin-token-here
 
 ### Admin ping with admin token
-GET {{baseUrl}}/api/admin/users/ping
+GET {{adminUsersPath}}/ping
 Authorization: Bearer {{adminToken}}
 Accept: application/json
 ```

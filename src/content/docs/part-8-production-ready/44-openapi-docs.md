@@ -75,9 +75,19 @@ if (app.Environment.IsDevelopment())
 
 ## ขั้นที่ 4: ทดสอบ OpenAPI document
 
-รัน API:
+รัน API ใน `Development` เพราะบทนี้ map OpenAPI เฉพาะ development ถ้าคุณเพิ่งทดลอง `Production` ในบทก่อนหน้า ให้เปลี่ยน environment กลับมาก่อน
+
+Windows PowerShell:
 
 ```powershell
+$env:ASPNETCORE_ENVIRONMENT="Development"
+dotnet run
+```
+
+macOS/Linux Bash:
+
+```bash
+export ASPNETCORE_ENVIRONMENT=Development
 dotnet run
 ```
 
@@ -88,6 +98,11 @@ https://localhost:7127/openapi/v1.json
 ```
 
 ถ้าเครื่องคุณแสดง port อื่น ให้ใช้ port ที่ `dotnet run`, Visual Studio หรือ Visual Studio Code แสดงจริง เช่น `http://localhost:5156/openapi/v1.json`
+
+ถ้าได้ `404 Not Found` ให้ตรวจสองอย่างก่อน:
+
+- ตอนรัน app เป็น `Development` หรือไม่
+- ใช้ port ตรงกับที่ terminal แสดงจริงหรือไม่
 
 ## ขั้นที่ 5: เพิ่ม response metadata ใน AuthController
 

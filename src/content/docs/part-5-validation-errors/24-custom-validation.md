@@ -76,7 +76,8 @@ public class CreateUserRequest : IValidatableObject
 ```csharp
 public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
 {
-    if (Email.EndsWith("@example.invalid", StringComparison.OrdinalIgnoreCase))
+    if (!string.IsNullOrWhiteSpace(Email) &&
+        Email.EndsWith("@example.invalid", StringComparison.OrdinalIgnoreCase))
     {
         yield return new ValidationResult(
             "Email domain is not allowed.",
@@ -86,6 +87,8 @@ public IEnumerable<ValidationResult> Validate(ValidationContext validationContex
 ```
 
 `[nameof(Email)]` บอกว่า error นี้ผูกกับ field `Email` ทำให้ response validation แสดง error ใต้ field ที่ถูกต้อง
+
+เราเช็ก `string.IsNullOrWhiteSpace(Email)` ก่อน เพราะ email ที่หายไปหรือว่างควรถูกจัดการโดย `[Required]` ส่วน custom rule นี้ควรทำงานเฉพาะตอนมี email ให้ตรวจเท่านั้น
 
 ## ขั้นที่ 2: ตรวจภาพรวม CreateUserRequest
 
@@ -105,7 +108,8 @@ public class CreateUserRequest : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (Email.EndsWith("@example.invalid", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(Email) &&
+            Email.EndsWith("@example.invalid", StringComparison.OrdinalIgnoreCase))
         {
             yield return new ValidationResult(
                 "Email domain is not allowed.",
@@ -135,7 +139,8 @@ public class UpdateUserRequest : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (Email.EndsWith("@example.invalid", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(Email) &&
+            Email.EndsWith("@example.invalid", StringComparison.OrdinalIgnoreCase))
         {
             yield return new ValidationResult(
                 "Email domain is not allowed.",
@@ -173,9 +178,10 @@ dotnet run
 
 ```http
 @baseUrl = http://localhost:5156
+@usersPath = /api/users
 
 ### Blocked email domain
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}{{usersPath}}
 Content-Type: application/json
 
 {
@@ -184,6 +190,8 @@ Content-Type: application/json
 ```
 
 ผลลัพธ์ที่คาดหวังคือ `400 Bad Request` และ error ควรอยู่ใต้ field `Email`
+
+ถ้าได้ `404 Not Found` ให้ตรวจ `@usersPath` ให้ตรงกับ route จริง เช่น `/api/users` หรือ `/api/v1/users`
 
 ## Business validation ไม่ควรอยู่ใน DTO
 

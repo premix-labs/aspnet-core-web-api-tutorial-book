@@ -429,6 +429,30 @@ dotnet build
 
 จากนั้นทดสอบ request เดิมใน `.http` ผลลัพธ์ควรเหมือนเดิม แต่ตอนนี้ response ถูกสร้างผ่าน `UserResponse` แล้ว
 
+ตัวอย่างหลังเรียก `GET /api/users/1`:
+
+```json
+{
+  "id": 1,
+  "email": "admin@example.com"
+}
+```
+
+สิ่งที่ต้องตรวจคือ response มีเฉพาะ field ที่ `UserResponse` อนุญาตให้ส่งออก ตอนนี้คือ `id` และ `email`
+
+ถ้าในอนาคต `User` model มี field ภายใน เช่น `passwordHash`, `role` หรือ `isActive` field เหล่านี้ไม่ควรหลุดออกมาจาก endpoint user ธรรมดา เว้นแต่เราตั้งใจเพิ่มลงใน response DTO สำหรับ use case นั้นจริง ๆ
+
+ใช้ตารางนี้ตรวจหลัง mapping:
+
+| Request | Status code | สิ่งที่ต้องดู |
+| --- | --- | --- |
+| `GET /api/users` | `200 OK` | แต่ละ item เป็น `UserResponse` |
+| `GET /api/users/1` | `200 OK` | body มี `id` และ `email` |
+| `GET /api/users/999` | `404 Not Found` | ไม่พบข้อมูลยังตอบ error ถูกต้อง |
+| `POST /api/users` | `201 Created` | response body เป็น `UserResponse` และมี `Location` header |
+| `PUT /api/users/1` | `200 OK` | response body เป็น `UserResponse` หลังแก้ไข |
+| `DELETE /api/users/1` | `204 No Content` | สำเร็จโดยไม่มี response body |
+
 ## Mapping ควรอยู่ที่ไหน
 
 ในโปรเจกต์เล็ก mapping อยู่ใน service ได้

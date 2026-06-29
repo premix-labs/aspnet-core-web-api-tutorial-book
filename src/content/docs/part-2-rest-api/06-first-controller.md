@@ -42,6 +42,23 @@ Controllers/WeatherForecastController.cs
 WeatherForecast.cs
 ```
 
+ถ้าต้องการลบผ่าน terminal ให้ใช้คำสั่งนี้จากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+Remove-Item -LiteralPath Controllers/WeatherForecastController.cs -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath WeatherForecast.cs -Force -ErrorAction SilentlyContinue
+```
+
+macOS/Linux Bash:
+
+```bash
+rm -f Controllers/WeatherForecastController.cs WeatherForecast.cs
+```
+
+ถ้าไฟล์บางตัวไม่มีอยู่แล้วถือว่าปกติ เพราะ template หรือ project ของแต่ละเครื่องอาจไม่เหมือนกัน
+
 ถ้ายังไม่อยากลบก็ไม่เป็นไร แต่ในหนังสือจะใช้ `UsersController` เป็นหลัก
 
 ## สิ่งที่จะใช้ใน Controller แรก
@@ -151,6 +168,12 @@ http://localhost:<http-port>
 URL ด้านบนเป็นเพียงตัวอย่าง เครื่องของคุณอาจแสดงเป็นค่าอื่น เช่น `http://localhost:5156` และ `https://localhost:7127`
 
 จากนั้นเปิด endpoint นี้ โดยเปลี่ยน host และ port ให้ตรงกับ terminal ของคุณ
+
+```text
+GET http://localhost:<http-port>/api/users
+```
+
+ตัวอย่าง ถ้า terminal แสดง HTTP port เป็น `5156` ให้ใช้:
 
 ```text
 GET http://localhost:5156/api/users

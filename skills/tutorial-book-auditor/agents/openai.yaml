@@ -1,0 +1,4 @@
+interface:
+  display_name: "Tutorial Book Auditor"
+  short_description: "Review tutorial books step by step"
+  default_prompt: "Use $tutorial-book-auditor to audit this tutorial chapter for step-by-step teaching quality."

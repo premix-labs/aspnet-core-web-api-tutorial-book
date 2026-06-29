@@ -101,7 +101,9 @@ public interface IUserRepository
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType File -Path Repositories/UserRepository.cs
+if (-not (Test-Path -LiteralPath Repositories/UserRepository.cs)) {
+    New-Item -ItemType File -Path Repositories/UserRepository.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -367,7 +369,9 @@ public async Task<UserResponse> CreateUserAsync(CreateUserRequest request)
 }
 ```
 
-`pending-auth` เป็น placeholder ชั่วคราว เพราะตอนนี้ยังไม่ได้สอน password hashing ในภาค Authentication
+`pending-auth` เป็น placeholder ชั่วคราวเพื่อให้ column `PasswordHash` ที่เป็น required field มีค่าในช่วงที่ยังไม่ได้เรียน password hashing
+
+ค่านี้ใช้ login ไม่ได้ และไม่ใช่ pattern สำหรับ production เมื่อถึงภาค Authentication เราจะเปลี่ยนเป็น hash ที่สร้างจาก password จริงด้วย password hasher
 
 เพิ่ม method แก้ไข:
 
@@ -568,7 +572,22 @@ Accept: application/json
 
 ถ้าเครื่องของคุณใช้ HTTPS และ certificate พร้อมแล้ว จะเปลี่ยนเป็น `https://localhost:7127` ก็ได้
 
-จากนั้น restart application แล้วเรียก `GET /api/users` อีกครั้ง ข้อมูลควรยังอยู่ เพราะตอนนี้ถูกเก็บใน database แล้ว
+ให้ตรวจผลลัพธ์ตามตารางนี้:
+
+| Request | ผลลัพธ์ที่ควรได้ |
+| --- | --- |
+| `POST /api/users` ด้วย email ใหม่ | `201 Created` และ body เป็น `UserResponse` |
+| `POST /api/users` ด้วย email เดิม | `409 Conflict` |
+| `GET /api/users` | `200 OK` และมีข้อมูลจาก database |
+| `GET /api/users/999` | `404 Not Found` |
+| `PUT /api/users/1` | `200 OK` ถ้า id `1` มีอยู่ |
+| `PUT /api/users/999` | `404 Not Found` |
+| `DELETE /api/users/999` | `404 Not Found` |
+| `DELETE /api/users/1` | `204 No Content` ถ้า id `1` มีอยู่ |
+
+ถ้า database ของคุณไม่ได้มี user id `1` ให้ใช้ id ที่ได้จาก response ของ `POST /api/users` แทน
+
+จากนั้น restart application แล้วเรียก `GET /api/users` อีกครั้ง ข้อมูลที่สร้างไว้ควรยังอยู่ เพราะตอนนี้ถูกเก็บใน database แล้ว ไม่ได้อยู่ใน memory list แล้ว
 
 ## ข้อผิดพลาดที่เจอบ่อย
 
@@ -590,4 +609,5 @@ Accept: application/json
 - `UserResponse` ไม่มี `PasswordHash`
 - `UserService` ใช้ async/await กับ repository
 - `UsersController` ยังเรียกผ่าน `IUserService`
+- `POST` email ซ้ำตอบ `409 Conflict`
 - สร้าง user แล้ว restart application ข้อมูลไม่หาย

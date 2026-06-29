@@ -219,9 +219,10 @@ dotnet run
 
 ```http
 @baseUrl = http://localhost:5156
+@usersPath = /api/users
 
 ### Invalid email
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}{{usersPath}}
 Content-Type: application/json
 
 {
@@ -229,19 +230,37 @@ Content-Type: application/json
 }
 ```
 
-ผลลัพธ์ที่คาดหวังคือ `400 Bad Request` พร้อมรายละเอียด validation error
+ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยน `@usersPath` เป็น `/api/v1/users`
+
+ผลลัพธ์ที่คาดหวังคือ `400 Bad Request` พร้อมรายละเอียด validation error เช่น:
+
+```json
+{
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "Email": [
+      "The Email field is not a valid e-mail address."
+    ]
+  }
+}
+```
+
+รูปแบบ response อาจยังไม่เหมือนบทท้าย ๆ เพราะบทนี้ยังใช้ automatic validation response แบบพื้นฐานก่อน บทที่ 26 จะปรับ format ให้มี `code` และ `traceId`
 
 ลองส่ง body ว่าง:
 
 ```http
 ### Missing email
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}{{usersPath}}
 Content-Type: application/json
 
 {}
 ```
 
 ควรได้ `400 Bad Request` เช่นกัน เพราะ `Email` ถูกกำหนด `[Required]`
+
+ถ้าได้ `404 Not Found` แทน `400 Bad Request` แปลว่า request ยังไม่ถึง action ที่ถูกต้อง ให้ตรวจ route ใน `UsersController` กับค่า `@usersPath` ก่อนตรวจ validation
 
 ## ทำไมไม่ต้องเช็ก ModelState เอง
 

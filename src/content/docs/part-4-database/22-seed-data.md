@@ -55,7 +55,9 @@ Data/DataSeeder.cs
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType File -Path Data/DataSeeder.cs
+if (-not (Test-Path -LiteralPath Data/DataSeeder.cs)) {
+    New-Item -ItemType File -Path Data/DataSeeder.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -247,7 +249,28 @@ GET /api/users
 
 ควรเห็น user ตัวอย่างสองรายการ
 
+ตัวอย่าง response ที่ควรเห็นโดยประมาณ:
+
+```json
+[
+  {
+    "email": "demo-user@example.com",
+    "role": "User",
+    "isActive": true
+  },
+  {
+    "email": "inactive-user@example.com",
+    "role": "User",
+    "isActive": false
+  }
+]
+```
+
+response จริงอาจมี field เพิ่ม เช่น `id`, `createdAtUtc` หรือ `updatedAtUtc` ตาม `UserResponse` ที่คุณสร้างไว้ในบทก่อน
+
 ถ้ารัน application ซ้ำ user ไม่ควรถูกเพิ่มซ้ำ เพราะ seeder ตรวจ `AnyAsync()` ก่อนแล้ว
+
+ข้อมูลสองรายการนี้เป็น test data สำหรับตรวจ database CRUD เท่านั้น ยัง login ไม่ได้ เพราะ `PasswordHash` ยังเป็นค่า placeholder `pending-auth`
 
 ถ้าต้องการทดสอบใหม่ตั้งแต่ database ว่าง ให้ลบข้อมูลใน database ด้วยเครื่องมือจัดการ SQL Server หรือสร้าง database ใหม่ หลีกเลี่ยงการลบ migration เพื่อแค่ล้างข้อมูลทดสอบ
 

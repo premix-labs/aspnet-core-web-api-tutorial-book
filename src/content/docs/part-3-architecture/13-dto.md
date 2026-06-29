@@ -171,7 +171,9 @@ Dtos/Users/CreateUserRequest.cs
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType File -Path Dtos/Users/CreateUserRequest.cs
+if (-not (Test-Path -LiteralPath Dtos/Users/CreateUserRequest.cs)) {
+    New-Item -ItemType File -Path Dtos/Users/CreateUserRequest.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -204,7 +206,9 @@ Dtos/Users/UpdateUserRequest.cs
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType File -Path Dtos/Users/UpdateUserRequest.cs
+if (-not (Test-Path -LiteralPath Dtos/Users/UpdateUserRequest.cs)) {
+    New-Item -ItemType File -Path Dtos/Users/UpdateUserRequest.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -237,7 +241,9 @@ Dtos/Users/UserResponse.cs
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType File -Path Dtos/Users/UserResponse.cs
+if (-not (Test-Path -LiteralPath Dtos/Users/UserResponse.cs)) {
+    New-Item -ItemType File -Path Dtos/Users/UserResponse.cs
+}
 ```
 
 macOS/Linux Bash:

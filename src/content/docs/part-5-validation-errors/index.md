@@ -22,6 +22,21 @@ description: ตรวจข้อมูล input และจัดการ er
 
 ถ้าเครื่องของคุณใช้ port ไม่ตรงกับตัวอย่าง ให้ใช้ port ที่ `dotnet run` หรือ Visual Studio แสดงจริง เช่น `http://localhost:5156` หรือ `https://localhost:7127`
 
+ตัวอย่าง `.http` ในภาคนี้จะใช้ตัวแปรสองตัว:
+
+```http
+@baseUrl = http://localhost:5156
+@usersPath = /api/users
+```
+
+ถ้าโปรเจกต์ของคุณใช้ versioned route เช่น `/api/v1/users` ให้เปลี่ยนเฉพาะ `@usersPath` เป็น:
+
+```http
+@usersPath = /api/v1/users
+```
+
+หลักคือ route ใน `.http` ต้องตรงกับ `[Route(...)]` ใน `UsersController` เสมอ
+
 ## บทในภาคนี้
 
 - บทที่ 23: Validation ด้วย Data Annotations

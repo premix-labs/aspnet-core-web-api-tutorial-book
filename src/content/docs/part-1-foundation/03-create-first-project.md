@@ -118,6 +118,27 @@ Application started. Press Ctrl+C to shut down.
 
 ให้ใช้ URL และ port ที่ terminal ของคุณแสดงจริงเสมอ
 
+ถ้า `dotnet run` แสดงแค่ HTTP เช่น:
+
+```text
+Now listening on: http://localhost:5229
+```
+
+แปลว่า .NET กำลังใช้ launch profile ชื่อ `http` อยู่ ถ้าต้องการรันด้วย HTTPS profile ให้หยุด server ด้วย `Ctrl+C` แล้วรัน:
+
+```powershell
+dotnet run --launch-profile https
+```
+
+เมื่อใช้ profile `https` terminal ควรแสดงทั้ง HTTPS และ HTTP ประมาณนี้:
+
+```text
+Now listening on: https://localhost:<https-port>
+Now listening on: http://localhost:<http-port>
+```
+
+ชื่อ profile และ port เหล่านี้มาจากไฟล์ `Properties/launchSettings.json` ซึ่งบทถัดไปจะอธิบายละเอียดขึ้น
+
 ถ้า terminal แสดงข้อความประมาณนี้ แปลว่า API กำลังรันอยู่:
 
 ```text
@@ -150,6 +171,8 @@ dotnet dev-certs https --trust
 
 คำสั่งนี้ใช้สำหรับเครื่อง development เท่านั้น ไม่ใช่ขั้นตอนสำหรับ production server
 
+บน Windows และ macOS คำสั่งนี้มักเปิดหน้าต่างให้ยืนยัน trust certificate ได้โดยตรง ส่วน Linux อาจต้องตั้งค่า certificate trust store ตาม distro ที่ใช้ ถ้าติดปัญหาในบทนี้ ให้ทดสอบผ่าน URL แบบ `http` ที่ terminal แสดงก่อนได้ แล้วค่อยกลับมาตั้งค่า HTTPS ภายหลัง
+
 ## หยุดโปรเจกต์
 
 กลับไปที่ terminal แล้วกด
@@ -168,6 +191,8 @@ Ctrl+C
 
 ถ้าเปิด OpenAPI ไม่ได้ ให้ดู URL จาก terminal อีกครั้ง อย่าเดา port เอง
 
+ถ้า `dotnet run` แสดงเฉพาะ HTTP แต่คุณต้องการใช้ HTTPS ให้รัน `dotnet run --launch-profile https` และดู HTTPS port ที่ terminal แสดงจริง
+
 ถ้า browser ขึ้น certificate warning ในเครื่อง local ให้ใช้ `dotnet dev-certs https --trust` หรือทดสอบผ่าน URL แบบ `http` ที่ terminal แสดง
 
 ถ้า `dotnet build` ไม่ผ่าน ให้ดูบรรทัด error แรกก่อน เพราะ error ถัด ๆ ไปอาจเป็นผลต่อเนื่องจาก error แรก
@@ -181,8 +206,9 @@ Ctrl+C
 1. สร้างโปรเจกต์ `Backend.Api` ด้วย `--use-controllers`
 2. รัน `dotnet build` ให้ผ่าน
 3. รัน `dotnet run` แล้วจด URL ที่เครื่องของคุณแสดง
-4. เปิด OpenAPI endpoint ใน browser หรือ REST Client
-5. หยุด server ด้วย `Ctrl+C`
+4. ถ้าต้องการลอง HTTPS ให้รัน `dotnet run --launch-profile https` แล้วจด HTTPS URL ที่เครื่องของคุณแสดง
+5. เปิด OpenAPI endpoint ใน browser หรือ REST Client
+6. หยุด server ด้วย `Ctrl+C`
 
 ## แนวคำตอบโดยย่อ
 
@@ -198,5 +224,6 @@ Ctrl+C
 - ใช้ `--use-controllers` ตอนสร้างโปรเจกต์
 - เข้าใจไฟล์เริ่มต้นที่ template สร้างให้
 - รันโปรเจกต์ด้วย `dotnet run`
+- รู้ว่าถ้าต้องการบังคับใช้ HTTPS profile ให้ใช้ `dotnet run --launch-profile https`
 - เปิด OpenAPI endpoint ได้
 - หยุด server ด้วย `Ctrl+C`

@@ -38,7 +38,6 @@ export default defineConfig({
 					items: [
 						{ label: 'หน้าแรก', link: '/' },
 						{ label: 'แผนทั้งเล่ม', link: 'book-plan/' },
-						{ label: 'สถานะต้นฉบับ', link: 'manuscript-status/' },
 					],
 				},
 				{

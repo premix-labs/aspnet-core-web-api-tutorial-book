@@ -199,6 +199,19 @@ Content-Type: application/json
   "email": "updated-admin@example.com"
 }
 
+### Update missing user
+PUT {{Backend.Api_HostAddress}}/api/users/{{missingUserId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "email": "missing@example.com"
+}
+
+### Delete missing user
+DELETE {{Backend.Api_HostAddress}}/api/users/{{missingUserId}}
+Authorization: Bearer {{token}}
+
 ### Delete user
 DELETE {{Backend.Api_HostAddress}}/api/users/{{userId}}
 Authorization: Bearer {{token}}

@@ -97,16 +97,36 @@ appsettings.json
 
 ทดสอบ output ที่ publish แล้ว
 
+ก่อนรัน published app ให้ตั้งค่า config สำคัญก่อน เพราะหลังบทที่ 42 เราไม่เก็บ connection string และ JWT signing key ไว้ใน `appsettings.json` แล้ว
+
+ให้รันจากโฟลเดอร์ `publish` เพื่อให้ content root ตรงกับไฟล์ที่ถูก publish จริง
+
+ถ้าเครื่องยังไม่มี SQL Server ที่ `localhost:1433` ให้เปิด database จาก Docker Compose ในบทที่ 48 ก่อน หรือเปลี่ยน connection string ให้ชี้ไปยัง database ที่พร้อมใช้งาน
+
 Windows PowerShell:
 
 ```powershell
-dotnet .\publish\Backend.Api.dll
+$env:ASPNETCORE_ENVIRONMENT="Production"
+$env:LOCAL_SQL_PASSWORD="Replace_With_Strong_Local_Password_123!"
+$env:Jwt__SigningKey="replace-with-local-development-signing-key-at-least-32-bytes"
+$env:ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=BackendApiDb;User Id=sa;Password=$($env:LOCAL_SQL_PASSWORD);TrustServerCertificate=True;"
+$env:Cors__AllowedOrigins__0="http://localhost:3000"
+Push-Location .\publish
+dotnet .\Backend.Api.dll
+Pop-Location
 ```
 
 macOS/Linux Bash:
 
 ```bash
-dotnet ./publish/Backend.Api.dll
+export ASPNETCORE_ENVIRONMENT=Production
+export LOCAL_SQL_PASSWORD='Replace_With_Strong_Local_Password_123!'
+export Jwt__SigningKey='replace-with-local-development-signing-key-at-least-32-bytes'
+export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=BackendApiDb;User Id=sa;Password=${LOCAL_SQL_PASSWORD};TrustServerCertificate=True;"
+export Cors__AllowedOrigins__0='http://localhost:3000'
+cd ./publish
+dotnet ./Backend.Api.dll
+cd ..
 ```
 
 ถ้ารันไม่ได้ ให้แก้ก่อน deploy เพราะนี่คือสิ่งที่ server หรือ container จะรันจริง

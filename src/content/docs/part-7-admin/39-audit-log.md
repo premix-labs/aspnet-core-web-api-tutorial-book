@@ -136,25 +136,23 @@ modelBuilder.Entity<AuditLog>(entity =>
     entity.HasIndex(log => log.CreatedAt);
     entity.HasIndex(log => new { log.ActorUserId, log.CreatedAt });
     entity.HasIndex(log => new { log.EntityName, log.EntityId, log.CreatedAt });
+
+    entity.Property(log => log.Action)
+        .IsRequired()
+        .HasMaxLength(100);
+
+    entity.Property(log => log.Detail)
+        .HasMaxLength(1000);
+
+    entity.Property(log => log.IpAddress)
+        .HasMaxLength(45);
+
+    entity.Property(log => log.CreatedAt)
+        .IsRequired();
 });
 ```
 
-เพิ่ม property constraints:
-
-```csharp
-entity.Property(log => log.Action)
-    .IsRequired()
-    .HasMaxLength(100);
-
-entity.Property(log => log.Detail)
-    .HasMaxLength(1000);
-
-entity.Property(log => log.IpAddress)
-    .HasMaxLength(45);
-
-entity.Property(log => log.CreatedAt)
-    .IsRequired();
-```
+property constraints ต้องอยู่ข้างใน block `modelBuilder.Entity<AuditLog>(entity => { ... })` เพราะตัวแปร `entity` มีอายุอยู่เฉพาะใน block นี้เท่านั้น
 
 index เหล่านี้ช่วย query log ล่าสุด, log ของ actor และ log ของ target entity ได้เร็วขึ้น
 
@@ -293,6 +291,8 @@ await auditLogService.LogAsync(
 
 ## ตรวจ audit log
 
+ก่อนตรวจ database ให้แน่ใจว่า `Backend.Api.http` มี `@adminUsersPath`, `@adminToken` และ `@targetUserId` จากบทก่อนหน้าแล้ว
+
 สำหรับช่วงเรียน ให้ตรวจผ่าน database tool หรือ SQL query ก่อน:
 
 ```sql
@@ -301,7 +301,9 @@ FROM AuditLogs
 ORDER BY CreatedAt DESC;
 ```
 
-หลังเปลี่ยน role หรือ status สำเร็จ ควรเห็น record ใหม่ใน `AuditLogs`
+ให้ทดสอบโดยเรียก `PUT {{adminUsersPath}}/{{targetUserId}}/role` หรือ `PUT {{adminUsersPath}}/{{targetUserId}}/status` ให้สำเร็จก่อน แล้วค่อยรัน SQL นี้
+
+หลังเปลี่ยน role หรือ status สำเร็จ ควรเห็น record ใหม่ใน `AuditLogs` ที่มี `Action` เป็น `USER_ROLE_CHANGED` หรือ `USER_STATUS_CHANGED`
 
 ## Production-grade audit events
 
@@ -320,7 +322,7 @@ ORDER BY CreatedAt DESC;
 - `USER_ROLE_CHANGED`
 - `USER_STATUS_CHANGED`
 
-ใน final project จะรวมชื่อ action ไว้ที่เดียวด้วย `AuditActions` และเพิ่ม test ตรวจว่า records ถูกเขียนลง `AuditLogs` จริง
+ในบท production hardening จะรวมชื่อ action ไว้ที่เดียวด้วย `AuditActions` และเพิ่ม test ตรวจว่า records ถูกเขียนลง `AuditLogs` จริง
 
 ## ข้อควรระวัง
 

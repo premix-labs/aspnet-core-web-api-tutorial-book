@@ -94,7 +94,9 @@ Windows PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path Models
-New-Item -ItemType File -Path Models/User.cs
+if (-not (Test-Path -LiteralPath Models/User.cs)) {
+    New-Item -ItemType File -Path Models/User.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -150,7 +152,9 @@ Windows PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path Repositories
-New-Item -ItemType File -Path Repositories/IUserRepository.cs
+if (-not (Test-Path -LiteralPath Repositories/IUserRepository.cs)) {
+    New-Item -ItemType File -Path Repositories/IUserRepository.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -209,7 +213,9 @@ Interface บอกว่า repository ต้องทำอะไรได้ 
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType File -Path Repositories/InMemoryUserRepository.cs
+if (-not (Test-Path -LiteralPath Repositories/InMemoryUserRepository.cs)) {
+    New-Item -ItemType File -Path Repositories/InMemoryUserRepository.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -401,7 +407,9 @@ Windows PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path Services
-New-Item -ItemType File -Path Services/IUserService.cs
+if (-not (Test-Path -LiteralPath Services/IUserService.cs)) {
+    New-Item -ItemType File -Path Services/IUserService.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -450,7 +458,9 @@ Service interface คล้าย repository แต่ใช้ชื่อ meth
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType File -Path Services/UserService.cs
+if (-not (Test-Path -LiteralPath Services/UserService.cs)) {
+    New-Item -ItemType File -Path Services/UserService.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -816,7 +826,27 @@ dotnet build
 dotnet run
 ```
 
+หลัง API รันแล้ว ให้ทดสอบ request หลักเหล่านี้ใน `Backend.Api.http` โดยใช้ `baseUrl` ที่ตรงกับ port จริงของเครื่องคุณ:
+
+| Request | ผลลัพธ์ที่ควรได้ |
+| --- | --- |
+| `GET /api/users` | `200 OK` และได้ list ของ user |
+| `GET /api/users/1` | `200 OK` และได้ user id `1` |
+| `GET /api/users/999` | `404 Not Found` |
+| `POST /api/users` | `201 Created` และได้ user ใหม่ |
+| `PUT /api/users/1` | `200 OK` และ email เปลี่ยน |
+| `PUT /api/users/999` | `404 Not Found` |
+| `DELETE /api/users/999` | `404 Not Found` |
+| `DELETE /api/users/1` | `204 No Content` |
+
 ผลลัพธ์ของ endpoint ควรเหมือนภาค 2 แต่ code ภายในเปลี่ยนจาก Controller ทำทุกอย่างเอง เป็น Controller เรียก Service และ Service เรียก Repository
+
+ถ้า status code ไม่ตรง ให้ตรวจตามลำดับนี้:
+
+1. `Program.cs` ลงทะเบียน `IUserRepository` และ `IUserService` ก่อน `builder.Build()` หรือไม่
+2. `UsersController` รับ `IUserService` ผ่าน constructor แล้วหรือยัง
+3. Controller ยังมี `List<User>` เดิมค้างอยู่หรือไม่
+4. ทดสอบ `DELETE /api/users/1` ไปก่อนหน้าแล้วหรือยัง ถ้าลบไปแล้วให้ restart API เพื่อกลับไปข้อมูลเริ่มต้น
 
 ## Service Lifetime ที่เจอบ่อย
 

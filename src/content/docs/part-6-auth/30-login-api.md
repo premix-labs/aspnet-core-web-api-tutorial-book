@@ -220,9 +220,10 @@ using Microsoft.AspNetCore.Identity;
 
 ```http
 @baseUrl = http://localhost:5156
+@authPath = /api/auth
 
 ### Login
-POST {{baseUrl}}/api/auth/login
+POST {{baseUrl}}{{authPath}}/login
 Content-Type: application/json
 
 {
@@ -242,6 +243,53 @@ Content-Type: application/json
 ```
 
 บทถัดไปจะเปลี่ยน response นี้ให้เป็น JWT จริง
+
+## ทดสอบกรณี login ไม่ผ่าน
+
+ลอง password ผิด:
+
+```http
+### Login with wrong password
+POST {{baseUrl}}{{authPath}}/login
+Content-Type: application/json
+
+{
+  "email": "demo-user@example.com",
+  "password": "wrong-password"
+}
+```
+
+ควรได้ `401 Unauthorized` พร้อม `code` เป็น `INVALID_CREDENTIALS`
+
+ลอง email ที่ไม่มีในระบบ:
+
+```http
+### Login with missing email
+POST {{baseUrl}}{{authPath}}/login
+Content-Type: application/json
+
+{
+  "email": "missing@example.com",
+  "password": "User1234!"
+}
+```
+
+ควรได้ `401 Unauthorized` และยังใช้ข้อความกลาง ๆ เหมือน password ผิด เพื่อไม่บอกผู้โจมตีว่า email ไหนมีอยู่จริง
+
+ลองบัญชี inactive จาก seed data:
+
+```http
+### Login inactive user
+POST {{baseUrl}}{{authPath}}/login
+Content-Type: application/json
+
+{
+  "email": "inactive-user@example.com",
+  "password": "User1234!"
+}
+```
+
+ควรได้ `403 Forbidden` พร้อม `code` เป็น `USER_INACTIVE`
 
 ## Checkpoint
 

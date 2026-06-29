@@ -218,14 +218,29 @@ using Microsoft.AspNetCore.Authorization;
 
 ## ทดสอบ endpoint me
 
-เรียก login ก่อน แล้ว copy token จาก `accessToken`
+เรียก login ก่อน:
 
 ```http
 @baseUrl = http://localhost:5156
+@authPath = /api/auth
+
+### Login
+POST {{baseUrl}}{{authPath}}/login
+Content-Type: application/json
+
+{
+  "email": "demo-user@example.com",
+  "password": "User1234!"
+}
+```
+
+จาก response ให้ copy ค่า `accessToken` แล้วนำมาใส่ในตัวแปร `@token`:
+
+```http
 @token = paste-token-here
 
 ### Me
-GET {{baseUrl}}/api/auth/me
+GET {{baseUrl}}{{authPath}}/me
 Authorization: Bearer {{token}}
 Accept: application/json
 ```
@@ -245,11 +260,13 @@ Accept: application/json
 ลองเรียก endpoint เดิมโดยไม่ส่ง Authorization header:
 
 ```http
-GET {{baseUrl}}/api/auth/me
+GET {{baseUrl}}{{authPath}}/me
 Accept: application/json
 ```
 
 ผลลัพธ์ที่คาดหวังคือ `401 Unauthorized`
+
+ถ้าได้ `401` ทั้งที่ส่ง token แล้ว ให้ตรวจว่า header ต้องเป็น `Authorization: Bearer <token>` และมีช่องว่างระหว่าง `Bearer` กับ token
 
 ## Checkpoint
 

@@ -236,7 +236,9 @@ public class AuthController(AuthService authService) : ControllerBase
 }
 ```
 
-เราใช้ `[Route("api/auth")]` ตรง ๆ เพื่อให้ endpoint เป็น `/api/auth/register` ไม่ใช่ `/api/authcontroller/register`
+เราใช้ `[Route("api/auth")]` ตรง ๆ เพื่อให้ contract ของ auth ชัดเจนและไม่ผูกกับชื่อ class ของ controller
+
+ถ้าใช้ `[Route("api/[controller]")]` กับ `AuthController` ASP.NET Core จะตัดคำว่า `Controller` ออกและได้ route เป็น `/api/auth` เช่นกัน แต่ในบท auth เราเลือกเขียน route คงที่เพื่อให้อ่าน endpoint ได้ทันที
 
 ## ขั้นที่ 7: ปรับ DataSeeder
 
@@ -359,9 +361,10 @@ dotnet run
 
 ```http
 @baseUrl = http://localhost:5156
+@authPath = /api/auth
 
 ### Register
-POST {{baseUrl}}/api/auth/register
+POST {{baseUrl}}{{authPath}}/register
 Content-Type: application/json
 
 {
@@ -371,6 +374,8 @@ Content-Type: application/json
 ```
 
 ผลลัพธ์ที่คาดหวังคือ `201 Created` และ response ไม่มี password หรือ password hash
+
+ถ้าส่ง email เดิมซ้ำ ควรได้ `409 Conflict` พร้อม `code` เป็น `EMAIL_ALREADY_EXISTS`
 
 ## Checkpoint
 

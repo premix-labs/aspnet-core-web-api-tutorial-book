@@ -235,9 +235,10 @@ login ด้วย admin:
 
 ```http
 @baseUrl = http://localhost:5156
+@authPath = {{baseUrl}}/api/auth
 
 ### Login as admin
-POST {{baseUrl}}/api/auth/login
+POST {{authPath}}/login
 Content-Type: application/json
 
 {

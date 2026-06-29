@@ -161,6 +161,20 @@ JWT_SIGNING_KEY=replace-with-local-development-signing-key-at-least-32-bytes
 
 ## ขั้นที่ 6: กัน .env ไม่ให้ commit
 
+ถ้า root ของ solution ยังไม่มี `.gitignore` ให้สร้างก่อน
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType File -Force -Path .gitignore
+```
+
+macOS/Linux Bash:
+
+```bash
+touch .gitignore
+```
+
 เปิด `.gitignore` แล้วตรวจว่ามี:
 
 ```text
@@ -189,13 +203,15 @@ cp .env.example .env
 
 ## ขั้นที่ 8: ตรวจ compose config
 
-ก่อนรัน container ให้ตรวจ config:
+ก่อนรัน container ให้ตรวจ config หลังจากมี `.env` แล้ว:
 
 ```powershell
 docker compose config
 ```
 
 คำสั่งนี้ช่วยจับ YAML indentation ผิด, variable หาย หรือ syntax ผิดก่อนรันจริง
+
+ถ้าเห็น warning ว่า `MSSQL_SA_PASSWORD` หรือ `JWT_SIGNING_KEY` ไม่ถูกตั้ง ให้ย้อนกลับไปตรวจว่า copy `.env.example` เป็น `.env` แล้ว และค่าใน `.env` ไม่ว่าง
 
 ## ขั้นที่ 9: รัน database และ migration
 

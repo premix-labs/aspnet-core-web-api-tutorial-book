@@ -200,10 +200,11 @@ dotnet run
 
 ```http
 @baseUrl = http://localhost:5156
+@adminUsersPath = {{baseUrl}}/api/admin/users
 @adminToken = paste-admin-token-here
 
 ### Admin user list
-GET {{baseUrl}}/api/admin/users
+GET {{adminUsersPath}}
 Authorization: Bearer {{adminToken}}
 Accept: application/json
 ```
@@ -223,6 +224,8 @@ Accept: application/json
 ]
 ```
 
+จาก response ให้จด `id` ของ `admin@example.com` ไว้เป็น `adminUserId` และจด `id` ของ user คนอื่น เช่น `demo-user@example.com` ไว้เป็น `targetUserId` เพราะบทถัดไปจะใช้สองค่านี้ในการทดสอบ role/status
+
 ## Checkpoint
 
 ก่อนอ่านบทต่อไป ให้ตรวจว่าทำได้ครบตามนี้
@@ -232,3 +235,4 @@ Accept: application/json
 - `AdminUsersController` เรียก service ไม่ query repository เอง
 - admin token เรียก `GET /api/admin/users` ได้
 - response ไม่มี `PasswordHash`
+- รู้ค่า `adminUserId` และ `targetUserId` สำหรับใช้ในบทถัดไป

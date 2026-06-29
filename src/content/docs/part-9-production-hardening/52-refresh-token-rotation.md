@@ -25,7 +25,7 @@ sequenceDiagram
     AuthApi-->>Client: new token pair
 ```
 
-แต่ refresh token ต้องถูกเก็บแบบระวังมากกว่า access token เพราะมีอายุยาวกว่า ใน final project เราใช้แนวทางนี้:
+แต่ refresh token ต้องถูกเก็บแบบระวังมากกว่า access token เพราะมีอายุยาวกว่า ในบทนี้เราใช้แนวทางนี้:
 
 - สร้าง refresh token ด้วย random bytes
 - เก็บเฉพาะ hash ใน database ไม่เก็บ token ตัวจริง
@@ -35,7 +35,7 @@ sequenceDiagram
 - เก็บ `RevocationReason` เพื่อรู้ว่า token ถูก revoke เพราะ rotate, logout, reset password หรือ reuse detection
 - ถ้าเอา token เก่าที่ rotate แล้วมาใช้ซ้ำ ระบบจะมองว่าอาจถูกขโมย และ revoke active token ทั้ง family
 
-บทนี้ต่อจาก production user model ในบท 51 ดังนั้นตัวอย่างจะใช้ `Guid UserId` และ timestamp แบบ `DateTimeOffset` ถ้า project ของคุณยังอยู่ที่ progressive model จากภาค 1-8 ให้ทำ migration ในบท 51 ให้เรียบร้อยก่อน ไม่อย่างนั้น `RefreshToken.UserId`, JWT subject, `CurrentUserService` และ admin/audit code จะใช้ชนิดข้อมูลไม่ตรงกัน
+บทนี้ต่อจาก production user model ในบท 51 ดังนั้นตัวอย่างจะใช้ `Guid UserId` และ timestamp แบบ `DateTimeOffset` ถ้า project ของคุณยังใช้ model เดิมจากภาค 1-8 ให้ทำ migration ในบท 51 ให้เรียบร้อยก่อน ไม่อย่างนั้น `RefreshToken.UserId`, JWT subject, `CurrentUserService` และ admin/audit code จะใช้ชนิดข้อมูลไม่ตรงกัน
 
 ## RefreshToken model
 
@@ -78,15 +78,6 @@ DELETE /api/auth/sessions
 
 เมื่อ revoke session ระบบจะเขียน audit log ด้วย action `REFRESH_TOKEN_SESSION_REVOKED` หรือ `ALL_REFRESH_TOKEN_SESSIONS_REVOKED`
 
-## Implementation map ใน final example
-
-| Feature | Files | Tests |
-| --- | --- | --- |
-| Refresh token entity, EF mapping และ session family | `examples/final-backend-api/Backend.Api/Models/RefreshToken.cs`<br/>`examples/final-backend-api/Backend.Api/Data/AppDbContext.cs`<br/>`examples/final-backend-api/Backend.Api/Migrations/20260619035907_AddRefreshTokenUserAgent.cs` | `examples/final-backend-api/Backend.Api.Tests/DatabaseModelTests.cs` |
-| Rotation, revoke, reuse detection และ revoke family | `examples/final-backend-api/Backend.Api/Services/RefreshTokenService.cs`<br/>`examples/final-backend-api/Backend.Api/Services/AuthService.cs` | `examples/final-backend-api/Backend.Api.Tests/AuthIntegrationTests.cs` |
-| Session/device management API และ response DTO | `examples/final-backend-api/Backend.Api/Controllers/AuthController.cs`<br/>`examples/final-backend-api/Backend.Api/Dtos/Auth/AuthSessionResponse.cs` | `examples/final-backend-api/Backend.Api.Tests/AuthIntegrationTests.cs` |
-| Audit actions สำหรับ token และ session revoke | `examples/final-backend-api/Backend.Api/Constants/AuditActions.cs`<br/>`examples/final-backend-api/Backend.Api/Services/AuditLogService.cs` | `examples/final-backend-api/Backend.Api.Tests/AuditLogIntegrationTests.cs` |
-
 ## Reuse detection
 
 เมื่อ refresh token ถูกใช้สำเร็จ ระบบจะ:
@@ -109,7 +100,7 @@ flowchart TD
 
 ถ้ามี request เอา token เดิมกลับมาใช้ซ้ำอีกครั้ง ระบบจะถือว่าเป็นเหตุการณ์เสี่ยง เพราะอาจแปลว่า refresh token เดิมรั่วไปอยู่กับ attacker
 
-ในกรณีนี้ final project และ validation project จะ:
+ในกรณีนี้ระบบควรทำดังนี้:
 
 - revoke active token ทั้ง family
 - ใส่ `RevocationReason = "ReuseDetected"`
@@ -161,7 +152,7 @@ RevokeAllSessions(currentUserId):
 
 อย่าเก็บ refresh token เป็น plain text ใน database ถ้าฐานข้อมูลหลุด คนที่ได้ database จะเอา token ไปแลก access token ได้ทันที การเก็บ hash ทำให้ database leak ไม่กลายเป็น session leak โดยตรง
 
-final project และ validation project มี integration test ตรวจว่าเมื่อ reuse refresh token เก่าแล้ว token ใหม่ใน family เดียวกันถูก revoke, มี `RevocationReason = "ReuseDetected"` และเกิด audit log `REFRESH_TOKEN_REUSE_DETECTED`
+ควรมี integration test ตรวจว่าเมื่อ reuse refresh token เก่าแล้ว token ใหม่ใน family เดียวกันถูก revoke, มี `RevocationReason = "ReuseDetected"` และเกิด audit log `REFRESH_TOKEN_REUSE_DETECTED`
 
 นอกจากนี้ยังมี test สำหรับ session/device management: login แล้วเก็บ `UserAgent`, list active sessions, revoke session ของตัวเอง, ป้องกันการ revoke session ของ user อื่น, revoke all sessions และตรวจ audit log ของการ revoke
 

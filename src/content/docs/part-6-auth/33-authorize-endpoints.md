@@ -152,26 +152,29 @@ public IActionResult AdminOnly()
 
 ```http
 @baseUrl = http://localhost:5156
+@usersPath = /api/users
 
 ### Protected users endpoint without token
-GET {{baseUrl}}/api/users
+GET {{baseUrl}}{{usersPath}}
 Accept: application/json
 ```
 
 ควรได้ `401 Unauthorized`
 
-จากนั้นใส่ token:
+จากนั้น login แล้ว copy `accessToken` มาใส่ตัวแปร `@token`:
 
 ```http
 @token = paste-token-here
 
 ### Protected users endpoint with token
-GET {{baseUrl}}/api/users
+GET {{baseUrl}}{{usersPath}}
 Authorization: Bearer {{token}}
 Accept: application/json
 ```
 
 ควรได้ `200 OK`
+
+ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยนเฉพาะ `@usersPath` เป็น `/api/v1/users`
 
 ## เพิ่ม request ใน Backend.Api.http
 
@@ -179,38 +182,50 @@ Accept: application/json
 
 ```http
 @baseUrl = http://localhost:5156
+@authPath = /api/auth
+@usersPath = /api/users
 @token = paste-token-here
 
 ### Register
-POST {{baseUrl}}/api/auth/register
+POST {{baseUrl}}{{authPath}}/register
 Content-Type: application/json
 
 {
   "email": "new-user@example.com",
   "password": "Passw0rd!"
 }
+```
 
+หลัง register แล้วให้ login:
+
+```http
 ### Login
-POST {{baseUrl}}/api/auth/login
+POST {{baseUrl}}{{authPath}}/login
 Content-Type: application/json
 
 {
   "email": "new-user@example.com",
   "password": "Passw0rd!"
 }
+```
 
+copy ค่า `accessToken` จาก response มาแทน `paste-token-here` แล้วทดสอบ endpoint ที่ต้อง login:
+
+```http
 ### Me
-GET {{baseUrl}}/api/auth/me
+GET {{baseUrl}}{{authPath}}/me
 Authorization: Bearer {{token}}
 Accept: application/json
 
 ### Protected users endpoint
-GET {{baseUrl}}/api/users
+GET {{baseUrl}}{{usersPath}}
 Authorization: Bearer {{token}}
 Accept: application/json
 ```
 
 ถ้าเครื่องคุณใช้ HTTPS ได้ ให้เปลี่ยน `baseUrl` เป็น port HTTPS จริงของเครื่อง เช่น `https://localhost:7127`
+
+ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยนเฉพาะ `@usersPath` เป็น `/api/v1/users`
 
 ## Checkpoint
 

@@ -19,14 +19,6 @@ flowchart TD
     Database -- "Yes" --> SendTraffic["Send traffic to API"]
 ```
 
-## Implementation map ใน final example
-
-| Feature | Files | Tests |
-| --- | --- | --- |
-| Liveness endpoint | `examples/final-backend-api/Backend.Api/Program.cs` | `examples/final-backend-api/Backend.Api.Tests/ProductionHardeningIntegrationTests.cs` |
-| Readiness endpoint ที่ตรวจ database | `examples/final-backend-api/Backend.Api/Program.cs`<br/>`examples/final-backend-api/Backend.Api/Data/AppDbContext.cs` | `examples/final-backend-api/Backend.Api.Tests/ProductionHardeningIntegrationTests.cs` |
-| Docker Compose และ startup migration/seed สำหรับ local production-like run | `examples/final-backend-api/docker-compose.yml`<br/>`examples/final-backend-api/Backend.Api/Dockerfile`<br/>`examples/final-backend-api/Backend.Api/Program.cs` | `examples/final-backend-api/README.md` |
-
 ## Liveness
 
 ใช้ตอบคำถามว่า process ยังทำงานอยู่ไหม
@@ -45,7 +37,7 @@ GET /health/live
 GET /health/ready
 ```
 
-ใน final project readiness จะลอง `dbContext.Database.CanConnectAsync()`
+readiness ควรลอง `dbContext.Database.CanConnectAsync()`
 
 ```csharp
 app.MapGet("/health/ready", async (AppDbContext dbContext, CancellationToken ct) =>

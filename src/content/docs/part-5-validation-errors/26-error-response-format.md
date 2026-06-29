@@ -217,9 +217,10 @@ public async Task<UserResponse> UpdateUserAsync(int id, UpdateUserRequest reques
 
 ```http
 @baseUrl = http://localhost:5156
+@usersPath = /api/users
 
 ### Validation failed
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}{{usersPath}}
 Content-Type: application/json
 
 {
@@ -229,9 +230,13 @@ Content-Type: application/json
 
 ควรได้ `400 Bad Request` พร้อม `code` เป็น `VALIDATION_FAILED` และมี `traceId`
 
+ถ้าได้ `400` แต่ไม่มี `code` ให้กลับไปตรวจ `InvalidModelStateResponseFactory`
+
+ถ้าได้ `400` มี `code` แต่ไม่มี `traceId` ให้ตรวจว่าคุณใส่ `problemDetails.Extensions["traceId"]` ใน factory แล้วหรือยัง
+
 ```http
 ### Email conflict
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}{{usersPath}}
 Content-Type: application/json
 
 {
@@ -240,6 +245,8 @@ Content-Type: application/json
 ```
 
 ควรได้ `409 Conflict` พร้อม `code` เป็น `EMAIL_ALREADY_EXISTS`
+
+ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยน `@usersPath` เป็น `/api/v1/users`
 
 ## Checkpoint
 

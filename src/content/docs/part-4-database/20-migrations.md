@@ -76,6 +76,8 @@ docker ps
 dotnet tool run dotnet-ef migrations add InitialCreate
 ```
 
+คำสั่งนี้ให้รันครั้งเดียวต่อ migration name ถ้ามี migration ชื่อ `InitialCreate` อยู่แล้ว ห้ามรันซ้ำ เพราะ EF Core จะฟ้องว่าชื่อนี้ถูกใช้แล้ว ให้ข้ามไปขั้น `database update` หรือใช้ `migrations list` เพื่อตรวจรายการ migration แทน
+
 หลังคำสั่งสำเร็จ จะมีโฟลเดอร์ใหม่
 
 ```text
@@ -135,6 +137,7 @@ dotnet tool run dotnet-ef migrations list
 ```powershell
 dotnet build
 dotnet tool run dotnet-ef --version
+# Run this only if InitialCreate does not exist yet.
 dotnet tool run dotnet-ef migrations add InitialCreate
 dotnet tool run dotnet-ef database update
 dotnet tool run dotnet-ef migrations list
@@ -170,7 +173,7 @@ dotnet tool run dotnet-ef migrations remove
 
 ก่อนอ่านบทต่อไป ให้ตรวจว่าทำได้ครบตามนี้
 
-- รัน `dotnet tool run dotnet-ef migrations add InitialCreate` สำเร็จ
+- รัน `dotnet tool run dotnet-ef migrations add InitialCreate` สำเร็จ หรือมี migration `InitialCreate` อยู่แล้ว
 - รัน `dotnet tool run dotnet-ef database update` สำเร็จ
 - database มี table `Users`
 - `dotnet tool run dotnet-ef migrations list` แสดง migration ที่สร้างไว้

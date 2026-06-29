@@ -115,7 +115,7 @@ Constraint ที่เจอบ่อย:
 {value:min(1)}
 ```
 
-ใน final project เราจะใช้ `{id:guid}` เพราะ user id เป็น `Guid`
+ในภาค production hardening เราจะใช้ `{id:guid}` เพราะ user id จะถูกย้ายเป็น `Guid`
 
 ## Query String
 
@@ -138,7 +138,9 @@ GET /api/users?keyword=admin&page=1&pageSize=10
 | `Take(...)` | เลือกข้อมูลจำนวนหนึ่ง ใช้กับ pagination |
 | `ToList()` | แปลงผลลัพธ์กลับเป็น list |
 
-ตัวอย่าง action:
+ตัวอย่าง action ด้านล่างเป็นตัวอย่างให้อ่านเพื่อเข้าใจ query string ก่อน ยังไม่ใช่ขั้นบังคับที่ต้องแก้ไฟล์ในบทนี้
+
+ถ้าต้องการทดลองจริง ให้แทน action `GetUsers()` เดิมชั่วคราวด้วย code นี้ แล้วทดสอบ URL หลัง code block
 
 ```csharp
 [HttpGet]
@@ -164,6 +166,18 @@ public IActionResult GetUsers(string? keyword, int page = 1, int pageSize = 10)
     return Ok(result);
 }
 ```
+
+request สำหรับทดลอง:
+
+```text
+GET http://localhost:<http-port>/api/users?keyword=admin&page=1&pageSize=10
+```
+
+ให้เปลี่ยน `<http-port>` เป็น port จริงจาก `dotnet run` เช่น `5156`
+
+ผลที่ควรเห็นคือ `200 OK` และรายการ user ที่ email มีคำว่า `admin`
+
+ถ้าไม่ได้ทดลองแก้ code ให้ข้าม request นี้ได้ บทนี้ต้องการให้เข้าใจว่า query string ถูกส่งหลังเครื่องหมาย `?` และไม่ใช่ส่วนหนึ่งของ identity ของ resource
 
 ในภาค Admin เราจะทำ pagination, filtering และ sorting แบบจริงจังกว่านี้ด้วย DTO ชื่อ `AdminUserQuery`
 

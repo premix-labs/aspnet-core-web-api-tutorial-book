@@ -11,7 +11,8 @@ public class CreateUserRequest : IValidatableObject
 
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
-        if (Email.EndsWith("@example.invalid", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(Email) &&
+            Email.EndsWith("@example.invalid", StringComparison.OrdinalIgnoreCase))
         {
             yield return new ValidationResult(
                 "Email domain is not allowed.",

@@ -24,12 +24,14 @@ flowchart LR
 บทนี้จะเริ่มจาก integration test ที่ไม่ต้องใช้ database จริงก่อน:
 
 1. ติดตั้ง `Microsoft.AspNetCore.Mvc.Testing`
-2. เปิด `Program` ให้ test project เข้าถึง
-3. ทำให้ seeding ปิดได้ตอน test
-4. สร้าง `TestApiFactory`
-5. สร้าง test `GET /api/auth/me` แบบไม่ส่ง token
-6. เพิ่ม validation test ที่ไม่ต้องเข้า database
-7. รัน `dotnet test`
+2. ติดตั้ง EF Core InMemory provider สำหรับ test database
+3. เปิด `Program` ให้ test project เข้าถึง
+4. ทำให้ seeding ปิดได้ตอน test
+5. สร้าง `TestApiFactory`
+6. override database เป็น InMemory ตอน test
+7. สร้าง test `GET /api/auth/me` แบบไม่ส่ง token
+8. เพิ่ม validation test ที่ไม่ต้องเข้า database
+9. รัน `dotnet test`
 
 ## ก่อนเริ่มบทนี้
 
@@ -52,6 +54,7 @@ Backend.Api.slnx หรือ Backend.Api.sln
 | `HttpClient` | client ที่ test ใช้ยิง request เข้า test server |
 | `IClassFixture<T>` | xUnit fixture ที่ reuse object ร่วมกันใน class test |
 | `DataSeeding:Enabled` | config ที่ใช้ปิด seed data ตอน test |
+| EF Core InMemory | database provider เบา ๆ สำหรับ integration test เริ่มต้น |
 
 ## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
 
@@ -70,15 +73,17 @@ Windows PowerShell:
 
 ```powershell
 dotnet add Backend.Api.Tests\Backend.Api.Tests.csproj package Microsoft.AspNetCore.Mvc.Testing
+dotnet add Backend.Api.Tests\Backend.Api.Tests.csproj package Microsoft.EntityFrameworkCore.InMemory
 ```
 
 macOS/Linux Bash:
 
 ```bash
 dotnet add Backend.Api.Tests/Backend.Api.Tests.csproj package Microsoft.AspNetCore.Mvc.Testing
+dotnet add Backend.Api.Tests/Backend.Api.Tests.csproj package Microsoft.EntityFrameworkCore.InMemory
 ```
 
-package นี้ให้ `WebApplicationFactory<Program>` สำหรับรัน ASP.NET Core ใน test server
+`Microsoft.AspNetCore.Mvc.Testing` ให้ `WebApplicationFactory<Program>` สำหรับรัน ASP.NET Core ใน test server ส่วน `Microsoft.EntityFrameworkCore.InMemory` ใช้แทน SQL Server ใน test เริ่มต้นเพื่อไม่ต้องพึ่ง database จริง
 
 ## ขั้นที่ 2: เปิด Program ให้ test project เข้าถึง
 
@@ -140,7 +145,13 @@ Backend.Api.Tests/TestApiFactory.cs
 เริ่มด้วย using และ class:
 
 ```csharp
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Backend.Api.Data;
 
 namespace Backend.Api.Tests;
 
@@ -191,7 +202,32 @@ SetEnvironmentVariable(
 
 เหตุผลที่ใช้ environment variable คือ project นี้ validate config ตั้งแต่ startup ถ้าค่า config มาช้าเกินไป app อาจ start ไม่ผ่าน
 
-## ขั้นที่ 7: เพิ่ม helper restore environment
+แม้เราจะ override database เป็น InMemory ในขั้นถัดไป แต่ยังตั้ง connection string ไว้เพื่อให้ startup validation ผ่านครบเหมือน runtime จริง
+
+## ขั้นที่ 7: Override database เป็น InMemory
+
+เพิ่ม method นี้ใน `TestApiFactory`:
+
+```csharp
+protected override void ConfigureWebHost(IWebHostBuilder builder)
+{
+    builder.UseEnvironment("Testing");
+
+    builder.ConfigureServices(services =>
+    {
+        services.RemoveAll<AppDbContext>();
+        services.RemoveAll<DbContextOptions<AppDbContext>>();
+        services.RemoveAll<IDbContextOptionsConfiguration<AppDbContext>>();
+
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseInMemoryDatabase("BackendApiTests"));
+    });
+}
+```
+
+`RemoveAll` ใช้ลบ registration ของ SQL Server ที่มาจาก `Program.cs` แล้วแทนด้วย InMemory database เฉพาะตอน test วิธีนี้ทำให้ integration test เริ่มต้นไม่ต้องเปิด SQL Server จริง
+
+## ขั้นที่ 8: เพิ่ม helper restore environment
 
 เพิ่ม `Dispose`:
 
@@ -219,7 +255,7 @@ private void SetEnvironmentVariable(string key, string value)
 
 ตอนนี้ `TestApiFactory` พร้อมสร้าง test server แล้ว
 
-## ขั้นที่ 8: สร้าง AuthIntegrationTests.cs
+## ขั้นที่ 9: สร้าง AuthIntegrationTests.cs
 
 รันจาก root ของ solution
 
@@ -255,7 +291,7 @@ public class AuthIntegrationTests(TestApiFactory factory)
 }
 ```
 
-## ขั้นที่ 9: เพิ่ม test protected endpoint
+## ขั้นที่ 10: เพิ่ม test protected endpoint
 
 เพิ่ม test นี้ใน class:
 
@@ -286,7 +322,7 @@ private HttpClient CreateClient()
 
 test นี้ไม่ต้องใช้ database เพราะ authentication middleware ตอบ `401` ก่อนเข้า service
 
-## ขั้นที่ 10: เพิ่ม validation test
+## ขั้นที่ 11: เพิ่ม validation test
 
 เพิ่ม using:
 
@@ -314,7 +350,7 @@ public async Task Register_WhenEmailInvalid_ReturnsBadRequest()
 
 invalid model จะถูกตอบ `400` ก่อนเข้า service ที่คุยกับ database
 
-## ขั้นที่ 11: รัน integration test
+## ขั้นที่ 12: รัน integration test
 
 รันจาก root ของ solution
 
@@ -345,6 +381,7 @@ dotnet test
 - API มี `public partial class Program { }`
 - seeding database ถูกควบคุมได้ด้วย `DataSeeding:Enabled`
 - มี `TestApiFactory` ที่ตั้งค่า connection string, JWT และปิด seeding สำหรับ test
+- `TestApiFactory` override `AppDbContext` เป็น InMemory database
 - มี integration test สำหรับ `GET /api/auth/me` แบบไม่ส่ง token
 - มี validation test ที่ตอบ `400`
 - รัน `dotnet test` ผ่าน

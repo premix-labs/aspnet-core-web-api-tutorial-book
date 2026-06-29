@@ -89,15 +89,16 @@ dotnet --list-runtimes
 - ASP.NET and web development
 - .NET desktop development ถ้าต้องการเครื่องมือ .NET เพิ่มเติม
 
-หลังติดตั้งแล้วสามารถเปิดไฟล์ solution หรือ project ได้จาก Visual Studio แต่ยังแนะนำให้เปิด terminal แล้วตรวจคำสั่งเหล่านี้ด้วย:
+หลังติดตั้งแล้วสามารถเปิดไฟล์ solution หรือ project ได้จาก Visual Studio แต่ยังแนะนำให้เปิด terminal แล้วตรวจว่า `dotnet` ใช้งานได้จาก command line:
 
 ```powershell
 dotnet --version
-dotnet build
-dotnet run
+dotnet --list-sdks
 ```
 
-เหตุผลคือเมื่อขึ้น production, CI/CD หรือ Docker เราจะพึ่งคำสั่ง command line มากกว่าเมนูของ IDE
+คำสั่ง `dotnet build` และ `dotnet run` จะเริ่มใช้หลังจากสร้างโปรเจกต์ในบทถัดไป ตอนนี้ยังไม่ต้องรัน เพราะยังไม่มีไฟล์ project ให้ build หรือ run
+
+เหตุผลที่ต้องตรวจ command line คือเมื่อขึ้น production, CI/CD หรือ Docker เราจะพึ่งคำสั่งเหล่านี้มากกว่าเมนูของ IDE
 
 ## ติดตั้ง Git
 

@@ -79,6 +79,8 @@ dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer --version 10.0.
 
 package นี้ใช้สำหรับ validate JWT bearer token ใน ASP.NET Core
 
+ให้ใช้ package major version ที่ตรงกับ `TargetFramework` ของโปรเจกต์ เช่น `net10.0` ใช้ package ตระกูล `10.x` ถ้าอนาคต template ของคุณใช้ .NET รุ่นใหม่กว่า ให้เลือก version ที่ตรงกับ framework นั้น
+
 ## ขั้นที่ 2: เพิ่ม JWT configuration
 
 เปิด `appsettings.json` แล้วเพิ่ม section `Jwt`
@@ -386,9 +388,10 @@ dotnet run
 
 ```http
 @baseUrl = http://localhost:5156
+@authPath = /api/auth
 
 ### Login
-POST {{baseUrl}}/api/auth/login
+POST {{baseUrl}}{{authPath}}/login
 Content-Type: application/json
 
 {
@@ -398,6 +401,16 @@ Content-Type: application/json
 ```
 
 ผลลัพธ์ที่คาดหวังคือ `200 OK` พร้อม `accessToken` ที่เป็น JWT จริง
+
+JWT string จะมี 3 ส่วนคั่นด้วยจุด `.` เช่น:
+
+```text
+header.payload.signature
+```
+
+ถ้า `accessToken` ยังเป็น `temporary-token-created-in-next-chapter` แปลว่ายังไม่ได้แก้ `AuthService.LoginAsync` ให้เรียก `jwtTokenService.GenerateLoginResponse(user)`
+
+ให้ copy ค่า `accessToken` ไว้ใช้เป็น `@token` ในบทถัดไป
 
 ## Checkpoint
 

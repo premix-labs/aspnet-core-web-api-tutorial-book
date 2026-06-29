@@ -29,7 +29,7 @@ flowchart LR
 4. ลงทะเบียน handler ใน `Program.cs`
 5. ปรับ service ให้ throw exception
 6. ลบ `try-catch` ที่ไม่จำเป็นออกจาก Controller
-7. ทดสอบ `404`, `409`, และ `500`
+7. ทดสอบ `404`, `409`, และดูวิธีตรวจ `500` แบบชั่วคราวใน development
 
 ## สิ่งที่จะใช้ในบทนี้
 
@@ -253,6 +253,23 @@ private ProblemDetails CreateInternalProblemDetails(Exception exception)
 
 สำหรับ error ที่ไม่คาดคิด เรา log รายละเอียดไว้ที่ server แต่ตอบ client ด้วยข้อความกลาง ๆ เพื่อไม่ให้ข้อมูลภายในรั่ว
 
+ก่อนลงทะเบียน handler ให้ตรวจโครงไฟล์ `GlobalExceptionHandler.cs` ว่ามีส่วนหลักครบแบบนี้:
+
+```text
+public class GlobalExceptionHandler(
+    ILogger<GlobalExceptionHandler> logger,
+    IProblemDetailsService problemDetailsService) : IExceptionHandler
+{
+    public async ValueTask<bool> TryHandleAsync(...) { ... }
+
+    private static ProblemDetails CreateApiProblemDetails(...) { ... }
+
+    private ProblemDetails CreateInternalProblemDetails(...) { ... }
+}
+```
+
+ถ้า brace `{ }` อยู่ผิดตำแหน่ง ให้เทียบจากโครงนี้ก่อน เพราะ error ในไฟล์ handler มักเกิดจากการวาง method ซ้อนผิดชั้น
+
 ## ขั้นที่ 7: ลงทะเบียน Exception Handler
 
 เปิด `Program.cs` แล้วเพิ่ม using:
@@ -382,7 +399,7 @@ public async Task DeleteUserAsync(int id)
 
 เมื่อ service โยน exception แล้ว Controller ไม่ต้อง `try-catch` ทุกกรณีเอง
 
-ตัวอย่าง `GET /api/users/{id}`:
+ตัวอย่าง `GET {{usersPath}}/{id}`:
 
 ```csharp
 [HttpGet("{id:int}")]
@@ -394,7 +411,7 @@ public async Task<IActionResult> GetUserById(int id)
 }
 ```
 
-ตัวอย่าง `POST /api/users`:
+ตัวอย่าง `POST {{usersPath}}`:
 
 ```csharp
 [HttpPost]
@@ -406,7 +423,7 @@ public async Task<IActionResult> CreateUser(CreateUserRequest request)
 }
 ```
 
-ตัวอย่าง `DELETE /api/users/{id}`:
+ตัวอย่าง `DELETE {{usersPath}}/{id}`:
 
 ```csharp
 [HttpDelete("{id:int}")]
@@ -440,9 +457,10 @@ dotnet run
 
 ```http
 @baseUrl = http://localhost:5156
+@usersPath = /api/users
 
 ### User not found
-GET {{baseUrl}}/api/users/999999
+GET {{baseUrl}}{{usersPath}}/999999
 Accept: application/json
 ```
 
@@ -452,7 +470,7 @@ Accept: application/json
 
 ```http
 ### Email conflict
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}{{usersPath}}
 Content-Type: application/json
 
 {
@@ -461,6 +479,31 @@ Content-Type: application/json
 ```
 
 ควรได้ `409 Conflict` พร้อม `code` เป็น `EMAIL_ALREADY_EXISTS`
+
+ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยน `@usersPath` เป็น `/api/v1/users`
+
+### ตรวจ 500 แบบชั่วคราว
+
+ในโปรเจกต์จริงเราไม่ควรสร้าง endpoint ที่ตั้งใจ throw exception ไว้ถาวร แต่ถ้าต้องการเห็นว่า unexpected error ถูกแปลงเป็น `500 Internal Server Error` จริง ให้เพิ่ม endpoint ชั่วคราวใน `Program.cs` เฉพาะตอน development โดยวางก่อน `app.MapControllers()`:
+
+```csharp
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/debug/throw", () =>
+        throw new InvalidOperationException("Test exception"));
+}
+```
+
+จากนั้นยิง request นี้:
+
+```http
+GET {{baseUrl}}/debug/throw
+Accept: application/json
+```
+
+ควรได้ `500 Internal Server Error` พร้อม `code` เป็น `INTERNAL_ERROR` และ `title` เป็น `Unexpected error`
+
+หลังทดสอบเสร็จให้ลบ endpoint `/debug/throw` ออกทันที เพราะ endpoint นี้มีไว้ตรวจ handler เท่านั้น ไม่ใช่ส่วนหนึ่งของ API จริง
 
 ## ทำไมไม่ควรส่ง exception.Message ทุกกรณี
 

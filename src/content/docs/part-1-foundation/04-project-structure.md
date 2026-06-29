@@ -152,13 +152,9 @@ Controller ไม่ควรเป็นที่รวมทุกอย่า
 </Project>
 ```
 
-เมื่อเราติดตั้ง package เช่น EF Core หรือ JWT package ข้อมูลจะถูกเพิ่มเข้ามาในไฟล์นี้
+เมื่อเราติดตั้ง package เช่น EF Core หรือ JWT package ในบทหลัง ๆ ข้อมูลจะถูกเพิ่มเข้ามาในไฟล์นี้เป็น `PackageReference`
 
-```powershell
-dotnet add package Microsoft.EntityFrameworkCore.SqlServer
-```
-
-หลังรันคำสั่งนี้ `.csproj` จะมี `PackageReference` เพิ่มขึ้น
+ตอนนี้ยังไม่ต้องติดตั้ง package เพิ่ม เพราะบทนี้มีหน้าที่แค่อ่านโครงสร้างไฟล์ก่อน คำสั่งติดตั้ง EF Core จะเริ่มใช้จริงในภาคฐานข้อมูล
 
 ## appsettings.json
 

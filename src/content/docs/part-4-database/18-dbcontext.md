@@ -52,7 +52,9 @@ Windows PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path Data
-New-Item -ItemType File -Path Data/AppDbContext.cs
+if (-not (Test-Path -LiteralPath Data/AppDbContext.cs)) {
+    New-Item -ItemType File -Path Data/AppDbContext.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -155,9 +157,13 @@ entity.Property(user => user.Role)
 
 entity.Property(user => user.CreatedAtUtc)
     .IsRequired();
+
+entity.Property(user => user.UpdatedAtUtc);
 ```
 
 `PasswordHash` ให้ความยาวมากกว่า email เพราะ hash บางรูปแบบยาวได้มาก ส่วน `Role` จำกัดไว้สั้น ๆ เพราะค่าควรเป็น role name เช่น `User` หรือ `Admin`
+
+`UpdatedAtUtc` เป็น nullable อยู่แล้ว จึงไม่ต้องเรียก `IsRequired()` เพราะ user ที่เพิ่งสร้างอาจยังไม่เคยถูกแก้ไข
 
 ## ตรวจภาพรวมของ AppDbContext
 
@@ -172,9 +178,12 @@ AppDbContext
     - PasswordHash required + max length
     - Role required + max length
     - CreatedAtUtc required
+    - UpdatedAtUtc nullable
 ```
 
-ถ้าต้องเทียบกับ code เต็ม ให้ดูภาพรวมนี้และตรวจว่าของคุณมีส่วนประกอบครบ
+ถ้าต้องเทียบกับ code ให้ตรวจเป็นสองส่วน อย่าคัดลอกทั้งไฟล์ใหม่ถ้าไฟล์ของคุณมี code อยู่แล้ว
+
+ส่วนโครง class:
 
 ```csharp
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
@@ -187,28 +196,36 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(user => user.Id);
-
-            entity.Property(user => user.Email)
-                .IsRequired()
-                .HasMaxLength(256);
-
-            entity.HasIndex(user => user.Email)
-                .IsUnique();
-
-            entity.Property(user => user.PasswordHash)
-                .IsRequired()
-                .HasMaxLength(500);
-
-            entity.Property(user => user.Role)
-                .IsRequired()
-                .HasMaxLength(50);
-
-            entity.Property(user => user.CreatedAtUtc)
-                .IsRequired();
+            // User mapping should be here.
         });
     }
 }
+```
+
+ส่วน mapping ภายใน `modelBuilder.Entity<User>(entity => { ... })`:
+
+```csharp
+entity.HasKey(user => user.Id);
+
+entity.Property(user => user.Email)
+    .IsRequired()
+    .HasMaxLength(256);
+
+entity.HasIndex(user => user.Email)
+    .IsUnique();
+
+entity.Property(user => user.PasswordHash)
+    .IsRequired()
+    .HasMaxLength(500);
+
+entity.Property(user => user.Role)
+    .IsRequired()
+    .HasMaxLength(50);
+
+entity.Property(user => user.CreatedAtUtc)
+    .IsRequired();
+
+entity.Property(user => user.UpdatedAtUtc);
 ```
 
 ## อธิบาย code สำคัญ
@@ -253,3 +270,5 @@ using Backend.Api.Models;
 - มี `DbSet<User> Users`
 - email ถูกกำหนดเป็น unique index
 - string field สำคัญมี `HasMaxLength`
+- `CreatedAtUtc` ถูกกำหนดเป็น required
+- `UpdatedAtUtc` เป็น nullable และไม่ถูกกำหนด `IsRequired()`

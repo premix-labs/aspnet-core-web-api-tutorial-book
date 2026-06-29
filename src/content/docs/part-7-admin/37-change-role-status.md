@@ -242,10 +242,12 @@ dotnet build
 
 ```http
 @baseUrl = http://localhost:5156
+@adminUsersPath = {{baseUrl}}/api/admin/users
 @adminToken = paste-admin-token-here
+@targetUserId = paste-target-user-id-here
 
 ### Change role
-PUT {{baseUrl}}/api/admin/users/2/role
+PUT {{adminUsersPath}}/{{targetUserId}}/role
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
@@ -254,9 +256,16 @@ Content-Type: application/json
 }
 ```
 
-ถ้าส่ง role ที่ไม่อยู่ใน `Roles.All`:
+`targetUserId` คือ id ของ user ที่ admin ต้องการจัดการ ให้เอาค่ามาจาก response ของ `GET {{adminUsersPath}}` ในบทก่อนหน้า อย่าใช้ id เดาสุ่ม เพราะ database ของแต่ละคนอาจไม่เหมือนกัน
 
-```json
+ทดสอบ validation โดยส่ง role ที่ไม่อยู่ใน `Roles.All`:
+
+```http
+### Change role with invalid role
+PUT {{adminUsersPath}}/{{targetUserId}}/role
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
 {
   "role": "SuperAdmin"
 }
@@ -268,7 +277,7 @@ Content-Type: application/json
 
 ```http
 ### Change status
-PUT {{baseUrl}}/api/admin/users/2/status
+PUT {{adminUsersPath}}/{{targetUserId}}/status
 Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 

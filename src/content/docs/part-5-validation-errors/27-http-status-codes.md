@@ -46,15 +46,15 @@ Status code คือภาษากลางของ HTTP ที่บอก c
 
 | Endpoint | สถานการณ์ | Status code | Body |
 | --- | --- | --- | --- |
-| `GET /api/users` | อ่านรายการสำเร็จ | `200 OK` | list ของ `UserResponse` |
-| `GET /api/users/{id}` | พบ user | `200 OK` | `UserResponse` |
-| `GET /api/users/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
-| `POST /api/users` | สร้างสำเร็จ | `201 Created` | `UserResponse` |
-| `POST /api/users` | email ซ้ำ | `409 Conflict` | `ProblemDetails` |
-| `PUT /api/users/{id}` | แก้ไขสำเร็จ | `200 OK` | `UserResponse` |
-| `PUT /api/users/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
-| `DELETE /api/users/{id}` | ลบสำเร็จ | `204 No Content` | ไม่มี body |
-| `DELETE /api/users/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
+| `GET {{usersPath}}` | อ่านรายการสำเร็จ | `200 OK` | list ของ `UserResponse` |
+| `GET {{usersPath}}/{id}` | พบ user | `200 OK` | `UserResponse` |
+| `GET {{usersPath}}/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
+| `POST {{usersPath}}` | สร้างสำเร็จ | `201 Created` | `UserResponse` |
+| `POST {{usersPath}}` | email ซ้ำ | `409 Conflict` | `ProblemDetails` |
+| `PUT {{usersPath}}/{id}` | แก้ไขสำเร็จ | `200 OK` | `UserResponse` |
+| `PUT {{usersPath}}/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
+| `DELETE {{usersPath}}/{id}` | ลบสำเร็จ | `204 No Content` | ไม่มี body |
+| `DELETE {{usersPath}}/{id}` | ไม่พบ user | `404 Not Found` | `ProblemDetails` |
 
 ## Validation ใช้ 400
 
@@ -107,9 +107,10 @@ Status code คือภาษากลางของ HTTP ที่บอก c
 
 ```http
 @baseUrl = http://localhost:5156
+@usersPath = /api/users
 
 ### Validation failed
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}{{usersPath}}
 Content-Type: application/json
 
 {
@@ -117,11 +118,11 @@ Content-Type: application/json
 }
 
 ### User not found
-GET {{baseUrl}}/api/users/999999
+GET {{baseUrl}}{{usersPath}}/999999
 Accept: application/json
 
 ### Email conflict
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}{{usersPath}}
 Content-Type: application/json
 
 {
@@ -130,6 +131,8 @@ Content-Type: application/json
 ```
 
 ให้ใช้ `baseUrl` ตาม port จริงของเครื่อง ถ้าเครื่องคุณรัน HTTPS ที่ `https://localhost:7127` และ certificate พร้อมแล้ว จะใช้ HTTPS ก็ได้
+
+ถ้า route จริงของคุณเป็น `/api/v1/users` ให้เปลี่ยนเฉพาะ `@usersPath` เป็น `/api/v1/users`
 
 ## วิธีอ่านผลลัพธ์หลังทดสอบ
 

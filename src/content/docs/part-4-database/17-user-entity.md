@@ -45,7 +45,9 @@ Windows PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path Models
-New-Item -ItemType File -Path Models/User.cs
+if (-not (Test-Path -LiteralPath Models/User.cs)) {
+    New-Item -ItemType File -Path Models/User.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -137,4 +139,5 @@ dotnet build
 - มีไฟล์ `Models/User.cs`
 - `User` มี `Id`, `Email`, `PasswordHash`, `Role`, `IsActive`
 - `CreatedAtUtc` ใช้ค่าเริ่มต้นเป็น `DateTime.UtcNow`
+- `UpdatedAtUtc` เป็น nullable ด้วยชนิด `DateTime?`
 - ไม่มี property ชื่อ `Password` สำหรับเก็บรหัสผ่านดิบ

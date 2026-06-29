@@ -53,7 +53,9 @@ Backend.Api.http
 Windows PowerShell:
 
 ```powershell
-New-Item -ItemType File -Path Backend.Api.http
+if (-not (Test-Path -LiteralPath Backend.Api.http)) {
+    New-Item -ItemType File -Path Backend.Api.http
+}
 ```
 
 macOS/Linux Bash:
@@ -154,6 +156,20 @@ Content-Type: application/json
 
 หลัง PUT สำเร็จ ให้กด `GET /api/users/1` อีกครั้งเพื่อดูว่าข้อมูลเปลี่ยนแล้ว
 
+ลองทดสอบ id ที่ไม่มีอยู่ด้วย:
+
+```http
+### Update missing user
+PUT {{baseUrl}}/api/users/999
+Content-Type: application/json
+
+{
+  "email": "missing@example.com"
+}
+```
+
+ผลลัพธ์ที่คาดหวังคือ `404 Not Found`
+
 ## ทดสอบ DELETE
 
 ```http
@@ -164,6 +180,15 @@ DELETE {{baseUrl}}/api/users/1
 ผลลัพธ์ที่คาดหวังคือ `204 No Content`
 
 หลัง DELETE สำเร็จ ให้กด `GET /api/users/1` อีกครั้ง ผลลัพธ์ควรเป็น `404 Not Found`
+
+ลองทดสอบลบ id ที่ไม่มีอยู่ด้วย:
+
+```http
+### Delete missing user
+DELETE {{baseUrl}}/api/users/999
+```
+
+ผลลัพธ์ที่คาดหวังคือ `404 Not Found`
 
 ## ลำดับการทดสอบที่แนะนำ
 
@@ -178,8 +203,10 @@ DELETE {{baseUrl}}/api/users/1
 | 5 | `GET /api/users` | `200 OK` และเห็น user ใหม่ใน list |
 | 6 | `PUT /api/users/1` | `200 OK` และ email เปลี่ยน |
 | 7 | `GET /api/users/1` | `200 OK` และเห็น email ใหม่ |
-| 8 | `DELETE /api/users/1` | `204 No Content` |
-| 9 | `GET /api/users/1` | `404 Not Found` |
+| 8 | `PUT /api/users/999` | `404 Not Found` |
+| 9 | `DELETE /api/users/999` | `404 Not Found` |
+| 10 | `DELETE /api/users/1` | `204 No Content` |
+| 11 | `GET /api/users/1` | `404 Not Found` |
 
 ถ้าคุณทดสอบ `DELETE` ก่อน `PUT` แล้ว `PUT /api/users/1` ได้ `404 Not Found` ถือว่าถูกต้อง เพราะ user id `1` ถูกลบจาก memory ไปแล้ว ให้ restart API ถ้าต้องการกลับไปข้อมูลเริ่มต้น
 
@@ -236,6 +263,19 @@ Content-Type: application/json
 {
   "email": "updated-admin@example.com"
 }
+
+### Update missing user
+# id 999 should not exist, so this request should return 404.
+PUT {{baseUrl}}/api/users/999
+Content-Type: application/json
+
+{
+  "email": "missing@example.com"
+}
+
+### Delete missing user
+# id 999 should not exist, so this request should return 404.
+DELETE {{baseUrl}}/api/users/999
 
 ### Delete user
 # A successful delete should return 204 No Content.

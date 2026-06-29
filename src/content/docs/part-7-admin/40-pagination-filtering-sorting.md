@@ -59,7 +59,7 @@ Backend.Api.http
 ## Query ที่ต้องรองรับ
 
 ```text
-GET /api/admin/users?page=1&pageSize=20&search=admin&role=Admin&isActive=true&sortBy=createdAt&sortDirection=desc
+GET /api/admin/users?page=1&pageSize=20&search=admin&role=Admin&isActive=true&sortBy=createdAtUtc&sortDirection=desc
 ```
 
 ความหมายของ query string:
@@ -176,7 +176,7 @@ public bool? IsActive { get; set; }
 เพิ่ม sorting:
 
 ```csharp
-public string SortBy { get; set; } = "createdAt";
+public string SortBy { get; set; } = "createdAtUtc";
 
 public string SortDirection { get; set; } = "desc";
 ```
@@ -229,14 +229,14 @@ public async Task<PagedResponse<User>> QueryUsersAsync(AdminUserQuery query)
 ```csharp
 if (!string.IsNullOrWhiteSpace(query.Search))
 {
-    var keyword = query.Search.Trim().ToUpperInvariant();
+    var keyword = query.Search.Trim();
 
     users = users.Where(user =>
-        user.NormalizedEmail.Contains(keyword));
+        user.Email.Contains(keyword));
 }
 ```
 
-เราใช้ `NormalizedEmail` เพราะ email ถูกเก็บเป็นตัวพิมพ์ใหญ่ไว้แล้ว ทำให้ค้นหาแบบไม่สนตัวเล็กตัวใหญ่ได้ง่ายขึ้น
+ใน progressive model ตอนนี้ยังไม่มี `NormalizedEmail` จึงค้นจาก `Email` ตรง ๆ ก่อน การย้ายไปใช้ `NormalizedEmail` และ index สำหรับค้นหาแบบ production จะอยู่ในภาค production hardening
 
 ## ขั้นที่ 6: เพิ่ม role และ status filter
 
@@ -279,12 +279,14 @@ users = (query.SortBy.ToLowerInvariant(),
     ("email", "desc") => users.OrderByDescending(user => user.Email),
     ("role", "asc") => users.OrderBy(user => user.Role),
     ("role", "desc") => users.OrderByDescending(user => user.Role),
-    ("createdat", "asc") => users.OrderBy(user => user.CreatedAt),
-    _ => users.OrderByDescending(user => user.CreatedAt)
+    ("createdatutc", "asc") => users.OrderBy(user => user.CreatedAtUtc),
+    _ => users.OrderByDescending(user => user.CreatedAtUtc)
 };
 ```
 
 เราใช้ `switch` เพื่อจำกัด field ที่ sort ได้ ไม่เปิดให้ client ส่งชื่อ column อะไรก็ได้เข้ามา
+
+ชื่อ `createdAtUtc` ต้องตรงกับ property ที่มีอยู่ใน `User` ตอนนี้ ถ้าใช้ `CreatedAt` จะ build ไม่ผ่าน เพราะ field นั้นจะถูกเพิ่มในภาค production hardening ภายหลัง
 
 ## ขั้นที่ 8: นับจำนวนและแบ่งหน้า
 
@@ -395,6 +397,7 @@ dotnet build
 - `IUserRepository` มี method `QueryUsersAsync`
 - `UserRepository` มี using `Backend.Api.Dtos.Admin` และ `Backend.Api.Dtos.Common`
 - `AdminUserService.GetUsersAsync` คืน `PagedResponse<AdminUserResponse>`
+- ถ้าเจอ error ว่า `User` ไม่มี `NormalizedEmail` หรือ `CreatedAt` ให้ตรวจว่าใช้ `Email` และ `CreatedAtUtc` ตามบทนี้ ไม่ใช่ code จากภาค production hardening
 
 ## ขั้นที่ 12: ทดสอบด้วย Backend.Api.http
 
@@ -402,20 +405,26 @@ dotnet build
 
 ```http
 @baseUrl = http://localhost:5156
+@adminUsersPath = {{baseUrl}}/api/admin/users
 @adminToken = paste-admin-token-here
 
 ### Admin users page 1
-GET {{baseUrl}}/api/admin/users?page=1&pageSize=20
+GET {{adminUsersPath}}?page=1&pageSize=20
 Authorization: Bearer {{adminToken}}
 Accept: application/json
 
 ### Filter admin users
-GET {{baseUrl}}/api/admin/users?role=Admin
+GET {{adminUsersPath}}?role=Admin
 Authorization: Bearer {{adminToken}}
 Accept: application/json
 
 ### Search by email
-GET {{baseUrl}}/api/admin/users?search=admin
+GET {{adminUsersPath}}?search=admin
+Authorization: Bearer {{adminToken}}
+Accept: application/json
+
+### Sort by created time
+GET {{adminUsersPath}}?sortBy=createdAtUtc&sortDirection=desc
 Authorization: Bearer {{adminToken}}
 Accept: application/json
 ```
@@ -428,12 +437,12 @@ Accept: application/json
 {
   "items": [
     {
-      "id": "11111111-1111-1111-1111-111111111111",
+      "id": 1,
       "email": "admin@example.com",
       "role": "Admin",
       "isActive": true,
-      "isEmailVerified": true,
-      "createdAt": "2026-06-16T03:00:00Z"
+      "createdAtUtc": "2026-06-16T03:00:00Z",
+      "updatedAtUtc": null
     }
   ],
   "page": 1,
@@ -443,7 +452,7 @@ Accept: application/json
 }
 ```
 
-จำนวน field ใน `items` จะขึ้นกับ `AdminUserResponse` ที่คุณสร้างไว้ก่อนหน้า แต่ metadata ด้านล่างต้องมีครบ
+ตัวอย่างนี้ใช้ model ของ Part 7 คือ `id` ยังเป็นตัวเลข และเวลายังเป็น `createdAtUtc`/`updatedAtUtc` ส่วน response หลังผ่านภาค production hardening อาจมี field เพิ่ม เช่น `isEmailVerified`
 
 ## Checkpoint
 
@@ -453,6 +462,6 @@ Accept: application/json
 - มี `AdminUserQuery`
 - `GET /api/admin/users` รับ query string ผ่าน `[FromQuery]`
 - filter ด้วย `search`, `role`, `isActive` ได้
-- sort ด้วย `email`, `role`, `createdAt` ได้
+- sort ด้วย `email`, `role`, `createdAtUtc` ได้
 - response มี `items`, `page`, `pageSize`, `totalItems`, `totalPages`
 - admin endpoint ยังถูกป้องกันด้วย role

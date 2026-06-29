@@ -5,15 +5,6 @@ description: "ทำให้ทีมรู้ว่า production มีปั
 
 ระบบ production ที่ดีต้องตอบคำถามหลังเกิดปัญหาได้ ไม่ใช่แค่หวังว่า code จะไม่พัง
 
-## Implementation map ใน final example
-
-| Feature | Files | Tests |
-| --- | --- | --- |
-| Correlation id middleware และ response header | `examples/final-backend-api/Backend.Api/Program.cs` | `examples/final-backend-api/Backend.Api.Tests/ProductionHardeningIntegrationTests.cs` |
-| Audit log สำหรับ security event สำคัญ | `examples/final-backend-api/Backend.Api/Models/AuditLog.cs`<br/>`examples/final-backend-api/Backend.Api/Services/AuditLogService.cs`<br/>`examples/final-backend-api/Backend.Api/Constants/AuditActions.cs` | `examples/final-backend-api/Backend.Api.Tests/AuditLogIntegrationTests.cs` |
-| Health endpoint สำหรับ operate ระบบ | `examples/final-backend-api/Backend.Api/Program.cs`<br/>`examples/final-backend-api/docker-compose.yml` | `examples/final-backend-api/Backend.Api.Tests/ProductionHardeningIntegrationTests.cs` |
-| Backup/restore/runbook checklist | `src/content/docs/part-9-production-hardening/58-observability-backup-runbook.md` | ตรวจผ่าน restore drill และ incident drill ของทีม |
-
 ## Observability ขั้นต่ำ
 
 ควรมีอย่างน้อย:
@@ -29,7 +20,7 @@ description: "ทำให้ทีมรู้ว่า production มีปั
 
 log ไม่ควรเก็บ password, token, refresh token หรือข้อมูลลับอื่น ๆ
 
-ใน final project และ validation/progressive project มี middleware ที่อ่าน `X-Correlation-Id` จาก request ถ้ามี ถ้าไม่มีจะใช้ `HttpContext.TraceIdentifier` แล้วส่งกลับใน response header ชื่อเดียวกัน พร้อมเปิด logging scope `CorrelationId` ให้ log ใน request เดียวกันค้นหาได้ง่ายขึ้น
+ควรมี middleware ที่อ่าน `X-Correlation-Id` จาก request ถ้ามี ถ้าไม่มีให้ใช้ `HttpContext.TraceIdentifier` แล้วส่งกลับใน response header ชื่อเดียวกัน พร้อมเปิด logging scope `CorrelationId` ให้ log ใน request เดียวกันค้นหาได้ง่ายขึ้น
 
 ## Metrics ที่ควร monitor
 
