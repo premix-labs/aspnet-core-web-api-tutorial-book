@@ -9,7 +9,7 @@ namespace Backend.Api.Controllers;
 
 [Authorize(Roles = Roles.Admin)]
 [ApiController]
-[Route("api/admin/users")]
+[Route("api/v1/admin/users")]
 public class AdminUsersController(AdminUserService adminUserService) : ControllerBase
 {
     [HttpGet("ping")]

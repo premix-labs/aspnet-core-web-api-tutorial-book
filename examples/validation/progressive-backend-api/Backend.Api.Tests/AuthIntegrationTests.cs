@@ -19,7 +19,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/auth/me");
+        var response = await client.GetAsync("/api/v1/auth/me");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -29,7 +29,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/register", new
+        var response = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "not-an-email",
             password = "Passw0rd!"
@@ -48,7 +48,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var firstResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var firstResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "CaseSensitive@example.com",
             password = "Passw0rd!"
@@ -56,7 +56,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
 
-        var duplicateResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var duplicateResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "casesensitive@example.com",
             password = "Passw0rd!"
@@ -75,7 +75,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/register", new
+        var response = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "verify-email@example.com",
             password = "Passw0rd!"
@@ -98,7 +98,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "verify-success@example.com",
             password = "Passw0rd!"
@@ -107,7 +107,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         registerResponse.EnsureSuccessStatusCode();
 
         var verificationToken = GetVerificationToken("verify-success@example.com");
-        var verifyResponse = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var verifyResponse = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = verificationToken
         });
@@ -124,7 +124,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var response = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = "invalid-token"
         });
@@ -137,7 +137,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "resend@example.com",
             password = "Passw0rd!"
@@ -147,7 +147,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         var beforeCount = factory.EmailSender.Messages.Count(message => message.To == "resend@example.com");
 
-        var resendResponse = await client.PostAsJsonAsync("/api/auth/resend-email-verification", new
+        var resendResponse = await client.PostAsJsonAsync("/api/v1/auth/resend-email-verification", new
         {
             email = "resend@example.com"
         });
@@ -163,7 +163,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/register", new
+        var response = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "verification-hash@example.com",
             password = "Passw0rd!"
@@ -194,7 +194,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "verify-reuse@example.com",
             password = "Passw0rd!"
@@ -203,14 +203,14 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         registerResponse.EnsureSuccessStatusCode();
 
         var verificationToken = GetVerificationToken("verify-reuse@example.com");
-        var verifyResponse = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var verifyResponse = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = verificationToken
         });
 
         verifyResponse.EnsureSuccessStatusCode();
 
-        var reusedResponse = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var reusedResponse = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = verificationToken
         });
@@ -223,7 +223,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "verify-expired@example.com",
             password = "Passw0rd!"
@@ -240,7 +240,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         storedToken.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1);
         await dbContext.SaveChangesAsync();
 
-        var verifyResponse = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var verifyResponse = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = verificationToken
         });
@@ -253,7 +253,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "resend-revokes@example.com",
             password = "Passw0rd!"
@@ -263,14 +263,14 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         var firstToken = GetVerificationToken("resend-revokes@example.com");
 
-        var resendResponse = await client.PostAsJsonAsync("/api/auth/resend-email-verification", new
+        var resendResponse = await client.PostAsJsonAsync("/api/v1/auth/resend-email-verification", new
         {
             email = "resend-revokes@example.com"
         });
 
         Assert.Equal(HttpStatusCode.NoContent, resendResponse.StatusCode);
 
-        var firstVerifyResponse = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var firstVerifyResponse = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = firstToken
         });
@@ -278,7 +278,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.Equal(HttpStatusCode.Unauthorized, firstVerifyResponse.StatusCode);
 
         var secondToken = GetVerificationToken("resend-revokes@example.com");
-        var secondVerifyResponse = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var secondVerifyResponse = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = secondToken
         });
@@ -292,7 +292,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var client = CreateClient();
 
         var missingBeforeCount = factory.EmailSender.Messages.Count;
-        var missingResponse = await client.PostAsJsonAsync("/api/auth/resend-email-verification", new
+        var missingResponse = await client.PostAsJsonAsync("/api/v1/auth/resend-email-verification", new
         {
             email = "missing-verification@example.com"
         });
@@ -300,7 +300,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.Equal(HttpStatusCode.NoContent, missingResponse.StatusCode);
         Assert.Equal(missingBeforeCount, factory.EmailSender.Messages.Count);
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "already-verified-resend@example.com",
             password = "Passw0rd!"
@@ -309,7 +309,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         registerResponse.EnsureSuccessStatusCode();
 
         var verificationToken = GetVerificationToken("already-verified-resend@example.com");
-        var verifyResponse = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var verifyResponse = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = verificationToken
         });
@@ -317,7 +317,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         verifyResponse.EnsureSuccessStatusCode();
 
         var verifiedBeforeCount = factory.EmailSender.Messages.Count;
-        var resendVerifiedResponse = await client.PostAsJsonAsync("/api/auth/resend-email-verification", new
+        var resendVerifiedResponse = await client.PostAsJsonAsync("/api/v1/auth/resend-email-verification", new
         {
             email = "already-verified-resend@example.com"
         });
@@ -331,7 +331,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "verify-audit@example.com",
             password = "Passw0rd!"
@@ -343,7 +343,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.NotNull(registerBody);
 
         var verificationToken = GetVerificationToken("verify-audit@example.com");
-        var verifyResponse = await client.PostAsJsonAsync("/api/auth/verify-email", new
+        var verifyResponse = await client.PostAsJsonAsync("/api/v1/auth/verify-email", new
         {
             token = verificationToken
         });
@@ -371,7 +371,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "forgot@example.com",
             password = "Passw0rd!"
@@ -379,7 +379,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         registerResponse.EnsureSuccessStatusCode();
 
-        var response = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var response = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "forgot@example.com"
         });
@@ -399,7 +399,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var client = CreateClient();
 
         var missingBeforeCount = factory.EmailSender.Messages.Count;
-        var missingResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var missingResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "missing-reset@example.com"
         });
@@ -407,7 +407,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.Equal(HttpStatusCode.NoContent, missingResponse.StatusCode);
         Assert.Equal(missingBeforeCount, factory.EmailSender.Messages.Count);
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "inactive-reset@example.com",
             password = "Passw0rd!"
@@ -425,7 +425,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         await dbContext.SaveChangesAsync();
 
         var inactiveBeforeCount = factory.EmailSender.Messages.Count;
-        var inactiveResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var inactiveResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "inactive-reset@example.com"
         });
@@ -439,7 +439,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "reset-hash@example.com",
             password = "Passw0rd!"
@@ -450,7 +450,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var registerBody = await registerResponse.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(registerBody);
 
-        var forgotResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var forgotResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "reset-hash@example.com"
         });
@@ -477,7 +477,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "reset-revokes@example.com",
             password = "Passw0rd!"
@@ -485,7 +485,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         registerResponse.EnsureSuccessStatusCode();
 
-        var firstForgotResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var firstForgotResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "reset-revokes@example.com"
         });
@@ -494,14 +494,14 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         var firstToken = GetEmailToken("reset-revokes@example.com", "Reset your password");
 
-        var secondForgotResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var secondForgotResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "reset-revokes@example.com"
         });
 
         Assert.Equal(HttpStatusCode.NoContent, secondForgotResponse.StatusCode);
 
-        var firstResetResponse = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        var firstResetResponse = await client.PostAsJsonAsync("/api/v1/auth/reset-password", new
         {
             token = firstToken,
             newPassword = "NewPassw0rd!"
@@ -510,7 +510,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.Equal(HttpStatusCode.Unauthorized, firstResetResponse.StatusCode);
 
         var secondToken = GetEmailToken("reset-revokes@example.com", "Reset your password");
-        var secondResetResponse = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        var secondResetResponse = await client.PostAsJsonAsync("/api/v1/auth/reset-password", new
         {
             token = secondToken,
             newPassword = "NewPassw0rd!"
@@ -524,7 +524,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var response = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        var response = await client.PostAsJsonAsync("/api/v1/auth/reset-password", new
         {
             token = "invalid-token",
             newPassword = "NewPassw0rd!"
@@ -538,7 +538,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "reset-expired@example.com",
             password = "Passw0rd!"
@@ -549,7 +549,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var registerBody = await registerResponse.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(registerBody);
 
-        var forgotResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var forgotResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "reset-expired@example.com"
         });
@@ -565,7 +565,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         storedToken.ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(-1);
         await dbContext.SaveChangesAsync();
 
-        var resetResponse = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        var resetResponse = await client.PostAsJsonAsync("/api/v1/auth/reset-password", new
         {
             token = resetToken,
             newPassword = "NewPassw0rd!"
@@ -579,7 +579,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "reset-success@example.com",
             password = "Passw0rd!"
@@ -590,7 +590,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var registerBody = await registerResponse.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(registerBody);
 
-        var forgotResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var forgotResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "reset-success@example.com"
         });
@@ -598,7 +598,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.Equal(HttpStatusCode.NoContent, forgotResponse.StatusCode);
 
         var resetToken = GetEmailToken("reset-success@example.com", "Reset your password");
-        var resetResponse = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        var resetResponse = await client.PostAsJsonAsync("/api/v1/auth/reset-password", new
         {
             token = resetToken,
             newPassword = "NewPassw0rd!"
@@ -606,7 +606,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         Assert.Equal(HttpStatusCode.NoContent, resetResponse.StatusCode);
 
-        var oldPasswordResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var oldPasswordResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "reset-success@example.com",
             password = "Passw0rd!"
@@ -614,7 +614,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         Assert.Equal(HttpStatusCode.Unauthorized, oldPasswordResponse.StatusCode);
 
-        var newPasswordResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var newPasswordResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "reset-success@example.com",
             password = "NewPassw0rd!"
@@ -622,14 +622,14 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         newPasswordResponse.EnsureSuccessStatusCode();
 
-        var oldRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        var oldRefreshResponse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             refreshToken = registerBody.RefreshToken
         });
 
         Assert.Equal(HttpStatusCode.Unauthorized, oldRefreshResponse.StatusCode);
 
-        var reusedTokenResponse = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        var reusedTokenResponse = await client.PostAsJsonAsync("/api/v1/auth/reset-password", new
         {
             token = resetToken,
             newPassword = "AnotherPassw0rd!"
@@ -643,7 +643,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "reset-audit@example.com",
             password = "Passw0rd!"
@@ -656,7 +656,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         for (var attempt = 1; attempt <= 5; attempt++)
         {
-            var failedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+            var failedResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
             {
                 email = "reset-audit@example.com",
                 password = "wrong-password"
@@ -665,7 +665,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
         }
 
-        var forgotResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var forgotResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "reset-audit@example.com"
         });
@@ -673,7 +673,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.Equal(HttpStatusCode.NoContent, forgotResponse.StatusCode);
 
         var resetToken = GetEmailToken("reset-audit@example.com", "Reset your password");
-        var resetResponse = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        var resetResponse = await client.PostAsJsonAsync("/api/v1/auth/reset-password", new
         {
             token = resetToken,
             newPassword = "NewPassw0rd!"
@@ -708,7 +708,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "refresh@example.com",
             password = "Passw0rd!"
@@ -716,7 +716,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         Assert.Equal(HttpStatusCode.OK, registerResponse.StatusCode);
 
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "refresh@example.com",
             password = "Passw0rd!"
@@ -729,7 +729,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.False(string.IsNullOrWhiteSpace(loginBody.AccessToken));
         Assert.False(string.IsNullOrWhiteSpace(loginBody.RefreshToken));
 
-        var refreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        var refreshResponse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             refreshToken = loginBody.RefreshToken
         });
@@ -742,14 +742,14 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         Assert.False(string.IsNullOrWhiteSpace(refreshBody.RefreshToken));
         Assert.NotEqual(loginBody.RefreshToken, refreshBody.RefreshToken);
 
-        var oldTokenResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        var oldTokenResponse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             refreshToken = loginBody.RefreshToken
         });
 
         Assert.Equal(HttpStatusCode.Unauthorized, oldTokenResponse.StatusCode);
 
-        var revokedFamilyTokenResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        var revokedFamilyTokenResponse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             refreshToken = refreshBody.RefreshToken
         });
@@ -784,7 +784,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var client = CreateClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd("BackendApiBookTests/1.0");
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "session-user-agent@example.com",
             password = "Passw0rd!"
@@ -810,7 +810,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var client = CreateClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd("SessionListTests/1.0");
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "sessions-list@example.com",
             password = "Passw0rd!"
@@ -826,7 +826,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             loginBody.AccessToken);
 
         var sessions = await client.GetFromJsonAsync<IReadOnlyList<AuthSessionResponse>>(
-            "/api/auth/sessions");
+            "/api/v1/auth/sessions");
 
         Assert.NotNull(sessions);
         Assert.NotEmpty(sessions);
@@ -838,7 +838,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "revoke-one@example.com",
             password = "Passw0rd!"
@@ -849,7 +849,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var registerBody = await registerResponse.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(registerBody);
 
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "revoke-one@example.com",
             password = "Passw0rd!"
@@ -860,7 +860,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var loginBody = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(loginBody);
 
-        var otherRegisterResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var otherRegisterResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "revoke-other@example.com",
             password = "Passw0rd!"
@@ -876,7 +876,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             loginBody.AccessToken);
 
         var ownSessions = await client.GetFromJsonAsync<IReadOnlyList<AuthSessionResponse>>(
-            "/api/auth/sessions");
+            "/api/v1/auth/sessions");
         Assert.NotNull(ownSessions);
         var ownFamilyId = ownSessions.First().FamilyId;
 
@@ -888,10 +888,10 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             .Select(token => token.FamilyId)
             .SingleAsync();
 
-        var otherRevokeResponse = await client.DeleteAsync($"/api/auth/sessions/{otherFamilyId}");
+        var otherRevokeResponse = await client.DeleteAsync($"/api/v1/auth/sessions/{otherFamilyId}");
         Assert.Equal(HttpStatusCode.NoContent, otherRevokeResponse.StatusCode);
 
-        var otherRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        var otherRefreshResponse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             refreshToken = otherBody.RefreshToken
         });
@@ -901,10 +901,10 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             "Bearer",
             loginBody.AccessToken);
 
-        var revokeResponse = await client.DeleteAsync($"/api/auth/sessions/{ownFamilyId}");
+        var revokeResponse = await client.DeleteAsync($"/api/v1/auth/sessions/{ownFamilyId}");
         Assert.Equal(HttpStatusCode.NoContent, revokeResponse.StatusCode);
 
-        var revokedRefreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        var revokedRefreshResponse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             refreshToken = loginBody.RefreshToken
         });
@@ -923,7 +923,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "revoke-all@example.com",
             password = "Passw0rd!"
@@ -934,7 +934,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
         var registerBody = await registerResponse.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(registerBody);
 
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "revoke-all@example.com",
             password = "Passw0rd!"
@@ -949,12 +949,12 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             "Bearer",
             loginBody.AccessToken);
 
-        var revokeResponse = await client.DeleteAsync("/api/auth/sessions");
+        var revokeResponse = await client.DeleteAsync("/api/v1/auth/sessions");
         Assert.Equal(HttpStatusCode.NoContent, revokeResponse.StatusCode);
 
         foreach (var refreshToken in new[] { registerBody.RefreshToken, loginBody.RefreshToken })
         {
-            var refreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+            var refreshResponse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new
             {
                 refreshToken
             });
@@ -976,7 +976,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "locked@example.com",
             password = "Passw0rd!"
@@ -986,7 +986,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         for (var attempt = 1; attempt <= 5; attempt++)
         {
-            var failedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+            var failedResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
             {
                 email = "locked@example.com",
                 password = "wrong-password"
@@ -995,7 +995,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
         }
 
-        var lockedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var lockedResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "locked@example.com",
             password = "Passw0rd!"
@@ -1009,7 +1009,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "generic-login-error@example.com",
             password = "Passw0rd!"
@@ -1017,13 +1017,13 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         registerResponse.EnsureSuccessStatusCode();
 
-        var wrongPasswordResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var wrongPasswordResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "generic-login-error@example.com",
             password = "wrong-password"
         });
 
-        var missingEmailResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var missingEmailResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "missing-generic-login-error@example.com",
             password = "wrong-password"
@@ -1045,7 +1045,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "failed-login-audit@example.com",
             password = "Passw0rd!"
@@ -1058,7 +1058,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         for (var attempt = 1; attempt <= 2; attempt++)
         {
-            var failedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+            var failedResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
             {
                 email = "failed-login-audit@example.com",
                 password = "wrong-password"
@@ -1067,7 +1067,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
         }
 
-        var successResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var successResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "failed-login-audit@example.com",
             password = "Passw0rd!"
@@ -1097,7 +1097,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "locked-audit@example.com",
             password = "Passw0rd!"
@@ -1110,7 +1110,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
 
         for (var attempt = 1; attempt <= 5; attempt++)
         {
-            var failedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+            var failedResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
             {
                 email = "locked-audit@example.com",
                 password = "wrong-password"
@@ -1119,7 +1119,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             Assert.Equal(HttpStatusCode.Unauthorized, failedResponse.StatusCode);
         }
 
-        var lockedResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var lockedResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "locked-audit@example.com",
             password = "Passw0rd!"
@@ -1147,7 +1147,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync("/api/admin/users");
+        var response = await client.GetAsync("/api/v1/admin/users");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
@@ -1157,7 +1157,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "admin-authz@example.com",
             password = "Passw0rd!"
@@ -1176,7 +1176,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             await dbContext.SaveChangesAsync();
         }
 
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "admin-authz@example.com",
             password = "Passw0rd!"
@@ -1191,7 +1191,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             "Bearer",
             loginBody.AccessToken);
 
-        var response = await client.GetAsync("/api/admin/users");
+        var response = await client.GetAsync("/api/v1/admin/users");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
@@ -1201,7 +1201,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "regular-authz@example.com",
             password = "Passw0rd!"
@@ -1216,7 +1216,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             "Bearer",
             loginBody.AccessToken);
 
-        var response = await client.GetAsync("/api/admin/users");
+        var response = await client.GetAsync("/api/v1/admin/users");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -1226,7 +1226,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "regular-users-endpoint@example.com",
             password = "Passw0rd!"
@@ -1241,7 +1241,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             "Bearer",
             loginBody.AccessToken);
 
-        var response = await client.GetAsync("/api/users");
+        var response = await client.GetAsync("/api/v1/users");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -1251,7 +1251,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
     {
         var client = CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "admin-users-endpoint@example.com",
             password = "Passw0rd!"
@@ -1270,7 +1270,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             await dbContext.SaveChangesAsync();
         }
 
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "admin-users-endpoint@example.com",
             password = "Passw0rd!"
@@ -1285,7 +1285,7 @@ public class AuthIntegrationTests(TestApiFactory factory) : IClassFixture<TestAp
             "Bearer",
             loginBody.AccessToken);
 
-        var response = await client.GetAsync("/api/users");
+        var response = await client.GetAsync("/api/v1/users");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }

@@ -18,7 +18,7 @@ sequenceDiagram
     participant AuditLogService
     participant Database
 
-    Admin->>AdminUsersController: PUT /api/admin/users/{id}/role
+    Admin->>AdminUsersController: PUT /api/v1/admin/users/{id}/role
     AdminUsersController->>AdminUserService: UpdateRoleAsync
     AdminUserService->>UserRepository: update user role
     UserRepository->>Database: save Users row

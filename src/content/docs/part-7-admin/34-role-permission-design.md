@@ -234,8 +234,8 @@ dotnet run
 login ด้วย admin:
 
 ```http
-@baseUrl = http://localhost:5156
-@authPath = {{baseUrl}}/api/auth
+@baseUrl = http://localhost:<http-port>
+@authPath = {{baseUrl}}/api/v1/auth
 
 ### Login as admin
 POST {{authPath}}/login

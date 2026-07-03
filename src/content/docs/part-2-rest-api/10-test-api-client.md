@@ -1,4 +1,4 @@
-﻿---
+---
 title: 10 - ทดสอบ API ด้วย REST Client หรือ Postman
 description: ทดสอบ endpoint ด้วยเครื่องมือภายนอกเพื่อดู request และ response จริง
 ---
@@ -28,13 +28,13 @@ dotnet run
 ดู URL ที่ terminal แสดง เช่น
 
 ```text
-http://localhost:5156
-https://localhost:7127
+http://localhost:<http-port>
+https://localhost:<https-port>
 ```
 
-เลข port เป็นค่าจากเครื่องของคุณ อาจไม่ตรงกับตัวอย่างในหนังสือ ให้ใช้ URL ที่ terminal แสดงจริง
+`<http-port>` และ `<https-port>` คือเลข port จริงจากเครื่องของคุณ ไม่ใช่ค่าที่ต้องพิมพ์ตามตัวอย่าง
 
-ถ้าเริ่มต้นด้วย REST Client แล้วเจอปัญหา certificate กับ HTTPS ให้ใช้ URL แบบ `http` ก่อน เช่น `http://localhost:5156`
+ถ้าเริ่มต้นด้วย REST Client แล้วเจอปัญหา certificate กับ HTTPS ให้ใช้ URL แบบ `http` ก่อน เช่น `http://localhost:<http-port>`
 
 ## เตรียมไฟล์ Backend.Api.http
 
@@ -46,7 +46,7 @@ Backend.Api.http
 
 ให้เปิดไฟล์นี้แล้วแทน request ตัวอย่างของ template ด้วย request ในบทนี้
 
-ถ้า project ของคุณไม่มีไฟล์นี้ จะสร้างไฟล์ชื่อ `Backend.Api.http` หรือ `requests.http` เองก็ได้ หลักการเหมือนกัน
+ถ้า project ของคุณไม่มีไฟล์นี้ ให้สร้างไฟล์ชื่อ `Backend.Api.http` เป็นชื่อหลักตามหนังสือ ถ้าคุณเลือกใช้ `requests.http` เองก็ได้ แต่ให้ใช้ชื่อนั้นให้ต่อเนื่องทั้งโปรเจกต์
 
 ให้รันคำสั่งจากโฟลเดอร์ `Backend.Api`
 
@@ -84,23 +84,23 @@ touch Backend.Api.http
 
 ```http
 # Use the URL shown by dotnet run on your machine.
-@baseUrl = http://localhost:5156
+@baseUrl = http://localhost:<http-port>
 ```
 
-ถ้า port ในเครื่องคุณไม่ใช่ `5156` ให้แก้ `baseUrl` ให้ตรงกับ terminal ตอน `dotnet run`
+ให้แทน `<http-port>` ด้วย port จริงจาก terminal ตอน `dotnet run`
 
-ตัวอย่างเช่น ถ้า terminal แสดง `https://localhost:7127` และเครื่องคุณ trust development certificate แล้ว จะใช้แบบนี้ก็ได้:
+ถ้า terminal แสดง HTTPS และเครื่องคุณ trust development certificate แล้ว จะใช้แบบนี้ก็ได้:
 
 ```http
 # Use HTTPS only if your development certificate is trusted.
-@baseUrl = https://localhost:7127
+@baseUrl = https://localhost:<https-port>
 ```
 
 ## ทดสอบ GET รายการทั้งหมด
 
 ```http
 ### Get all users
-GET {{baseUrl}}/api/users
+GET {{baseUrl}}/api/v1/users
 Accept: application/json
 ```
 
@@ -110,7 +110,7 @@ Accept: application/json
 
 ```http
 ### Get user by id
-GET {{baseUrl}}/api/users/1
+GET {{baseUrl}}/api/v1/users/1
 Accept: application/json
 ```
 
@@ -118,7 +118,7 @@ Accept: application/json
 
 ```http
 ### Get missing user
-GET {{baseUrl}}/api/users/999
+GET {{baseUrl}}/api/v1/users/999
 Accept: application/json
 ```
 
@@ -128,7 +128,7 @@ Accept: application/json
 
 ```http
 ### Create user
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}/api/v1/users
 Content-Type: application/json
 
 {
@@ -138,13 +138,13 @@ Content-Type: application/json
 
 ผลลัพธ์ที่คาดหวังคือ `201 Created`
 
-หลัง POST สำเร็จ ให้กด `GET /api/users` อีกครั้ง คุณควรเห็น user ใหม่ใน list
+หลัง POST สำเร็จ ให้กด `GET /api/v1/users` อีกครั้ง คุณควรเห็น user ใหม่ใน list
 
 ## ทดสอบ PUT
 
 ```http
 ### Update user
-PUT {{baseUrl}}/api/users/1
+PUT {{baseUrl}}/api/v1/users/1
 Content-Type: application/json
 
 {
@@ -154,13 +154,13 @@ Content-Type: application/json
 
 ผลลัพธ์ที่คาดหวังคือ `200 OK`
 
-หลัง PUT สำเร็จ ให้กด `GET /api/users/1` อีกครั้งเพื่อดูว่าข้อมูลเปลี่ยนแล้ว
+หลัง PUT สำเร็จ ให้กด `GET /api/v1/users/1` อีกครั้งเพื่อดูว่าข้อมูลเปลี่ยนแล้ว
 
 ลองทดสอบ id ที่ไม่มีอยู่ด้วย:
 
 ```http
 ### Update missing user
-PUT {{baseUrl}}/api/users/999
+PUT {{baseUrl}}/api/v1/users/999
 Content-Type: application/json
 
 {
@@ -174,18 +174,18 @@ Content-Type: application/json
 
 ```http
 ### Delete user
-DELETE {{baseUrl}}/api/users/1
+DELETE {{baseUrl}}/api/v1/users/1
 ```
 
 ผลลัพธ์ที่คาดหวังคือ `204 No Content`
 
-หลัง DELETE สำเร็จ ให้กด `GET /api/users/1` อีกครั้ง ผลลัพธ์ควรเป็น `404 Not Found`
+หลัง DELETE สำเร็จ ให้กด `GET /api/v1/users/1` อีกครั้ง ผลลัพธ์ควรเป็น `404 Not Found`
 
 ลองทดสอบลบ id ที่ไม่มีอยู่ด้วย:
 
 ```http
 ### Delete missing user
-DELETE {{baseUrl}}/api/users/999
+DELETE {{baseUrl}}/api/v1/users/999
 ```
 
 ผลลัพธ์ที่คาดหวังคือ `404 Not Found`
@@ -196,19 +196,19 @@ DELETE {{baseUrl}}/api/users/999
 
 | ลำดับ | Request | ผลลัพธ์ที่ควรได้ |
 | --- | --- | --- |
-| 1 | `GET /api/users` | `200 OK` และมี user เริ่มต้น |
-| 2 | `GET /api/users/1` | `200 OK` และได้ user id `1` |
-| 3 | `GET /api/users/999` | `404 Not Found` |
-| 4 | `POST /api/users` | `201 Created` และได้ user ใหม่ |
-| 5 | `GET /api/users` | `200 OK` และเห็น user ใหม่ใน list |
-| 6 | `PUT /api/users/1` | `200 OK` และ email เปลี่ยน |
-| 7 | `GET /api/users/1` | `200 OK` และเห็น email ใหม่ |
-| 8 | `PUT /api/users/999` | `404 Not Found` |
-| 9 | `DELETE /api/users/999` | `404 Not Found` |
-| 10 | `DELETE /api/users/1` | `204 No Content` |
-| 11 | `GET /api/users/1` | `404 Not Found` |
+| 1 | `GET /api/v1/users` | `200 OK` และมี user เริ่มต้น |
+| 2 | `GET /api/v1/users/1` | `200 OK` และได้ user id `1` |
+| 3 | `GET /api/v1/users/999` | `404 Not Found` |
+| 4 | `POST /api/v1/users` | `201 Created` และได้ user ใหม่ |
+| 5 | `GET /api/v1/users` | `200 OK` และเห็น user ใหม่ใน list |
+| 6 | `PUT /api/v1/users/1` | `200 OK` และ email เปลี่ยน |
+| 7 | `GET /api/v1/users/1` | `200 OK` และเห็น email ใหม่ |
+| 8 | `PUT /api/v1/users/999` | `404 Not Found` |
+| 9 | `DELETE /api/v1/users/999` | `404 Not Found` |
+| 10 | `DELETE /api/v1/users/1` | `204 No Content` |
+| 11 | `GET /api/v1/users/1` | `404 Not Found` |
 
-ถ้าคุณทดสอบ `DELETE` ก่อน `PUT` แล้ว `PUT /api/users/1` ได้ `404 Not Found` ถือว่าถูกต้อง เพราะ user id `1` ถูกลบจาก memory ไปแล้ว ให้ restart API ถ้าต้องการกลับไปข้อมูลเริ่มต้น
+ถ้าคุณทดสอบ `DELETE` ก่อน `PUT` แล้ว `PUT /api/v1/users/1` ได้ `404 Not Found` ถือว่าถูกต้อง เพราะ user id `1` ถูกลบจาก memory ไปแล้ว ให้ restart API ถ้าต้องการกลับไปข้อมูลเริ่มต้น
 
 ## ไฟล์ Backend.Api.http แบบเต็ม
 
@@ -218,24 +218,24 @@ DELETE {{baseUrl}}/api/users/999
 
 ```http
 # Base URL for the API. Change the port to match dotnet run.
-@baseUrl = http://localhost:5156
+@baseUrl = http://localhost:<http-port>
 ```
 
 ส่วนที่ 2: request สำหรับอ่านข้อมูล
 
 ```http
 ### Get all users
-GET {{baseUrl}}/api/users
+GET {{baseUrl}}/api/v1/users
 Accept: application/json
 
 ### Get user by id
 # id 1 exists in the initial in-memory data.
-GET {{baseUrl}}/api/users/1
+GET {{baseUrl}}/api/v1/users/1
 Accept: application/json
 
 ### Get missing user
 # id 999 should not exist, so this request should return 404.
-GET {{baseUrl}}/api/users/999
+GET {{baseUrl}}/api/v1/users/999
 Accept: application/json
 ```
 
@@ -243,10 +243,9 @@ Accept: application/json
 
 ```http
 ### Create user
-POST {{baseUrl}}/api/users
+POST {{baseUrl}}/api/v1/users
 Content-Type: application/json
 
-# JSON body sent to CreateUserRequest.
 {
   "email": "new-user@example.com"
 }
@@ -256,17 +255,16 @@ Content-Type: application/json
 
 ```http
 ### Update user
-PUT {{baseUrl}}/api/users/1
+PUT {{baseUrl}}/api/v1/users/1
 Content-Type: application/json
 
-# JSON body sent to UpdateUserRequest.
 {
   "email": "updated-admin@example.com"
 }
 
 ### Update missing user
 # id 999 should not exist, so this request should return 404.
-PUT {{baseUrl}}/api/users/999
+PUT {{baseUrl}}/api/v1/users/999
 Content-Type: application/json
 
 {
@@ -275,14 +273,14 @@ Content-Type: application/json
 
 ### Delete missing user
 # id 999 should not exist, so this request should return 404.
-DELETE {{baseUrl}}/api/users/999
+DELETE {{baseUrl}}/api/v1/users/999
 
 ### Delete user
 # A successful delete should return 204 No Content.
-DELETE {{baseUrl}}/api/users/1
+DELETE {{baseUrl}}/api/v1/users/1
 ```
 
-หลังเพิ่มครบแล้ว ให้เริ่มทดสอบจาก `GET /api/users` ก่อนเสมอ เพื่อดูว่าข้อมูลเริ่มต้นยังอยู่ครบหรือไม่
+หลังเพิ่มครบแล้ว ให้เริ่มทดสอบจาก `GET /api/v1/users` ก่อนเสมอ เพื่อดูว่าข้อมูลเริ่มต้นยังอยู่ครบหรือไม่
 
 ## Postman ใช้ยังไง
 
@@ -303,7 +301,7 @@ DELETE {{baseUrl}}/api/users/1
 
 ## ถ้าผลลัพธ์ไม่ตรง
 
-ถ้าได้ `404 Not Found` ให้ตรวจ path เช่น `/api/users` ต้องมี `/api` นำหน้า และใช้ id ที่ยังมีอยู่ใน memory
+ถ้าได้ `404 Not Found` ให้ตรวจ path เช่น `/api/v1/users` ต้องมี `/api` นำหน้า และใช้ id ที่ยังมีอยู่ใน memory
 
 ถ้าได้ `405 Method Not Allowed` ให้ตรวจ HTTP method และ attribute ใน controller เช่น `PUT` ต้องคู่กับ `[HttpPut("{id:int}")]`
 
@@ -347,11 +345,11 @@ DELETE user
 เมื่อจบบทนี้ คุณควรมีไฟล์ `Backend.Api.http` หรือไฟล์ `.http` ที่เทียบเท่า และทดสอบ endpoint เหล่านี้ได้
 
 ```text
-GET    /api/users
-GET    /api/users/{id}
-POST   /api/users
-PUT    /api/users/{id}
-DELETE /api/users/{id}
+GET    /api/v1/users
+GET    /api/v1/users/{id}
+POST   /api/v1/users
+PUT    /api/v1/users/{id}
+DELETE /api/v1/users/{id}
 ```
 
 และควรตรวจได้ว่า endpoint แต่ละตัวตอบ status code ตรงกับที่ออกแบบไว้

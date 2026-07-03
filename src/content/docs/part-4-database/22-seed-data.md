@@ -1,4 +1,4 @@
-﻿---
+---
 title: 22 - Seed ข้อมูลเริ่มต้น
 description: เพิ่มข้อมูลเริ่มต้นสำหรับทดสอบฐานข้อมูลโดยไม่ต้องกรอกเองทุกครั้ง
 ---
@@ -16,6 +16,17 @@ Seed data คือข้อมูลเริ่มต้นที่ applicati
 3. เรียก `SeedAsync()` ตอน application start
 
 หลังทำเสร็จให้รัน app สองครั้งเพื่อพิสูจน์ว่า seed data ไม่ถูกเพิ่มซ้ำ
+
+## ก่อนเริ่มบทนี้
+
+ให้ทำบท 21 ให้จบก่อน และตรวจว่า CRUD ใช้ database จริงแล้ว:
+
+```powershell
+dotnet build
+dotnet tool run dotnet-ef database update
+```
+
+ถ้า `POST /api/v1/users` แล้ว restart application ข้อมูลยังหายอยู่ แปลว่าโปรเจกต์อาจยังใช้ `InMemoryUserRepository` อยู่ ให้กลับไปตรวจ DI registration ในบท 21 ก่อน
 
 ## สิ่งที่จะใช้ในบทนี้
 
@@ -244,7 +255,7 @@ dotnet run
 เปิด endpoint นี้
 
 ```text
-GET /api/users
+GET /api/v1/users
 ```
 
 ควรเห็น user ตัวอย่างสองรายการ

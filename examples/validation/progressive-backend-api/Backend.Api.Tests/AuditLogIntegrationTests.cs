@@ -16,7 +16,7 @@ public class AuditLogIntegrationTests(TestApiFactory factory)
     {
         var client = factory.CreateClient();
 
-        var registerResponse = await client.PostAsJsonAsync("/api/auth/register", new
+        var registerResponse = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
             email = "audit@example.com",
             password = "Passw0rd!"
@@ -27,7 +27,7 @@ public class AuditLogIntegrationTests(TestApiFactory factory)
         var registerBody = await registerResponse.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(registerBody);
 
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new
+        var loginResponse = await client.PostAsJsonAsync("/api/v1/auth/login", new
         {
             email = "audit@example.com",
             password = "Passw0rd!"
@@ -38,14 +38,14 @@ public class AuditLogIntegrationTests(TestApiFactory factory)
         var loginBody = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
         Assert.NotNull(loginBody);
 
-        var refreshResponse = await client.PostAsJsonAsync("/api/auth/refresh", new
+        var refreshResponse = await client.PostAsJsonAsync("/api/v1/auth/refresh", new
         {
             refreshToken = loginBody.RefreshToken
         });
 
         refreshResponse.EnsureSuccessStatusCode();
 
-        var forgotPasswordResponse = await client.PostAsJsonAsync("/api/auth/forgot-password", new
+        var forgotPasswordResponse = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new
         {
             email = "audit@example.com"
         });
@@ -53,7 +53,7 @@ public class AuditLogIntegrationTests(TestApiFactory factory)
         forgotPasswordResponse.EnsureSuccessStatusCode();
 
         var resetToken = GetEmailToken("audit@example.com", "Reset your password");
-        var resetPasswordResponse = await client.PostAsJsonAsync("/api/auth/reset-password", new
+        var resetPasswordResponse = await client.PostAsJsonAsync("/api/v1/auth/reset-password", new
         {
             token = resetToken,
             newPassword = "NewPassw0rd!"

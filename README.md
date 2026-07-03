@@ -29,6 +29,41 @@ npm run dev
 npm run build
 ```
 
+## เอกสารควบคุมคุณภาพ
+
+เอกสารภายในสำหรับพัฒนา ตรวจ และ release หนังสืออยู่ที่ `docs/internal` และใช้ `Book Documentation Standard v1` เหมือนหนังสือเล่มอื่น อ่านมาตรฐานได้ที่ `docs/internal/README.md`
+
+```text
+docs/internal/
+  README.md
+  book-plan.md
+  api-contract.md
+  final-project-structure.md
+  manuscript-status.md
+  release-checklist.md
+  style-guide.md
+  teaching-principles.md
+  validation-report.md
+  decisions/
+  qa/
+```
+
+ก่อนแก้บทเรียนหรือ example project ให้อ่าน:
+
+- `AGENTS.md`
+- `skills/tutorial-book-auditor/SKILL.md`
+- `skills/tutorial-book-auditor/references/teaching-principles.md`
+- `docs/internal/teaching-principles.md`
+- `docs/internal/style-guide.md`
+
+ก่อน release ให้อ่าน:
+
+- `docs/internal/release-checklist.md`
+- `docs/internal/validation-report.md`
+- `docs/internal/qa/browser-test-plan.md`
+- `docs/internal/qa/accessibility-checklist.md`
+- `docs/internal/qa/security-review-checklist.md`
+
 ## Deploy
 
 โปรเจกต์นี้มี GitHub Actions สำหรับ deploy ไป GitHub Pages แล้วใน `.github/workflows/deploy.yml`

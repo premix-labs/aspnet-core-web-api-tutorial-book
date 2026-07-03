@@ -91,13 +91,13 @@ export ASPNETCORE_ENVIRONMENT=Development
 dotnet run
 ```
 
-เปิด URL นี้ ถ้าใช้ HTTPS port ตามตัวอย่างของหนังสือ:
+เปิด URL นี้โดยใช้ HTTPS port จริงของเครื่องคุณ:
 
 ```text
-https://localhost:7127/openapi/v1.json
+https://localhost:<https-port>/openapi/v1.json
 ```
 
-ถ้าเครื่องคุณแสดง port อื่น ให้ใช้ port ที่ `dotnet run`, Visual Studio หรือ Visual Studio Code แสดงจริง เช่น `http://localhost:5156/openapi/v1.json`
+ถ้าจะใช้ HTTP ให้เปลี่ยนเป็น URL ที่ `dotnet run`, Visual Studio หรือ Visual Studio Code แสดงจริง เช่น `http://localhost:<http-port>/openapi/v1.json`
 
 ถ้าได้ `404 Not Found` ให้ตรวจสองอย่างก่อน:
 
@@ -122,7 +122,7 @@ public async Task<IActionResult> Login(LoginRequest request)
 
 ## ขั้นที่ 6: เพิ่ม response metadata ใน AdminUsersController
 
-ตัวอย่าง `GET /api/admin/users`:
+ตัวอย่าง `GET /api/v1/admin/users`:
 
 ```csharp
 [HttpGet]

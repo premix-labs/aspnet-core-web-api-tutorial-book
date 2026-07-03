@@ -1,4 +1,4 @@
-﻿---
+---
 title: "55. CORS, Rate Limiting และ Security Headers"
 description: "ลดผิวโจมตีของ API ด้วย origin policy, rate limit และ response headers ที่ตรวจด้วย integration test"
 ---
@@ -197,7 +197,7 @@ public async Task Response_IncludesSecurityHeaders()
 public async Task CorsPreflight_WhenOriginIsConfigured_ReturnsCorsHeaders()
 {
     var client = factory.CreateClient();
-    using var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
+    using var request = new HttpRequestMessage(HttpMethod.Options, "/api/v1/auth/login");
     request.Headers.Add("Origin", "http://localhost:3000");
     request.Headers.Add("Access-Control-Request-Method", "POST");
 

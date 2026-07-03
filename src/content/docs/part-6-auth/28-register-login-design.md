@@ -44,9 +44,9 @@ Dtos/Auth/CurrentUserResponse.cs
 ## Endpoint ที่ต้องมี
 
 ```text
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/auth/me
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+GET  /api/v1/auth/me
 ```
 
 `register` ใช้สมัครสมาชิกใหม่
@@ -55,11 +55,11 @@ GET  /api/auth/me
 
 `me` ใช้อ่านข้อมูลผู้ใช้ที่ login อยู่จาก token
 
-## ทำไมไม่ใช้ POST /api/users สำหรับ register
+## ทำไมไม่ใช้ POST /api/v1/users สำหรับ register
 
-ก่อนหน้านี้เราใช้ `POST /api/users` เพื่อเรียน CRUD กับ database แต่หลังเข้าสู่ระบบ auth แล้ว การสมัครสมาชิกสาธารณะควรอยู่ที่ `POST /api/auth/register`
+ก่อนหน้านี้เราใช้ `POST /api/v1/users` เพื่อเรียน CRUD กับ database แต่หลังเข้าสู่ระบบ auth แล้ว การสมัครสมาชิกสาธารณะควรอยู่ที่ `POST /api/v1/auth/register`
 
-ส่วน `POST /api/users` จะค่อยถูกปรับให้เป็นงานของ admin ในภาคถัดไป
+ส่วน `POST /api/v1/users` จะค่อยถูกปรับให้เป็นงานของ admin ในภาคถัดไป
 
 ## สร้างโฟลเดอร์ DTO
 
@@ -189,7 +189,7 @@ public class CurrentUserResponse
 }
 ```
 
-response นี้ใช้กับ `GET /api/auth/me` เพื่อให้ client รู้ว่าตอนนี้ token เป็นของ user คนไหน
+response นี้ใช้กับ `GET /api/v1/auth/me` เพื่อให้ client รู้ว่าตอนนี้ token เป็นของ user คนไหน
 
 ## Contract ที่คาดหวัง
 
@@ -225,6 +225,8 @@ Login response:
 }
 ```
 
+`LoginResponse` ในบทนี้ตั้งใจให้เล็กก่อน เพื่อให้ผู้เรียนเข้าใจ access token พื้นฐานให้ได้ก่อน ภาค 9 จะขยาย response ให้มี `refreshToken`, `expiresAt` และข้อมูล user ตาม production hardening
+
 ## ตรวจ build
 
 รันจากโฟลเดอร์ `Backend.Api`
@@ -245,5 +247,6 @@ using System.ComponentModel.DataAnnotations;
 
 - มีโฟลเดอร์ `Dtos/Auth`
 - มี `RegisterRequest`, `LoginRequest`, `LoginResponse`, `CurrentUserResponse`
-- เข้าใจว่า `POST /api/auth/register` แทนการสมัครสมาชิก ไม่ใช่ `POST /api/users`
+- เข้าใจว่า `POST /api/v1/auth/register` แทนการสมัครสมาชิก ไม่ใช่ `POST /api/v1/users`
 - ไม่ส่ง password หรือ password hash กลับไปใน response
+- เข้าใจว่า response ของ auth จะค่อย ๆ โตขึ้นในบทหลัง ไม่ต้องเพิ่ม refresh token ในบทนี้

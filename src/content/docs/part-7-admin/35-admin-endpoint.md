@@ -73,7 +73,7 @@ namespace Backend.Api.Controllers;
 ```csharp
 [Authorize(Roles = Roles.Admin)]
 [ApiController]
-[Route("api/admin/users")]
+[Route("api/v1/admin/users")]
 public class AdminUsersController : ControllerBase
 {
 }
@@ -111,8 +111,8 @@ app.MapControllers();
 ## ทดสอบแบบไม่ส่ง token
 
 ```http
-@baseUrl = http://localhost:5156
-@adminUsersPath = {{baseUrl}}/api/admin/users
+@baseUrl = http://localhost:<http-port>
+@adminUsersPath = {{baseUrl}}/api/v1/admin/users
 
 ### Admin ping without token
 GET {{adminUsersPath}}/ping

@@ -29,7 +29,7 @@ description: ใช้ PasswordHasher<TUser> เพื่อ hash และ veri
 | `HashPassword(...)` | สร้าง password hash จาก password ดิบ |
 | salt | random data ที่ทำให้ hash ของ password เดียวกันไม่จำเป็นต้องเหมือนกัน |
 | `AuthService` | service สำหรับ use case ด้าน authentication |
-| `AuthController` | controller ของ endpoint `/api/auth/...` |
+| `AuthController` | controller ของ endpoint `/api/v1/auth/...` |
 
 ## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
 
@@ -223,7 +223,7 @@ using Backend.Api.Services;
 namespace Backend.Api.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api/v1/auth")]
 public class AuthController(AuthService authService) : ControllerBase
 {
     [HttpPost("register")]
@@ -236,9 +236,9 @@ public class AuthController(AuthService authService) : ControllerBase
 }
 ```
 
-เราใช้ `[Route("api/auth")]` ตรง ๆ เพื่อให้ contract ของ auth ชัดเจนและไม่ผูกกับชื่อ class ของ controller
+เราใช้ `[Route("api/v1/auth")]` ตรง ๆ เพื่อให้ contract ของ auth ชัดเจนและไม่ผูกกับชื่อ class ของ controller
 
-ถ้าใช้ `[Route("api/[controller]")]` กับ `AuthController` ASP.NET Core จะตัดคำว่า `Controller` ออกและได้ route เป็น `/api/auth` เช่นกัน แต่ในบท auth เราเลือกเขียน route คงที่เพื่อให้อ่าน endpoint ได้ทันที
+ถ้าใช้ `[Route("api/v1/[controller]")]` กับ `AuthController` ASP.NET Core จะตัดคำว่า `Controller` ออกและได้ route เป็น `/api/v1/auth` เช่นกัน แต่ในบท auth เราเลือกเขียน route คงที่เพื่อให้อ่าน endpoint ได้ทันที
 
 ## ขั้นที่ 7: ปรับ DataSeeder
 
@@ -249,6 +249,8 @@ public class AuthController(AuthService authService) : ControllerBase
 ```text
 Data/DataSeeder.cs
 ```
+
+ให้แก้เฉพาะ constructor และ logic ใน `SeedAsync` ตามขั้นตอนด้านล่าง อย่าลบ class, using หรือ method อื่นที่มีอยู่แล้วในไฟล์
 
 เพิ่ม using:
 
@@ -360,8 +362,8 @@ dotnet run
 ใช้ `baseUrl` ตาม port จริง:
 
 ```http
-@baseUrl = http://localhost:5156
-@authPath = /api/auth
+@baseUrl = http://localhost:<http-port>
+@authPath = /api/v1/auth
 
 ### Register
 POST {{baseUrl}}{{authPath}}/register
@@ -377,6 +379,8 @@ Content-Type: application/json
 
 ถ้าส่ง email เดิมซ้ำ ควรได้ `409 Conflict` พร้อม `code` เป็น `EMAIL_ALREADY_EXISTS`
 
+ในภาคนี้ register คืน `UserResponse` เพื่อยืนยันว่าบันทึก user ได้แล้ว ภาค 9 จะเปลี่ยน auth response ให้ครบขึ้นด้วย refresh token และข้อมูล current user
+
 ## Checkpoint
 
 ก่อนอ่านบทต่อไป ให้ตรวจว่าทำได้ครบตามนี้
@@ -384,6 +388,6 @@ Content-Type: application/json
 - ลงทะเบียน `IPasswordHasher<User>`
 - มี `AuthService.RegisterAsync`
 - `RegisterAsync` hash password ก่อนบันทึก database
-- มี `AuthController` พร้อม `POST /api/auth/register`
+- มี `AuthController` พร้อม `POST /api/v1/auth/register`
 - `DataSeeder` ไม่สร้าง seed ใหม่ด้วย `PasswordHash = "pending-auth"` แล้ว
 - `DataSeeder` อัปเกรด seed เดิมที่ยังเป็น `pending-auth` ให้ login ได้

@@ -1,4 +1,4 @@
-﻿---
+---
 title: "52. Refresh Token Rotation"
 description: "แยก access token อายุสั้นออกจาก refresh token อายุยาว และ rotate refresh token ทุกครั้งที่ใช้งาน"
 ---
@@ -17,7 +17,7 @@ sequenceDiagram
     participant RefreshTokenService
     participant Database
 
-    Client->>AuthApi: POST /api/auth/refresh with token A
+    Client->>AuthApi: POST /api/v1/auth/refresh with token A
     AuthApi->>RefreshTokenService: validate token hash
     RefreshTokenService->>Database: revoke token A
     RefreshTokenService->>Database: create token B in same FamilyId
@@ -61,20 +61,20 @@ public class RefreshToken
 ## Endpoint ที่เพิ่ม
 
 ```http
-POST /api/auth/refresh
-POST /api/auth/revoke
-GET /api/auth/sessions
-DELETE /api/auth/sessions/{familyId}
-DELETE /api/auth/sessions
+POST /api/v1/auth/refresh
+POST /api/v1/auth/revoke
+GET /api/v1/auth/sessions
+DELETE /api/v1/auth/sessions/{familyId}
+DELETE /api/v1/auth/sessions
 ```
 
-`/api/auth/refresh` รับ refresh token เดิม แล้วคืน access token + refresh token ชุดใหม่
+`/api/v1/auth/refresh` รับ refresh token เดิม แล้วคืน access token + refresh token ชุดใหม่
 
-`/api/auth/revoke` ใช้ logout ฝั่ง client หรือ revoke token ที่ไม่ต้องการใช้อีก
+`/api/v1/auth/revoke` ใช้ logout ฝั่ง client หรือ revoke token ที่ไม่ต้องการใช้อีก
 
-`/api/auth/sessions` ใช้ดู session/device ที่ยัง active ของ user ปัจจุบัน โดยระบบ group refresh token ตาม `FamilyId` และแสดงเวลาสร้าง session, เวลาที่ออก token ล่าสุด, IP และ user agent ที่เกี่ยวข้อง
+`/api/v1/auth/sessions` ใช้ดู session/device ที่ยัง active ของ user ปัจจุบัน โดยระบบ group refresh token ตาม `FamilyId` และแสดงเวลาสร้าง session, เวลาที่ออก token ล่าสุด, IP และ user agent ที่เกี่ยวข้อง
 
-`DELETE /api/auth/sessions/{familyId}` ใช้ revoke session เดียว เช่น ผู้ใช้ต้องการออกจากระบบเฉพาะ device หนึ่ง ส่วน `DELETE /api/auth/sessions` ใช้ revoke refresh token session ทั้งหมดของ user ปัจจุบัน
+`DELETE /api/v1/auth/sessions/{familyId}` ใช้ revoke session เดียว เช่น ผู้ใช้ต้องการออกจากระบบเฉพาะ device หนึ่ง ส่วน `DELETE /api/v1/auth/sessions` ใช้ revoke refresh token session ทั้งหมดของ user ปัจจุบัน
 
 เมื่อ revoke session ระบบจะเขียน audit log ด้วย action `REFRESH_TOKEN_SESSION_REVOKED` หรือ `ALL_REFRESH_TOKEN_SESSIONS_REVOKED`
 

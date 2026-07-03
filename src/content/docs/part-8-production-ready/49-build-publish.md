@@ -166,7 +166,7 @@ GET http://localhost:18080/openapi/v1.json
 ถ้า OpenAPI ปิดใน production ให้ทดสอบ login validation แทน:
 
 ```http
-POST http://localhost:18080/api/auth/login
+POST http://localhost:18080/api/v1/auth/login
 Content-Type: application/json
 
 {

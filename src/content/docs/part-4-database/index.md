@@ -1,4 +1,4 @@
-﻿---
+---
 title: ภาค 4 - เชื่อมต่อฐานข้อมูลด้วย EF Core
 description: ใช้ Entity Framework Core เชื่อมต่อ SQL Server และจัดการข้อมูลจริง
 ---
@@ -17,7 +17,7 @@ description: ใช้ Entity Framework Core เชื่อมต่อ SQL Ser
 4. รัน `dotnet build` หลังจบบทสำคัญ
 5. รัน migration และทดสอบ API ด้วย `.http`
 
-ถ้าเครื่องของคุณใช้ port ไม่ตรงกับตัวอย่าง ให้ใช้ port ที่ `dotnet run` หรือ Visual Studio แสดงจริง เช่น `http://localhost:5156` หรือ `https://localhost:7127`
+ถ้าเครื่องของคุณใช้ port ไม่ตรงกับตัวอย่าง ให้ใช้ port ที่ `dotnet run` หรือ Visual Studio แสดงจริง เช่น `http://localhost:<http-port>` หรือ `https://localhost:<https-port>`
 
 ## บทในภาคนี้
 
@@ -54,3 +54,23 @@ flowchart LR
 ภาคนี้ยังไม่ทำระบบ login จริง แม้ `User` entity จะมี `PasswordHash` แล้วก็ตาม เพราะการสร้าง password hash อย่างถูกต้องจะสอนในภาค Authentication
 
 ดังนั้นข้อมูล seed ในภาคนี้เป็นข้อมูลทดสอบฐานข้อมูลเท่านั้น ไม่ใช่บัญชีที่ใช้ login ได้จริง
+
+ก่อนเริ่มภาคนี้ ให้โปรเจกต์จากภาค 3 build ผ่าน และเลือก SQL Server สำหรับ local development ให้ชัดเจน:
+
+```powershell
+dotnet build
+```
+
+ถ้าใช้ Windows และมี LocalDB อยู่แล้ว สามารถใช้ `(localdb)\MSSQLLocalDB` ได้ ถ้าใช้ Docker ให้เตรียม container SQL Server ตามบทที่ 19
+
+## Checklist หลังจบภาคนี้
+
+- `dotnet build` ผ่าน
+- `dotnet tool run dotnet-ef --version` ทำงานได้
+- มี `Data/AppDbContext.cs` และ migration `InitialCreate`
+- `dotnet tool run dotnet-ef database update` สำเร็จ
+- `Program.cs` ใช้ `UserRepository` แทน `InMemoryUserRepository`
+- `GET /api/v1/users` อ่านข้อมูลจาก database จริง
+- สร้าง user แล้ว restart application ข้อมูลไม่หาย
+- seed data ไม่ถูกเพิ่มซ้ำทุกครั้งที่ app start
+- ไม่มี password จริงหรือ production secret ถูกใส่ลง tracked `appsettings*.json`

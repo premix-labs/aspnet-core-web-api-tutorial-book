@@ -29,7 +29,7 @@ flowchart LR
 4. ทำให้ seeding ปิดได้ตอน test
 5. สร้าง `TestApiFactory`
 6. override database เป็น InMemory ตอน test
-7. สร้าง test `GET /api/auth/me` แบบไม่ส่ง token
+7. สร้าง test `GET /api/v1/auth/me` แบบไม่ส่ง token
 8. เพิ่ม validation test ที่ไม่ต้องเข้า database
 9. รัน `dotnet test`
 
@@ -301,7 +301,7 @@ public async Task Me_WhenNoToken_ReturnsUnauthorized()
 {
     var client = CreateClient();
 
-    var response = await client.GetAsync("/api/auth/me");
+    var response = await client.GetAsync("/api/v1/auth/me");
 
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
 }
@@ -338,7 +338,7 @@ public async Task Register_WhenEmailInvalid_ReturnsBadRequest()
 {
     var client = CreateClient();
 
-    var response = await client.PostAsJsonAsync("/api/auth/register", new
+    var response = await client.PostAsJsonAsync("/api/v1/auth/register", new
     {
         email = "not-an-email",
         password = "Passw0rd!"
@@ -382,7 +382,7 @@ dotnet test
 - seeding database ถูกควบคุมได้ด้วย `DataSeeding:Enabled`
 - มี `TestApiFactory` ที่ตั้งค่า connection string, JWT และปิด seeding สำหรับ test
 - `TestApiFactory` override `AppDbContext` เป็น InMemory database
-- มี integration test สำหรับ `GET /api/auth/me` แบบไม่ส่ง token
+- มี integration test สำหรับ `GET /api/v1/auth/me` แบบไม่ส่ง token
 - มี validation test ที่ตอบ `400`
 - รัน `dotnet test` ผ่าน
 - เข้าใจว่าการ test database ต้องจัด test database ให้ชัดเจน

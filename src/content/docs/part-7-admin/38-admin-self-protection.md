@@ -221,8 +221,8 @@ dotnet build
 login ด้วย admin แล้วลองปิดบัญชีตัวเอง:
 
 ```http
-@baseUrl = http://localhost:5156
-@adminUsersPath = {{baseUrl}}/api/admin/users
+@baseUrl = http://localhost:<http-port>
+@adminUsersPath = {{baseUrl}}/api/v1/admin/users
 @adminToken = paste-admin-token-here
 @adminUserId = paste-admin-user-id-here
 

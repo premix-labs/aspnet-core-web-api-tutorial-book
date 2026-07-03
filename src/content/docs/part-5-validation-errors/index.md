@@ -1,4 +1,4 @@
-﻿---
+---
 title: ภาค 5 - Validation และ Error Handling
 description: ตรวจข้อมูล input และจัดการ error ให้ response สม่ำเสมอ
 ---
@@ -20,22 +20,16 @@ description: ตรวจข้อมูล input และจัดการ er
 
 อย่าเริ่มจากการคัดลอก handler ทั้งไฟล์ ให้เข้าใจก่อนว่า error แต่ละชนิดเกิดที่ชั้นไหนและควรถูกแปลงเป็น HTTP response แบบใด
 
-ถ้าเครื่องของคุณใช้ port ไม่ตรงกับตัวอย่าง ให้ใช้ port ที่ `dotnet run` หรือ Visual Studio แสดงจริง เช่น `http://localhost:5156` หรือ `https://localhost:7127`
+ถ้าเครื่องของคุณใช้ port ไม่ตรงกับตัวอย่าง ให้ใช้ port ที่ `dotnet run` หรือ Visual Studio แสดงจริง เช่น `http://localhost:<http-port>` หรือ `https://localhost:<https-port>`
 
 ตัวอย่าง `.http` ในภาคนี้จะใช้ตัวแปรสองตัว:
 
 ```http
-@baseUrl = http://localhost:5156
-@usersPath = /api/users
-```
-
-ถ้าโปรเจกต์ของคุณใช้ versioned route เช่น `/api/v1/users` ให้เปลี่ยนเฉพาะ `@usersPath` เป็น:
-
-```http
+@baseUrl = http://localhost:<http-port>
 @usersPath = /api/v1/users
 ```
 
-หลักคือ route ใน `.http` ต้องตรงกับ `[Route(...)]` ใน `UsersController` เสมอ
+หนังสือเล่มนี้ใช้ route หลักเป็น `/api/v1/users` เพื่อให้ผู้เรียนโฟกัสเรื่อง validation และ error handling ก่อน ถ้าได้ `404 Not Found` จาก request ที่ควรเข้า endpoint ให้ตรวจว่า `@usersPath` ตรงกับ `[Route("api/v1/[controller]")]` ใน `UsersController`
 
 ## บทในภาคนี้
 
@@ -72,3 +66,13 @@ flowchart LR
 Validation คือการกัน request ที่ผิดตั้งแต่ขอบของระบบ ส่วน error handling คือการแปลงปัญหาที่เกิดระหว่างทำงานให้เป็น response ที่ client เข้าใจได้
 
 ทั้งสองเรื่องนี้ควรทำให้เป็นระบบตั้งแต่ต้น เพราะถ้าปล่อยให้ Controller แต่ละตัวตอบ error คนละรูปแบบ เมื่อโปรเจกต์โตขึ้น frontend และ tester จะทำงานยากทันที
+
+## Checklist หลังจบภาคนี้
+
+- `dotnet build` ผ่าน
+- `POST /api/v1/users` ด้วย email ผิดรูปแบบตอบ `400 Bad Request`
+- validation error มี `code = VALIDATION_FAILED` และมี `traceId`
+- `GET /api/v1/users/999999` ตอบ `404 Not Found` พร้อม `code = USER_NOT_FOUND`
+- email ซ้ำตอบ `409 Conflict` พร้อม `code = EMAIL_ALREADY_EXISTS`
+- Controller ไม่สร้าง error object เองหลายรูปแบบ
+- API ไม่ส่ง stack trace หรือ exception detail ที่ไม่จำเป็นกลับไปหา client

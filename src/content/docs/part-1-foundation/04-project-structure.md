@@ -125,9 +125,9 @@ flowchart TD
 ตัวอย่างเช่น `UsersController` จะรับ request ที่เกี่ยวกับ user เช่น
 
 ```text
-GET /api/users
-POST /api/users
-GET /api/users/{id}
+GET /api/v1/users
+POST /api/v1/users
+GET /api/v1/users/{id}
 ```
 
 Controller ไม่ควรเป็นที่รวมทุกอย่าง เมื่อระบบใหญ่ขึ้น Controller ควรเรียก service แทนการเขียน logic ยาว ๆ เอง
@@ -136,7 +136,7 @@ Controller ไม่ควรเป็นที่รวมทุกอย่า
 
 ไฟล์ `Backend.Api.csproj` คือไฟล์ project ของ .NET ใช้กำหนด target framework และ package reference
 
-ตัวอย่าง:
+ตัวอย่างนี้ใช้เพื่ออ่านโครงสร้างไฟล์ ไม่ใช่ code ที่ต้อง copy ไปแทนทั้งไฟล์:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -147,10 +147,12 @@ Controller ไม่ควรเป็นที่รวมทุกอย่า
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.x" />
   </ItemGroup>
 </Project>
 ```
+
+เลข `10.0.x` หมายถึง version ที่ template หรือ SDK ของเครื่องคุณสร้างให้จริง อย่าแก้ version ในบทนี้เพียงเพื่อให้ตรงกับตัวอย่าง เพราะบทนี้มีเป้าหมายให้เข้าใจว่า package อยู่ตรงไหน ไม่ใช่ติดตั้งหรืออัปเดต package
 
 เมื่อเราติดตั้ง package เช่น EF Core หรือ JWT package ในบทหลัง ๆ ข้อมูลจะถูกเพิ่มเข้ามาในไฟล์นี้เป็น `PackageReference`
 
@@ -200,7 +202,7 @@ Controller ไม่ควรเป็นที่รวมทุกอย่า
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://localhost:5156",
+      "applicationUrl": "http://localhost:<http-port>",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -209,7 +211,7 @@ Controller ไม่ควรเป็นที่รวมทุกอย่า
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:7127;http://localhost:5156",
+      "applicationUrl": "https://localhost:<https-port>;http://localhost:<http-port>",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -220,13 +222,13 @@ Controller ไม่ควรเป็นที่รวมทุกอย่า
 
 ไฟล์นี้มีผลกับการรันในเครื่อง development เป็นหลัก ไม่ใช่ไฟล์ที่ใช้ตั้งค่า production
 
-เลข port ในไฟล์นี้เป็นตัวอย่างจาก template เท่านั้น เครื่องของคุณอาจเป็นเลขอื่น เช่น `http://localhost:5156` หรือ `https://localhost:7127` ให้ยึด URL ที่ `dotnet run` หรือ Visual Studio แสดงจริงเสมอ
+เลข port ในไฟล์นี้เป็นตัวอย่างจาก template เท่านั้น เครื่องของคุณอาจเป็นเลขอื่น ให้ยึด URL ที่ `dotnet run` หรือ Visual Studio แสดงจริงเสมอ
 
 ## Backend.Api.http
 
 ไฟล์ `.http` ใช้เก็บ request สำหรับทดสอบ API จาก Visual Studio Code หรือ Visual Studio
 
-ช่วงแรกเราจะใช้ไฟล์นี้ทดสอบ `GET /api/users` และ CRUD endpoint หลังจากนั้นจะเพิ่ม request สำหรับ register, login และ admin endpoint
+ช่วงแรกเราจะใช้ไฟล์นี้ทดสอบ `GET /api/v1/users` และ CRUD endpoint หลังจากนั้นจะเพิ่ม request สำหรับ register, login และ admin endpoint
 
 ## โครงสร้างที่จะค่อย ๆ เพิ่ม
 
@@ -258,6 +260,16 @@ Backend.Api/
 ถ้า port หรือ environment ไม่ตรงกับที่คาดไว้ ให้ดู `Properties/launchSettings.json`
 
 ถ้าต้องการทดสอบ endpoint ซ้ำ ให้ดูไฟล์ `.http`
+
+## ตรวจว่าโปรเจกต์ยัง build ได้
+
+บทนี้ไม่ได้ตั้งใจให้แก้ code แต่หลังอ่านโครงสร้างแล้วควรลอง build อีกครั้งเพื่อยืนยันว่าโปรเจกต์ยังอยู่ในสถานะดี:
+
+```powershell
+dotnet build
+```
+
+ผลที่ต้องการคือ `Build succeeded.` ถ้า build fail หลังจากคุณลองแก้ไฟล์เอง ให้ย้อนดูไฟล์ที่แก้ล่าสุดก่อน
 
 ## แบบฝึกหัด
 

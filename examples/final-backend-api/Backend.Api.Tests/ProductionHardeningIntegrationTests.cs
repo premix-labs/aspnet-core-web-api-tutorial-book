@@ -50,7 +50,7 @@ public class ProductionHardeningIntegrationTests(CustomWebApplicationFactory fac
     public async Task CorsPreflight_WhenOriginIsConfigured_ReturnsCorsHeaders()
     {
         var client = factory.CreateClient();
-        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/auth/login");
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/v1/auth/login");
         request.Headers.Add("Origin", "http://localhost:3000");
         request.Headers.Add("Access-Control-Request-Method", "POST");
 

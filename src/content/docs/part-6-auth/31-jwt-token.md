@@ -20,7 +20,7 @@ sequenceDiagram
     participant JwtTokenService
     participant ProtectedApi
 
-    Client->>AuthController: POST /api/auth/login
+    Client->>AuthController: POST /api/v1/auth/login
     AuthController->>AuthService: validate email/password
     AuthService->>JwtTokenService: create access token
     JwtTokenService-->>Client: accessToken
@@ -90,7 +90,7 @@ package นี้ใช้สำหรับ validate JWT bearer token ใน AS
   "Jwt": {
     "Issuer": "Backend.Api",
     "Audience": "Backend.ApiClient",
-    "SigningKey": "change-this-development-key-at-least-32-characters",
+    "SigningKey": "change-this-development-key-at-least-32-bytes",
     "ExpirationMinutes": 60
   }
 }
@@ -99,6 +99,15 @@ package นี้ใช้สำหรับ validate JWT bearer token ใน AS
 ถ้าไฟล์มี key อื่นอยู่แล้ว ให้รวม `Jwt` เข้าไปใน object เดิม ไม่ต้องสร้าง JSON ซ้อนสองชุด
 
 `SigningKey` ต้องยาวพอและต้องเก็บเป็น secret ใน production อย่าใช้ค่าตัวอย่างนี้ในระบบจริง
+
+ในบทนี้ใส่ค่าไว้ใน `appsettings.json` เพื่อให้เรียนต่อได้ง่ายในเครื่อง local เท่านั้น ถ้าต้องการเลี่ยงการ commit key ลงไฟล์ config ให้ใช้ user secrets แทน:
+
+```powershell
+dotnet user-secrets init
+dotnet user-secrets set "Jwt:SigningKey" "replace-with-local-development-signing-key-at-least-32-bytes"
+```
+
+บน production ให้ใช้ environment variable หรือ secret manager เช่น `Jwt__SigningKey` ไม่ควรใช้ key ตัวอย่างจากหนังสือ
 
 ## ขั้นที่ 3: สร้าง JwtOptions
 
@@ -224,6 +233,8 @@ claim ที่ใช้ในหนังสือนี้:
 - `email` คือ email ของ user
 - `role` คือ role สำหรับ authorization
 
+JWT payload อ่านได้จากฝั่ง client จึงห้ามใส่ password, password hash, signing key หรือข้อมูลลับอื่นลงใน claim
+
 ## ขั้นที่ 7: สร้าง token และ response
 
 เพิ่ม code นี้ต่อจาก claims:
@@ -268,9 +279,9 @@ var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt options not found.");
 
 if (string.IsNullOrWhiteSpace(jwtOptions.SigningKey) ||
-    jwtOptions.SigningKey.Length < 32)
+    Encoding.UTF8.GetByteCount(jwtOptions.SigningKey) < 32)
 {
-    throw new InvalidOperationException("Jwt signing key must be at least 32 characters.");
+    throw new InvalidOperationException("Jwt signing key must be at least 32 bytes.");
 }
 ```
 
@@ -387,8 +398,8 @@ dotnet run
 ส่ง request login ด้วย user จาก seed data:
 
 ```http
-@baseUrl = http://localhost:5156
-@authPath = /api/auth
+@baseUrl = http://localhost:<http-port>
+@authPath = /api/v1/auth
 
 ### Login
 POST {{baseUrl}}{{authPath}}/login
@@ -419,6 +430,7 @@ header.payload.signature
 - ติดตั้ง `Microsoft.AspNetCore.Authentication.JwtBearer`
 - มี `JwtOptions`
 - มี `JwtTokenService`
+- signing key ยาวอย่างน้อย 32 bytes และไม่ใช้ค่าตัวอย่างใน production
 - `Program.cs` ตั้งค่า `AddAuthentication().AddJwtBearer(...)`
 - middleware เรียก `UseAuthentication()` ก่อน `UseAuthorization()`
 - login สำเร็จแล้วได้ `accessToken`

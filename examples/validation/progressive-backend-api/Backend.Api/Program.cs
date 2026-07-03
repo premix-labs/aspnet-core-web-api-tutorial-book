@@ -22,9 +22,9 @@ var jwtOptions = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()
     ?? throw new InvalidOperationException("Jwt options not found.");
 
 if (string.IsNullOrWhiteSpace(jwtOptions.SigningKey) ||
-    jwtOptions.SigningKey.Length < 32)
+    Encoding.UTF8.GetByteCount(jwtOptions.SigningKey) < 32)
 {
-    throw new InvalidOperationException("Jwt signing key must be at least 32 characters.");
+    throw new InvalidOperationException("Jwt signing key must be at least 32 bytes.");
 }
 
 // Add services to the container.

@@ -1,17 +1,39 @@
-﻿---
+---
 title: 06 - สร้าง Controller แรก
 description: เริ่มสร้าง Controller และ endpoint แรกใน ASP.NET Core Web API
 ---
 
 Controller คือ class ที่รับ HTTP request แล้วส่ง HTTP response กลับไป ใน ASP.NET Core เรามักวาง Controller ไว้ในโฟลเดอร์ `Controllers`
 
-บทนี้เราจะสร้าง `UsersController` ตัวแรก แล้วทดสอบ `GET /api/users`
+บทนี้เราจะสร้าง `UsersController` ตัวแรก แล้วทดสอบ `GET /api/v1/users`
 
 ## วิธีเรียนบทนี้
 
-บทนี้ให้ทำแค่ endpoint เดียวก่อนคือ `GET /api/users`
+บทนี้ให้ทำแค่ endpoint เดียวก่อนคือ `GET /api/v1/users`
 
 อย่าเพิ่งเพิ่ม `POST`, `PUT` หรือ `DELETE` เองในบทนี้ เป้าหมายคือเข้าใจว่า Controller หนึ่งตัวกลายเป็น URL ได้อย่างไร และรู้ว่าต้องทดสอบ endpoint จาก browser หรือ REST Client อย่างไร
+
+## ก่อนเริ่มบทนี้
+
+ให้ยืนยันว่าคุณอยู่ในโฟลเดอร์โปรเจกต์ `Backend.Api` และโปรเจกต์ยัง build ผ่าน:
+
+```powershell
+dotnet build
+```
+
+ผลที่ต้องการคือ `Build succeeded.` ถ้า build ไม่ผ่าน ให้แก้ error ในบทก่อนหน้าก่อน เพราะถ้าโปรเจกต์ compile ไม่ผ่าน Controller ใหม่จะรันไม่ได้
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+บทนี้จะทำให้โปรเจกต์เปลี่ยนประมาณนี้:
+
+```text
+Controllers/UsersController.cs        เพิ่มใหม่
+Controllers/WeatherForecastController.cs  ลบได้ถ้า template สร้างมา
+WeatherForecast.cs                    ลบได้ถ้า template สร้างมา
+```
+
+ถ้า template ของคุณไม่มี `WeatherForecastController.cs` หรือ `WeatherForecast.cs` อยู่แล้ว ให้ข้ามส่วนลบไฟล์ได้
 
 ## ตรวจว่าโปรเจกต์ใช้ Controller แล้ว
 
@@ -70,13 +92,13 @@ rm -f Controllers/WeatherForecastController.cs WeatherForecast.cs
 | `using Microsoft.AspNetCore.Mvc;` | นำ class และ attribute สำหรับเขียน Controller มาใช้ |
 | `namespace Backend.Api.Controllers;` | ระบุตำแหน่งทาง logical ของ class ในโปรเจกต์ |
 | `[ApiController]` | บอก ASP.NET Core ว่า class นี้เป็น API controller |
-| `[Route("api/[controller]")]` | กำหนด route หลักของ controller |
+| `[Route("api/v1/[controller]")]` | กำหนด route หลักของ controller |
 | `ControllerBase` | base class สำหรับ API controller ที่ไม่ render view |
 | `[HttpGet]` | บอกว่า method นี้รับ HTTP GET |
 | `IActionResult` | return type สำหรับ response หลายแบบ เช่น `Ok`, `NotFound`, `BadRequest` |
 | `Ok(value)` | ตอบ `200 OK` พร้อมข้อมูลเป็น JSON |
 
-เมื่อเห็น code ในหัวข้อถัดไป ให้มองว่าเรากำลังประกาศ controller หนึ่งตัวที่เปิด endpoint `GET /api/users`
+เมื่อเห็น code ในหัวข้อถัดไป ให้มองว่าเรากำลังประกาศ controller หนึ่งตัวที่เปิด endpoint `GET /api/v1/users`
 
 ## สร้าง UsersController
 
@@ -86,7 +108,9 @@ Windows PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path Controllers
-New-Item -ItemType File -Path Controllers/UsersController.cs
+if (-not (Test-Path -LiteralPath Controllers/UsersController.cs)) {
+    New-Item -ItemType File -Path Controllers/UsersController.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -111,11 +135,11 @@ namespace Backend.Api.Controllers;
 
 // Marks this class as a Web API controller.
 [ApiController]
-// Base route becomes /api/users because the class name is UsersController.
-[Route("api/[controller]")]
+// Base route becomes /api/v1/users because the class name is UsersController.
+[Route("api/v1/[controller]")]
 public class UsersController : ControllerBase
 {
-    // Handles GET /api/users.
+    // Handles GET /api/v1/users.
     [HttpGet]
     public IActionResult GetUsers()
     {
@@ -140,7 +164,9 @@ public class UsersController : ControllerBase
 
 `[ApiController]` บอก ASP.NET Core ว่า class นี้เป็น API controller และเปิด behavior บางอย่างที่เหมาะกับ API เช่น validation response อัตโนมัติ
 
-`[Route("api/[controller]")]` กำหนด route หลักของ controller โดย `[controller]` จะถูกแทนด้วยชื่อ controller ที่ตัดคำว่า `Controller` ออก ดังนั้น `UsersController` จะกลายเป็น `api/users`
+`[Route("api/v1/[controller]")]` กำหนด route หลักของ controller โดย `[controller]` จะถูกแทนด้วยชื่อ controller ที่ตัดคำว่า `Controller` ออก ดังนั้น `UsersController` จะกลายเป็น `api/v1/users`
+
+`v1` คือ version ของ API contract ในหนังสือเล่มนี้ เราใส่ตั้งแต่ต้นเพื่อให้ route ที่ backend, frontend และ test ใช้ตรงกันตลอดเล่ม
 
 `ControllerBase` คือ base class สำหรับ API controller ที่ไม่ต้อง render view
 
@@ -149,6 +175,16 @@ public class UsersController : ControllerBase
 `IActionResult` คือชนิด return ที่ยืดหยุ่น สามารถคืน `Ok`, `NotFound`, `BadRequest` และ response แบบอื่นได้
 
 `Ok(users)` สร้าง response status `200 OK` พร้อม body เป็น JSON
+
+## ตรวจ build ก่อนรัน API
+
+หลังเพิ่ม `UsersController` แล้ว ให้ build ก่อนรัน server:
+
+```powershell
+dotnet build
+```
+
+ถ้า build ผ่าน แปลว่า syntax และ namespace ของ Controller ถูกต้องพอที่จะเริ่มทดสอบ endpoint ได้
 
 ## รัน API
 
@@ -165,18 +201,12 @@ https://localhost:<https-port>
 http://localhost:<http-port>
 ```
 
-URL ด้านบนเป็นเพียงตัวอย่าง เครื่องของคุณอาจแสดงเป็นค่าอื่น เช่น `http://localhost:5156` และ `https://localhost:7127`
+URL ด้านบนเป็นเพียงตัวอย่าง เครื่องของคุณอาจแสดงเป็นค่าอื่น ให้ยึด URL ที่ terminal แสดงจริง
 
 จากนั้นเปิด endpoint นี้ โดยเปลี่ยน host และ port ให้ตรงกับ terminal ของคุณ
 
 ```text
-GET http://localhost:<http-port>/api/users
-```
-
-ตัวอย่าง ถ้า terminal แสดง HTTP port เป็น `5156` ให้ใช้:
-
-```text
-GET http://localhost:5156/api/users
+GET http://localhost:<http-port>/api/v1/users
 ```
 
 ผลลัพธ์ที่คาดหวังคือ JSON array
@@ -202,7 +232,7 @@ ASP.NET Core จะแปลง property จาก `Id` เป็น `id` แล
 
 - `dotnet run` ยังรันอยู่หรือไม่
 - ใช้ port ตรงกับ terminal หรือไม่
-- path เป็น `/api/users` ไม่ใช่ `/users`
+- path เป็น `/api/v1/users` ไม่ใช่ `/users`
 - `Program.cs` มี `AddControllers()` และ `MapControllers()` หรือไม่
 - ชื่อ class ลงท้ายด้วย `Controller` หรือไม่
 - file อยู่ใน namespace `Backend.Api.Controllers` หรือไม่
@@ -214,4 +244,4 @@ ASP.NET Core จะแปลง property จาก `Id` เป็น `id` แล
 - สร้าง `UsersController`
 - เข้าใจ `[ApiController]`, `[Route]`, `[HttpGet]`
 - เข้าใจว่า `[controller]` แปลงเป็น `users` ได้อย่างไร
-- รัน `GET /api/users` แล้วได้ JSON response
+- รัน `GET /api/v1/users` แล้วได้ JSON response

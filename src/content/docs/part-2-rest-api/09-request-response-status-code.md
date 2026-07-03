@@ -1,4 +1,4 @@
-﻿---
+---
 title: 09 - Request, Response และ Status Code
 description: เลือกชนิด response และ HTTP status code ให้เหมาะกับผลลัพธ์ของ API
 ---
@@ -48,8 +48,8 @@ public IActionResult CreateUser(CreateUserRequest request)
 ข้อมูลใน request อาจมาจากหลายที่
 
 ```text
-Route        /api/users/{id}
-Query string /api/users?page=1&pageSize=10
+Route        /api/v1/users/{id}
+Query string /api/v1/users?page=1&pageSize=10
 Body         JSON ที่ส่งมากับ POST/PUT/PATCH
 Header       Authorization, Content-Type
 ```
@@ -113,6 +113,18 @@ Request ผิดรูปแบบ       -> 400 Bad Request
 
 เลือก status code ให้ตรงกับสิ่งที่เกิดขึ้นจริง เพื่อให้ client ไม่ต้องเดาจากข้อความใน body
 
+ใน `UsersController` จากบท 7 mapping ของ action ควรเป็นแบบนี้:
+
+| Action | กรณีสำเร็จ | กรณีไม่พบข้อมูล |
+| --- | --- | --- |
+| `GetUsers()` | `Ok(users)` -> `200 OK` | ไม่มีกรณี not found เพราะ list ว่างก็ยังเป็น `200 OK` พร้อม array ว่าง |
+| `GetUserById(id)` | `Ok(user)` -> `200 OK` | `NotFound()` -> `404 Not Found` |
+| `CreateUser(request)` | `CreatedAtAction(...)` -> `201 Created` | ยังไม่มี validation ในบทนี้ |
+| `UpdateUser(id, request)` | `Ok(updatedUser)` -> `200 OK` | `NotFound()` -> `404 Not Found` |
+| `DeleteUser(id)` | `NoContent()` -> `204 No Content` | `NotFound()` -> `404 Not Found` |
+
+ตารางนี้ใช้เป็น checklist กลับไปตรวจ code ของบท 7 ได้ทันที
+
 ## อย่าตอบ 200 ทุกกรณี
 
 มือใหม่มักตอบ `200 OK` แม้เกิด error เช่น ไม่พบข้อมูล หรือ validation ไม่ผ่าน
@@ -164,7 +176,7 @@ return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
   "title": "Not Found",
   "status": 404,
   "detail": "User was not found.",
-  "instance": "/api/users/999"
+  "instance": "/api/v1/users/999"
 }
 ```
 
@@ -198,18 +210,18 @@ return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
 - response header เช่น `Content-Type` หรือ `Location`
 - response body เช่น JSON ที่ API ส่งกลับ
 
-ตัวอย่างเช่นหลัง `POST /api/users` สำเร็จ คุณควรเห็น `201 Created` และควรมีข้อมูล user ที่สร้างกลับมา
+ตัวอย่างเช่นหลัง `POST /api/v1/users` สำเร็จ คุณควรเห็น `201 Created` และควรมีข้อมูล user ที่สร้างกลับมา
 
-หลัง `DELETE /api/users/1` สำเร็จ คุณควรเห็น `204 No Content` และไม่ควรคาดหวัง JSON body กลับมา
+หลัง `DELETE /api/v1/users/1` สำเร็จ คุณควรเห็น `204 No Content` และไม่ควรคาดหวัง JSON body กลับมา
 
 ## แบบฝึกหัด
 
 ลองตอบว่าแต่ละกรณีควรใช้ status code อะไร:
 
-1. `GET /api/users/999` แต่ไม่มี user id `999`
-2. `POST /api/users` แล้วสร้าง user สำเร็จ
-3. `DELETE /api/users/1` แล้วลบสำเร็จ
-4. `PUT /api/users/999` แต่ไม่มี user id `999`
+1. `GET /api/v1/users/999` แต่ไม่มี user id `999`
+2. `POST /api/v1/users` แล้วสร้าง user สำเร็จ
+3. `DELETE /api/v1/users/1` แล้วลบสำเร็จ
+4. `PUT /api/v1/users/999` แต่ไม่มี user id `999`
 5. request body เป็น JSON ผิดรูปแบบ
 
 ## แนวคำตอบโดยย่อ

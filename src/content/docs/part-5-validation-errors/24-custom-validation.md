@@ -21,6 +21,16 @@ Business validation  ตรวจ rule ของระบบ เช่น email 
 3. ตรวจว่า email ซ้ำยังอยู่ใน `UserService`
 4. ตรวจว่า Controller ไม่ query repository เอง
 
+## ก่อนเริ่มบทนี้
+
+ให้ทำบท 23 ให้จบก่อน และตรวจว่า Data Annotations ทำงานแล้ว:
+
+```powershell
+dotnet build
+```
+
+ก่อนเริ่มบทนี้ `POST /api/v1/users` ด้วย email ผิดรูปแบบควรตอบ `400 Bad Request` แล้ว
+
 ## สิ่งที่จะใช้ในบทนี้
 
 | สิ่งที่จะใช้ | ความหมาย |
@@ -177,8 +187,8 @@ dotnet run
 เพิ่ม request นี้ใน `.http`
 
 ```http
-@baseUrl = http://localhost:5156
-@usersPath = /api/users
+@baseUrl = http://localhost:<http-port>
+@usersPath = /api/v1/users
 
 ### Blocked email domain
 POST {{baseUrl}}{{usersPath}}
@@ -191,7 +201,7 @@ Content-Type: application/json
 
 ผลลัพธ์ที่คาดหวังคือ `400 Bad Request` และ error ควรอยู่ใต้ field `Email`
 
-ถ้าได้ `404 Not Found` ให้ตรวจ `@usersPath` ให้ตรงกับ route จริง เช่น `/api/users` หรือ `/api/v1/users`
+ถ้าได้ `404 Not Found` ให้ตรวจว่า `@usersPath` เป็น `/api/v1/users` และ `UsersController` ยังใช้ `[Route("api/v1/[controller]")]`
 
 ## Business validation ไม่ควรอยู่ใน DTO
 

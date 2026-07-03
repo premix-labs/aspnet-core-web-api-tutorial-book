@@ -17,6 +17,17 @@ Data Annotations คือ attribute ที่ใช้กำหนด validatio
 4. build ตรวจ code
 5. ยิง request ที่ผิดเพื่อดู `400 Bad Request`
 
+## ก่อนเริ่มบทนี้
+
+ให้ทำภาค 4 ให้จบก่อน และตรวจว่า API ใช้ database จริงแล้ว:
+
+```powershell
+dotnet build
+dotnet tool run dotnet-ef database update
+```
+
+ตอนเริ่มบทนี้ควรมี `Dtos/Users`, `UsersController`, `UserService` และ route `/api/v1/users` จากภาคก่อนแล้ว
+
 ## สิ่งที่จะใช้ในบทนี้
 
 | สิ่งที่จะใช้ | ความหมาย |
@@ -53,9 +64,15 @@ Windows PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path Dtos/Users
-New-Item -ItemType File -Path Dtos/Users/CreateUserRequest.cs
-New-Item -ItemType File -Path Dtos/Users/UpdateUserRequest.cs
-New-Item -ItemType File -Path Dtos/Users/UserResponse.cs
+if (-not (Test-Path -LiteralPath Dtos/Users/CreateUserRequest.cs)) {
+    New-Item -ItemType File -Path Dtos/Users/CreateUserRequest.cs
+}
+if (-not (Test-Path -LiteralPath Dtos/Users/UpdateUserRequest.cs)) {
+    New-Item -ItemType File -Path Dtos/Users/UpdateUserRequest.cs
+}
+if (-not (Test-Path -LiteralPath Dtos/Users/UserResponse.cs)) {
+    New-Item -ItemType File -Path Dtos/Users/UserResponse.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -218,8 +235,8 @@ dotnet run
 ใช้ `baseUrl` ตาม port จริงของเครื่อง ตัวอย่าง:
 
 ```http
-@baseUrl = http://localhost:5156
-@usersPath = /api/users
+@baseUrl = http://localhost:<http-port>
+@usersPath = /api/v1/users
 
 ### Invalid email
 POST {{baseUrl}}{{usersPath}}
@@ -229,8 +246,6 @@ Content-Type: application/json
   "email": "not-an-email"
 }
 ```
-
-ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยน `@usersPath` เป็น `/api/v1/users`
 
 ผลลัพธ์ที่คาดหวังคือ `400 Bad Request` พร้อมรายละเอียด validation error เช่น:
 

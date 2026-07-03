@@ -1,4 +1,4 @@
-﻿---
+---
 title: 26 - Error Response Format
 description: ออกแบบ ProblemDetails และ ValidationProblemDetails ให้ frontend ใช้งานต่อได้ง่าย
 ---
@@ -16,6 +16,16 @@ ASP.NET Core ใช้แนวทาง `ProblemDetails` สำหรับ err
 3. เพิ่ม `traceId` ให้ `ProblemDetails`
 4. ตรวจว่า Controller ไม่สร้าง error object เอง
 5. เพิ่ม business rule ตอน update email ซ้ำ
+
+## ก่อนเริ่มบทนี้
+
+ให้ทำบท 25 ให้จบก่อน และตรวจว่า global exception handler ทำงาน:
+
+```powershell
+dotnet build
+```
+
+ก่อนเริ่มบทนี้ `GET /api/v1/users/999999` ควรตอบ `404 Not Found` ผ่าน `ProblemDetails` และ email ซ้ำควรตอบ `409 Conflict`
 
 ## สิ่งที่จะใช้ในบทนี้
 
@@ -216,8 +226,8 @@ public async Task<UserResponse> UpdateUserAsync(int id, UpdateUserRequest reques
 เพิ่ม request เหล่านี้ใน `.http`
 
 ```http
-@baseUrl = http://localhost:5156
-@usersPath = /api/users
+@baseUrl = http://localhost:<http-port>
+@usersPath = /api/v1/users
 
 ### Validation failed
 POST {{baseUrl}}{{usersPath}}
@@ -245,8 +255,6 @@ Content-Type: application/json
 ```
 
 ควรได้ `409 Conflict` พร้อม `code` เป็น `EMAIL_ALREADY_EXISTS`
-
-ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยน `@usersPath` เป็น `/api/v1/users`
 
 ## Checkpoint
 

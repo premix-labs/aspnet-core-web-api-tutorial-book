@@ -31,6 +31,16 @@ flowchart LR
 6. ลบ `try-catch` ที่ไม่จำเป็นออกจาก Controller
 7. ทดสอบ `404`, `409`, และดูวิธีตรวจ `500` แบบชั่วคราวใน development
 
+## ก่อนเริ่มบทนี้
+
+ให้ทำบท 24 ให้จบก่อน และตรวจว่า DTO validation ยังทำงาน:
+
+```powershell
+dotnet build
+```
+
+ก่อนเริ่มบทนี้ email domain ที่ห้ามใช้ควรตอบ `400 Bad Request` และ email ซ้ำอาจยังถูกจัดการแบบชั่วคราวใน Controller หรือ Service อยู่ ซึ่งบทนี้จะย้ายไปเป็น exception flow กลาง
+
 ## สิ่งที่จะใช้ในบทนี้
 
 | สิ่งที่จะใช้ | ความหมาย |
@@ -64,10 +74,18 @@ Windows PowerShell:
 
 ```powershell
 New-Item -ItemType Directory -Force -Path Exceptions
-New-Item -ItemType File -Path Exceptions/ApiException.cs
-New-Item -ItemType File -Path Exceptions/NotFoundException.cs
-New-Item -ItemType File -Path Exceptions/ConflictException.cs
-New-Item -ItemType File -Path Exceptions/GlobalExceptionHandler.cs
+if (-not (Test-Path -LiteralPath Exceptions/ApiException.cs)) {
+    New-Item -ItemType File -Path Exceptions/ApiException.cs
+}
+if (-not (Test-Path -LiteralPath Exceptions/NotFoundException.cs)) {
+    New-Item -ItemType File -Path Exceptions/NotFoundException.cs
+}
+if (-not (Test-Path -LiteralPath Exceptions/ConflictException.cs)) {
+    New-Item -ItemType File -Path Exceptions/ConflictException.cs
+}
+if (-not (Test-Path -LiteralPath Exceptions/GlobalExceptionHandler.cs)) {
+    New-Item -ItemType File -Path Exceptions/GlobalExceptionHandler.cs
+}
 ```
 
 macOS/Linux Bash:
@@ -456,8 +474,8 @@ dotnet run
 ใช้ `baseUrl` ตาม port จริง:
 
 ```http
-@baseUrl = http://localhost:5156
-@usersPath = /api/users
+@baseUrl = http://localhost:<http-port>
+@usersPath = /api/v1/users
 
 ### User not found
 GET {{baseUrl}}{{usersPath}}/999999
@@ -479,8 +497,6 @@ Content-Type: application/json
 ```
 
 ควรได้ `409 Conflict` พร้อม `code` เป็น `EMAIL_ALREADY_EXISTS`
-
-ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยน `@usersPath` เป็น `/api/v1/users`
 
 ### ตรวจ 500 แบบชั่วคราว
 

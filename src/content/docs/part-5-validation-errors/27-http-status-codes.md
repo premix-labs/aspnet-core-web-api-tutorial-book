@@ -1,4 +1,4 @@
-﻿---
+---
 title: 27 - เลือกใช้ HTTP Status Code ให้ถูกต้อง
 description: สรุปแนวทางเลือก status code สำหรับ validation, CRUD, auth และ business error
 ---
@@ -15,6 +15,22 @@ Status code คือภาษากลางของ HTTP ที่บอก c
 2. ถ้าผิดพลาด เป็น input validation, resource not found, conflict หรือ server error
 3. response body เป็น DTO, `ProblemDetails` หรือ `ValidationProblemDetails`
 4. status code ตรงกับความหมายจริงหรือไม่
+
+## ก่อนเริ่มบทนี้
+
+ให้ทำบท 26 ให้จบก่อน แล้วตรวจว่า error response มี `code` และ `traceId`:
+
+```powershell
+dotnet build
+```
+
+บทนี้ไม่เพิ่ม code ใหม่ แต่ใช้สำหรับตรวจว่า endpoint ที่ทำมาทั้งภาคเลือก status code ถูกต้อง
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+ไม่มีไฟล์ code ที่ต้องแก้ในบทนี้
+```
 
 ## สิ่งที่จะใช้ในบทนี้
 
@@ -106,8 +122,8 @@ Status code คือภาษากลางของ HTTP ที่บอก c
 เพิ่ม request เหล่านี้ลงใน `Backend.Api.http`
 
 ```http
-@baseUrl = http://localhost:5156
-@usersPath = /api/users
+@baseUrl = http://localhost:<http-port>
+@usersPath = /api/v1/users
 
 ### Validation failed
 POST {{baseUrl}}{{usersPath}}
@@ -130,9 +146,7 @@ Content-Type: application/json
 }
 ```
 
-ให้ใช้ `baseUrl` ตาม port จริงของเครื่อง ถ้าเครื่องคุณรัน HTTPS ที่ `https://localhost:7127` และ certificate พร้อมแล้ว จะใช้ HTTPS ก็ได้
-
-ถ้า route จริงของคุณเป็น `/api/v1/users` ให้เปลี่ยนเฉพาะ `@usersPath` เป็น `/api/v1/users`
+ให้ใช้ `baseUrl` ตาม port จริงของเครื่อง ถ้าเครื่องคุณรัน HTTPS ที่ `https://localhost:<https-port>` และ certificate พร้อมแล้ว จะใช้ HTTPS ก็ได้
 
 ## วิธีอ่านผลลัพธ์หลังทดสอบ
 

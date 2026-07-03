@@ -1,4 +1,4 @@
-﻿---
+---
 title: 05 - พื้นฐาน HTTP, REST และ JSON
 description: เข้าใจ request, response, method, route, status code และ JSON
 ---
@@ -25,24 +25,25 @@ Request คือข้อมูลที่ client ส่งมาหา server
 ตัวอย่าง request:
 
 ```http
-POST /api/users HTTP/1.1
+POST /api/v1/users HTTP/1.1
 Host: localhost:<port>
 Content-Type: application/json
-Authorization: Bearer <token>
 
 {
-  "email": "user@example.com",
-  "password": "Passw0rd!"
+  "email": "user@example.com"
 }
 ```
 
 ส่วนสำคัญของ request:
 
 - `POST` คือ HTTP method
-- `/api/users` คือ path หรือ route
+- `/api/v1/users` คือ path หรือ route
 - `Content-Type` บอกชนิดข้อมูลใน body
-- `Authorization` ใช้ส่ง token หลังระบบมี login
 - JSON body คือข้อมูลที่ส่งเข้า API
+
+ตอนต้นเล่มเราจะใช้ `/api/v1/users` เพื่อเรียน CRUD ด้วย email ก่อน ส่วน password, token และ login จะเริ่มในภาค Authentication ผ่าน endpoint กลุ่ม `/api/v1/auth`
+
+`v1` ใน route หมายถึง API version 1 เราใส่ไว้ตั้งแต่ต้นเพื่อให้ frontend และ client อ้างอิง contract ที่มี version ชัดเจน ถ้าวันหนึ่งต้องทำ API รุ่นใหม่ ก็สามารถเพิ่ม `/api/v2/...` โดยไม่ทำให้ client ที่ใช้ `/api/v1/...` พังทันที
 
 ## HTTP Response
 
@@ -53,7 +54,7 @@ Response คือข้อมูลที่ server ส่งกลับไป
 ```http
 HTTP/1.1 201 Created
 Content-Type: application/json
-Location: /api/users/1
+Location: /api/v1/users/1
 
 {
   "id": 1,
@@ -83,12 +84,12 @@ DELETE  ลบข้อมูล
 ตัวอย่างกับ resource `users`:
 
 ```text
-GET    /api/users       อ่าน user ทั้งหมด
-GET    /api/users/1     อ่าน user id 1
-POST   /api/users       สร้าง user ใหม่
-PUT    /api/users/1     แก้ไข user id 1 ทั้งก้อน
-PATCH  /api/users/1     แก้ไข user id 1 บาง field
-DELETE /api/users/1     ลบ user id 1
+GET    /api/v1/users       อ่าน user ทั้งหมด
+GET    /api/v1/users/1     อ่าน user id 1
+POST   /api/v1/users       สร้าง user ใหม่
+PUT    /api/v1/users/1     แก้ไข user id 1 ทั้งก้อน
+PATCH  /api/v1/users/1     แก้ไข user id 1 บาง field
+DELETE /api/v1/users/1     ลบ user id 1
 ```
 
 ## REST คืออะไร
@@ -100,17 +101,17 @@ REST คือแนวทางออกแบบ API ให้ resource มี
 ตัวอย่าง route ที่อ่านง่าย:
 
 ```text
-GET /api/users
-GET /api/users/1
-POST /api/users
+GET /api/v1/users
+GET /api/v1/users/1
+POST /api/v1/users
 ```
 
 ตัวอย่าง route ที่ควรหลีกเลี่ยง:
 
 ```text
-GET /api/getUsers
-POST /api/createUser
-POST /api/deleteUser
+GET /api/v1/getUsers
+POST /api/v1/createUser
+POST /api/v1/deleteUser
 ```
 
 เหตุผลคือ method เช่น `GET`, `POST`, `DELETE` บอก action อยู่แล้ว ไม่จำเป็นต้องใส่ action ซ้ำใน URL
@@ -122,11 +123,11 @@ POST /api/deleteUser
 ตัวอย่าง resource คือ `users`
 
 ```text
-GET    /api/users       อ่านรายการ user
-GET    /api/users/1     อ่าน user คนเดียว
-POST   /api/users       สร้าง user ใหม่
-PUT    /api/users/1     แก้ไข user คนเดียว
-DELETE /api/users/1     ลบ user คนเดียว
+GET    /api/v1/users       อ่านรายการ user
+GET    /api/v1/users/1     อ่าน user คนเดียว
+POST   /api/v1/users       สร้าง user ใหม่
+PUT    /api/v1/users/1     แก้ไข user คนเดียว
+DELETE /api/v1/users/1     ลบ user คนเดียว
 ```
 
 หลักที่ควรจำ:
@@ -201,12 +202,14 @@ Authorization: Bearer <token>
 
 `Authorization` ใช้ส่ง credential เช่น JWT token
 
+ในบทแรก ๆ คุณจะยังไม่ได้ใช้ `Authorization` จริง จนกว่าจะถึงภาค Authentication แต่ควรรู้จัก header นี้ไว้ก่อน เพราะจะกลับมาใช้กับ `GET /api/v1/auth/me` และ endpoint ที่ต้อง login
+
 ## ลองอ่าน Request และ Response
 
 ดู request นี้:
 
 ```http
-GET /api/users/1 HTTP/1.1
+GET /api/v1/users/1 HTTP/1.1
 Host: localhost:<port>
 Accept: application/json
 Authorization: Bearer <token>
@@ -248,9 +251,9 @@ HTTP/1.1 404 Not Found
 
 ## แนวคำตอบโดยย่อ
 
-- อ่านรายการสินค้า: `GET /api/products`
-- สร้าง order ใหม่: `POST /api/orders`
-- ลบ user id `10`: `DELETE /api/users/10`
+- อ่านรายการสินค้า: `GET /api/v1/products`
+- สร้าง order ใหม่: `POST /api/v1/orders`
+- ลบ user id `10`: `DELETE /api/v1/users/10`
 - ยังไม่ได้ login หรือ token ไม่ถูกต้อง: `401 Unauthorized`
 - login แล้วแต่ไม่มีสิทธิ์: `403 Forbidden`
 

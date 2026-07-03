@@ -14,7 +14,7 @@ flowchart LR
     Client["Client sends Bearer token"] --> JwtMiddleware["JWT Bearer middleware"]
     JwtMiddleware --> Principal["HttpContext.User<br/>ClaimsPrincipal"]
     Principal --> CurrentUserService["CurrentUserService"]
-    CurrentUserService --> AuthController["AuthController /api/auth/me"]
+    CurrentUserService --> AuthController["AuthController /api/v1/auth/me"]
     AuthController --> Response["CurrentUserResponse"]
 ```
 
@@ -25,7 +25,7 @@ flowchart LR
 1. เข้าใจรูปแบบ `Authorization` header
 2. สร้าง `CurrentUserService`
 3. ลงทะเบียน `HttpContextAccessor`
-4. เพิ่ม `GET /api/auth/me`
+4. เพิ่ม `GET /api/v1/auth/me`
 5. ทดสอบด้วย token และไม่ส่ง token
 
 ## สิ่งที่จะใช้ในบทนี้
@@ -168,7 +168,7 @@ using Microsoft.AspNetCore.Authorization;
 using Backend.Api.Exceptions;
 ```
 
-## ขั้นที่ 7: เพิ่ม endpoint GET /api/auth/me
+## ขั้นที่ 7: เพิ่ม endpoint GET /api/v1/auth/me
 
 เพิ่ม action นี้ใน `AuthController`
 
@@ -221,8 +221,8 @@ using Microsoft.AspNetCore.Authorization;
 เรียก login ก่อน:
 
 ```http
-@baseUrl = http://localhost:5156
-@authPath = /api/auth
+@baseUrl = http://localhost:<http-port>
+@authPath = /api/v1/auth
 
 ### Login
 POST {{baseUrl}}{{authPath}}/login
@@ -255,6 +255,8 @@ Accept: application/json
 }
 ```
 
+ในบทนี้ `me` อ่านข้อมูลจาก claims ใน token เพื่อให้เห็นกลไกของ JWT ให้ชัดก่อน ถ้า user ถูกปิดใช้งานหลังจากออก token แล้ว token เดิมอาจยังมี claim เดิมจนกว่าจะหมดอายุ ในระบบ production มักตรวจ user จาก database เพิ่ม หรือใช้ refresh token/session policy ซึ่งจะต่อยอดในภาค Admin และ production hardening
+
 ## ถ้าไม่ได้ส่ง token
 
 ลองเรียก endpoint เดิมโดยไม่ส่ง Authorization header:
@@ -274,6 +276,6 @@ Accept: application/json
 
 - มี `CurrentUserService`
 - ลงทะเบียน `AddHttpContextAccessor`
-- `GET /api/auth/me` ใช้ `[Authorize]`
+- `GET /api/v1/auth/me` ใช้ `[Authorize]`
 - ส่ง token แล้วได้ข้อมูล user ปัจจุบัน
 - ไม่ส่ง token แล้วได้ `401 Unauthorized`

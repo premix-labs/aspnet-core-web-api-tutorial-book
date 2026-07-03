@@ -11,7 +11,7 @@ description: สร้าง endpoint ด้วย Controller และทำ CR
 
 ภาคนี้ใช้ข้อมูลใน memory ด้วย `static List<T>` ดังนั้นข้อมูลจะเปลี่ยนระหว่างที่ application ยังรันอยู่ ถ้า restart server ข้อมูลจะกลับไปเป็นค่าเริ่มต้น เรื่องนี้ตั้งใจให้เกิดขึ้นเพื่อให้เห็นผลของ `POST`, `PUT` และ `DELETE` ชัดเจนก่อนเชื่อมต่อ database
 
-เวลา test ให้ใช้ port ที่ terminal ของคุณแสดงจริง เช่น `http://localhost:5156` หรือ `https://localhost:7127` ไม่ต้องยึดเลข port จากตัวอย่างในหนังสือ
+เวลา test ให้ใช้ port ที่ terminal ของคุณแสดงจริง เช่น `http://localhost:<http-port>` หรือ `https://localhost:<https-port>` ไม่ต้องยึดเลข port จากตัวอย่างในหนังสือ
 
 ## บทในภาคนี้
 
@@ -39,3 +39,5 @@ description: สร้าง endpoint ด้วย Controller และทำ CR
 - route parameter ใช้รูปแบบ `{id:int}` ไม่ใช่ `"id:int"`
 - ไฟล์ `.http` ใช้ `baseUrl` ตรงกับ port จริงของเครื่องคุณ
 - ทดสอบทั้งกรณีสำเร็จและกรณีไม่พบข้อมูลได้
+- `dotnet build` ผ่านหลังเพิ่ม CRUD endpoint
+- ยังไม่ต้องสร้าง `Services`, `Repositories`, `Dtos` หรือเชื่อมต่อ database ในภาคนี้ เพราะจะเริ่มแยก architecture ในภาคถัดไป

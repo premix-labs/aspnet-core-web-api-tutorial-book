@@ -29,6 +29,26 @@ Delete  ลบข้อมูล
 
 ถ้า build พัง ให้แก้ error แรกก่อน อย่าแก้หลายจุดพร้อมกัน
 
+## ก่อนเริ่มบทนี้
+
+ให้ตรวจว่าบทที่ 6 ผ่านแล้ว:
+
+```powershell
+dotnet build
+```
+
+และ `GET /api/v1/users` ต้องตอบ JSON array ได้แล้ว ถ้า endpoint แรกยังไม่ทำงาน ให้แก้ `UsersController` จากบทก่อนก่อนเริ่มเพิ่ม CRUD
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+บทนี้แก้ไฟล์เดียว:
+
+```text
+Controllers/UsersController.cs
+```
+
+เราจะยังไม่สร้างโฟลเดอร์ `Dtos`, `Models`, `Services` หรือ `Repositories` ในบทนี้ เพราะภาคนี้ต้องการให้เห็น HTTP และ Controller ก่อน โครงสร้างเหล่านั้นจะเริ่มในภาค Architecture
+
 ## สิ่งที่จะใช้ในบทนี้
 
 ก่อนเขียน code ให้รู้จัก attribute และ helper method ที่จะใช้ก่อน
@@ -36,7 +56,7 @@ Delete  ลบข้อมูล
 | สิ่งที่จะใช้ | ความหมาย |
 | --- | --- |
 | `[HttpGet]` | รับ request แบบ `GET` เพื่ออ่านข้อมูล |
-| `[HttpGet("{id:int}")]` | รับ `GET` พร้อม id จาก URL เช่น `/api/users/1` |
+| `[HttpGet("{id:int}")]` | รับ `GET` พร้อม id จาก URL เช่น `/api/v1/users/1` |
 | `[HttpPost]` | รับ `POST` เพื่อสร้างข้อมูลใหม่ โดยข้อมูลมักอยู่ใน request body |
 | `[HttpPut("{id:int}")]` | รับ `PUT` เพื่อแก้ไขข้อมูลตาม id |
 | `[HttpDelete("{id:int}")]` | รับ `DELETE` เพื่อลบข้อมูลตาม id |
@@ -76,16 +96,16 @@ Delete  ลบข้อมูล
 Controllers/UsersController.cs
 ```
 
-จากบทก่อน เรามี `UsersController` ที่ตอบ `GET /api/users` ด้วย array ชั่วคราวอยู่ใน method
+จากบทก่อน เรามี `UsersController` ที่ตอบ `GET /api/v1/users` ด้วย array ชั่วคราวอยู่ใน method
 
 บทนี้จะค่อย ๆ เปลี่ยนให้ controller มี endpoint ครบ:
 
 ```text
-GET    /api/users
-GET    /api/users/{id}
-POST   /api/users
-PUT    /api/users/{id}
-DELETE /api/users/{id}
+GET    /api/v1/users
+GET    /api/v1/users/{id}
+POST   /api/v1/users
+PUT    /api/v1/users/{id}
+DELETE /api/v1/users/{id}
 ```
 
 ## Step 1: สร้าง DTO และข้อมูลใน memory
@@ -96,10 +116,10 @@ DELETE /api/users/{id}
 // Response DTO returned to the client.
 public record UserDto(int Id, string Email);
 
-// Request body for POST /api/users.
+// Request body for POST /api/v1/users.
 public record CreateUserRequest(string Email);
 
-// Request body for PUT /api/users/{id}.
+// Request body for PUT /api/v1/users/{id}.
 public record UpdateUserRequest(string Email);
 ```
 
@@ -140,7 +160,7 @@ UpdateUserRequest
 private static readonly List<UserDto> Users = ...
 ```
 
-ส่วนที่ 3: action `GET /api/users` จากบทก่อนควรยังอยู่
+ส่วนที่ 3: action `GET /api/v1/users` จากบทก่อนควรยังอยู่
 
 ```csharp
 [HttpGet]
@@ -167,7 +187,7 @@ public IActionResult GetUsers()
 endpoint:
 
 ```text
-GET /api/users
+GET /api/v1/users
 ```
 
 `Ok(Users)` หมายถึงตอบ `200 OK` พร้อม list ของ user เป็น JSON
@@ -197,13 +217,13 @@ public IActionResult GetUserById(int id)
 endpoint:
 
 ```text
-GET /api/users/1
+GET /api/v1/users/1
 ```
 
 อธิบายทีละส่วน:
 
 - `[HttpGet("{id:int}")]` รับ `GET` ที่มี id เป็นตัวเลข
-- `int id` รับค่าจาก URL เช่น `/api/users/1`
+- `int id` รับค่าจาก URL เช่น `/api/v1/users/1`
 - `FirstOrDefault(...)` หา user ที่ id ตรงกัน
 - `user is null` แปลว่าไม่พบ user
 - `NotFound()` ตอบ `404 Not Found`
@@ -234,7 +254,7 @@ public IActionResult CreateUser(CreateUserRequest request)
 endpoint:
 
 ```text
-POST /api/users
+POST /api/v1/users
 ```
 
 body:
@@ -284,7 +304,7 @@ public IActionResult UpdateUser(int id, UpdateUserRequest request)
 endpoint:
 
 ```text
-PUT /api/users/1
+PUT /api/v1/users/1
 ```
 
 body:
@@ -333,7 +353,7 @@ public IActionResult DeleteUser(int id)
 endpoint:
 
 ```text
-DELETE /api/users/1
+DELETE /api/v1/users/1
 ```
 
 อธิบายทีละส่วน:
@@ -386,19 +406,19 @@ dotnet build
 ให้รัน API แล้วทดสอบตามลำดับนี้:
 
 ```text
-GET    /api/users
-GET    /api/users/1
-POST   /api/users
-GET    /api/users
-PUT    /api/users/1
-GET    /api/users/1
-DELETE /api/users/1
-GET    /api/users/1
+GET    /api/v1/users
+GET    /api/v1/users/1
+POST   /api/v1/users
+GET    /api/v1/users
+PUT    /api/v1/users/1
+GET    /api/v1/users/1
+DELETE /api/v1/users/1
+GET    /api/v1/users/1
 ```
 
 การทดสอบตามลำดับนี้ทำให้เห็นว่าข้อมูลใน memory เปลี่ยนจริง
 
-เพราะข้อมูลอยู่ใน memory ลำดับการทดสอบจึงสำคัญ ถ้าคุณลบ user id `1` ด้วย `DELETE /api/users/1` แล้วเรียก `GET /api/users/1` หรือ `PUT /api/users/1` ต่อทันที ผลลัพธ์ควรเป็น `404 Not Found` จนกว่าจะ restart application
+เพราะข้อมูลอยู่ใน memory ลำดับการทดสอบจึงสำคัญ ถ้าคุณลบ user id `1` ด้วย `DELETE /api/v1/users/1` แล้วเรียก `GET /api/v1/users/1` หรือ `PUT /api/v1/users/1` ต่อทันที ผลลัพธ์ควรเป็น `404 Not Found` จนกว่าจะ restart application
 
 ## ผลลัพธ์ที่ควรได้
 
@@ -406,18 +426,18 @@ GET    /api/users/1
 
 | Request | กรณี | Status code ที่ควรได้ |
 | --- | --- | --- |
-| `GET /api/users` | อ่านรายการทั้งหมด | `200 OK` |
-| `GET /api/users/1` | พบ user | `200 OK` |
-| `GET /api/users/999` | ไม่พบ user | `404 Not Found` |
-| `POST /api/users` | สร้าง user สำเร็จ | `201 Created` |
-| `PUT /api/users/1` | พบ user และแก้ไขสำเร็จ | `200 OK` |
-| `PUT /api/users/999` | ไม่พบ user | `404 Not Found` |
-| `DELETE /api/users/1` | พบ user และลบสำเร็จ | `204 No Content` |
-| `DELETE /api/users/999` | ไม่พบ user | `404 Not Found` |
+| `GET /api/v1/users` | อ่านรายการทั้งหมด | `200 OK` |
+| `GET /api/v1/users/1` | พบ user | `200 OK` |
+| `GET /api/v1/users/999` | ไม่พบ user | `404 Not Found` |
+| `POST /api/v1/users` | สร้าง user สำเร็จ | `201 Created` |
+| `PUT /api/v1/users/1` | พบ user และแก้ไขสำเร็จ | `200 OK` |
+| `PUT /api/v1/users/999` | ไม่พบ user | `404 Not Found` |
+| `DELETE /api/v1/users/1` | พบ user และลบสำเร็จ | `204 No Content` |
+| `DELETE /api/v1/users/999` | ไม่พบ user | `404 Not Found` |
 
 ## ข้อผิดพลาดที่เจอบ่อย
 
-ถ้า `PUT /api/users/1` ได้ `405 Method Not Allowed` ให้ตรวจว่า attribute เขียนเป็น route parameter จริงหรือไม่:
+ถ้า `PUT /api/v1/users/1` ได้ `405 Method Not Allowed` ให้ตรวจว่า attribute เขียนเป็น route parameter จริงหรือไม่:
 
 ```csharp
 [HttpPut("{id:int}")]
@@ -429,9 +449,9 @@ GET    /api/users/1
 [HttpPut("id:int")]
 ```
 
-แบบแรกหมายถึงรับค่า `id` จาก URL ส่วนแบบหลังหมายถึง path ต้องเป็นข้อความ `/api/users/id:int`
+แบบแรกหมายถึงรับค่า `id` จาก URL ส่วนแบบหลังหมายถึง path ต้องเป็นข้อความ `/api/v1/users/id:int`
 
-ถ้า `GET /api/users/1` ได้ `404 Not Found` หลังจากทดสอบ `DELETE` ไปแล้ว ให้ restart API เพราะข้อมูลใน memory ถูกลบไปจริงระหว่างที่ application ยังรันอยู่
+ถ้า `GET /api/v1/users/1` ได้ `404 Not Found` หลังจากทดสอบ `DELETE` ไปแล้ว ให้ restart API เพราะข้อมูลใน memory ถูกลบไปจริงระหว่างที่ application ยังรันอยู่
 
 ถ้า `POST` หรือ `PUT` ได้ `400 Bad Request` ให้ตรวจว่า JSON body ถูกต้องหรือไม่ เช่น key ต้องอยู่ใน double quote และไม่มี comma เกินท้าย object
 
@@ -442,10 +462,12 @@ GET    /api/users/1
 ลองเพิ่ม endpoint สำหรับค้นหา user ด้วย email:
 
 ```text
-GET /api/users/by-email/admin@example.com
+GET /api/v1/users/by-email/admin@example.com
 ```
 
-แนวทางคือสร้าง action ใหม่ที่ใช้ route ชัดเจน ไม่ชนกับ `GET /api/users/{id}`:
+แนวทางคือสร้าง action ใหม่ที่ใช้ route ชัดเจน ไม่ชนกับ `GET /api/v1/users/{id}`:
+
+ในตัวอย่างนี้ `StringComparison.OrdinalIgnoreCase` หมายถึงให้เปรียบเทียบ email แบบไม่สนตัวพิมพ์เล็กหรือใหญ่ เช่น `ADMIN@example.com` และ `admin@example.com` ถือว่าตรงกัน
 
 ```csharp
 [HttpGet("by-email/{email}")]
@@ -470,11 +492,11 @@ public IActionResult GetUserByEmail(string email)
 เมื่อจบบทนี้ คุณควรมี endpoint เหล่านี้:
 
 ```text
-GET    /api/users
-GET    /api/users/{id}
-POST   /api/users
-PUT    /api/users/{id}
-DELETE /api/users/{id}
+GET    /api/v1/users
+GET    /api/v1/users/{id}
+POST   /api/v1/users
+PUT    /api/v1/users/{id}
+DELETE /api/v1/users/{id}
 ```
 
 และควรอธิบายได้ว่า:

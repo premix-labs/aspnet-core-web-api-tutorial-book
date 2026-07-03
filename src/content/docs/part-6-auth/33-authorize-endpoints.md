@@ -54,7 +54,7 @@ Backend.Api.http
 
 ## ขั้นที่ 1: ป้องกัน UsersController
 
-หลังมีระบบ register แล้ว endpoint สร้างผู้ใช้แบบ public ไม่ควรอยู่ที่ `POST /api/users` อีกต่อไป
+หลังมีระบบ register แล้ว endpoint สร้างผู้ใช้แบบ public ไม่ควรอยู่ที่ `POST /api/v1/users` อีกต่อไป
 
 เปิด `Controllers/UsersController.cs` แล้วเพิ่ม using:
 
@@ -67,7 +67,7 @@ using Microsoft.AspNetCore.Authorization;
 ```csharp
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class UsersController(IUserService userService) : ControllerBase
 {
     // Actions
@@ -76,11 +76,11 @@ public class UsersController(IUserService userService) : ControllerBase
 
 เมื่อใส่ `[Authorize]` ที่ controller ทุก action ใน controller นี้ต้อง login ก่อน
 
-ถ้าโปรเจกต์ของคุณใช้ route แบบ versioned เช่น `[Route("api/v1/[controller]")]` ให้ใช้ route เดิมของโปรเจกต์ต่อไป จุดสำคัญคือเพิ่ม `[Authorize]`
+หนังสือเล่มนี้ใช้ route `[Route("api/v1/[controller]")]` ตั้งแต่บท Controller แรก จุดสำคัญของบทนี้คือเพิ่ม `[Authorize]` โดยไม่เปลี่ยน route เดิม
 
-## ควรทำอย่างไรกับ POST /api/users
+## ควรทำอย่างไรกับ POST /api/v1/users
 
-ในภาคนี้แนะนำให้ป้องกัน `UsersController` ทั้งตัวด้วย `[Authorize]` เพราะ public register ถูกย้ายไปที่ `POST /api/auth/register` แล้ว
+ในภาคนี้แนะนำให้ป้องกัน `UsersController` ทั้งตัวด้วย `[Authorize]` เพราะ public register ถูกย้ายไปที่ `POST /api/v1/auth/register` แล้ว
 
 ในภาค Admin เราจะย้าย logic การสร้าง user โดย admin ไปไว้ที่ admin controller แยก
 
@@ -93,9 +93,9 @@ public class UsersController(IUserService userService) : ControllerBase
 สิ่งที่ควรเป็น:
 
 ```text
-POST /api/auth/register  public
-POST /api/auth/login     public
-GET  /api/auth/me        protected with [Authorize]
+POST /api/v1/auth/register  public
+POST /api/v1/auth/login     public
+GET  /api/v1/auth/me        protected with [Authorize]
 ```
 
 ดังนั้นให้ใส่ `[Authorize]` เฉพาะ action `me` ตามบทก่อน
@@ -109,7 +109,7 @@ GET  /api/auth/me        protected with [Authorize]
 ```csharp
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class ExampleController : ControllerBase
 {
     [AllowAnonymous]
@@ -146,13 +146,21 @@ public IActionResult AdminOnly()
 
 ถ้า user login แล้วแต่ role ไม่ใช่ `Admin` API จะตอบ `403 Forbidden`
 
+ในบทนี้ `UsersController` ถูกป้องกันแค่ระดับ login ดังนั้น user ที่มี token ถูกต้องควรยังเรียก `GET /api/v1/users` ได้ `200 OK` เมื่อขึ้นภาค Admin แล้ว route ที่ใช้จัดการผู้ใช้จะค่อย ๆ ถูกย้ายและจำกัดเป็น role `Admin` มากขึ้น
+
 ## ขั้นที่ 3: ทดสอบ endpoint ที่ถูกป้องกัน
+
+ก่อนทดสอบให้รัน build หนึ่งครั้ง:
+
+```powershell
+dotnet build
+```
 
 เรียก endpoint โดยไม่ส่ง token:
 
 ```http
-@baseUrl = http://localhost:5156
-@usersPath = /api/users
+@baseUrl = http://localhost:<http-port>
+@usersPath = /api/v1/users
 
 ### Protected users endpoint without token
 GET {{baseUrl}}{{usersPath}}
@@ -174,16 +182,14 @@ Accept: application/json
 
 ควรได้ `200 OK`
 
-ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยนเฉพาะ `@usersPath` เป็น `/api/v1/users`
-
 ## เพิ่ม request ใน Backend.Api.http
 
 ใช้ชุดนี้เป็น checkpoint หลังจบภาค 6:
 
 ```http
-@baseUrl = http://localhost:5156
-@authPath = /api/auth
-@usersPath = /api/users
+@baseUrl = http://localhost:<http-port>
+@authPath = /api/v1/auth
+@usersPath = /api/v1/users
 @token = paste-token-here
 
 ### Register
@@ -223,9 +229,7 @@ Authorization: Bearer {{token}}
 Accept: application/json
 ```
 
-ถ้าเครื่องคุณใช้ HTTPS ได้ ให้เปลี่ยน `baseUrl` เป็น port HTTPS จริงของเครื่อง เช่น `https://localhost:7127`
-
-ถ้าโปรเจกต์ของคุณใช้ route แบบ `/api/v1/users` ให้เปลี่ยนเฉพาะ `@usersPath` เป็น `/api/v1/users`
+ถ้าเครื่องคุณใช้ HTTPS ได้ ให้เปลี่ยน `baseUrl` เป็น port HTTPS จริงของเครื่อง เช่น `https://localhost:<https-port>`
 
 ## Checkpoint
 

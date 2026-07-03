@@ -1,4 +1,4 @@
-﻿---
+---
 title: "54. Email Verification และ Reset Password"
 description: "ทำระบบยืนยันอีเมลและลืมรหัสผ่านแบบ production-grade โดยเก็บเฉพาะ token hash"
 ---
@@ -129,7 +129,7 @@ sequenceDiagram
     User->>AuthApi: Register
     AuthApi->>TokenStore: store verification token hash
     AuthApi->>EmailSender: send verification link
-    User->>AuthApi: POST /api/auth/verify-email
+    User->>AuthApi: POST /api/v1/auth/verify-email
     AuthApi->>TokenStore: validate token hash
     AuthApi-->>User: email verified
 ```
@@ -164,14 +164,14 @@ VerifyEmail(rawToken):
 endpoint:
 
 ```text
-POST /api/auth/verify-email
-POST /api/auth/resend-email-verification
+POST /api/v1/auth/verify-email
+POST /api/v1/auth/resend-email-verification
 ```
 
 ตัวอย่าง request:
 
 ```http
-POST {{baseUrl}}/api/auth/verify-email
+POST {{baseUrl}}/api/v1/auth/verify-email
 Content-Type: application/json
 
 {
@@ -193,10 +193,10 @@ sequenceDiagram
     participant EmailSender
     participant RefreshTokens
 
-    User->>AuthApi: POST /api/auth/forgot-password
+    User->>AuthApi: POST /api/v1/auth/forgot-password
     AuthApi->>TokenStore: store reset token hash
     AuthApi->>EmailSender: send reset link
-    User->>AuthApi: POST /api/auth/reset-password
+    User->>AuthApi: POST /api/v1/auth/reset-password
     AuthApi->>TokenStore: consume reset token
     AuthApi->>RefreshTokens: revoke all sessions
     AuthApi-->>User: password reset completed
@@ -237,14 +237,14 @@ ResetPassword(rawToken, newPassword):
 endpoint:
 
 ```text
-POST /api/auth/forgot-password
-POST /api/auth/reset-password
+POST /api/v1/auth/forgot-password
+POST /api/v1/auth/reset-password
 ```
 
 ตัวอย่าง forgot password:
 
 ```http
-POST {{baseUrl}}/api/auth/forgot-password
+POST {{baseUrl}}/api/v1/auth/forgot-password
 Content-Type: application/json
 
 {
@@ -255,7 +255,7 @@ Content-Type: application/json
 ตัวอย่าง reset password:
 
 ```http
-POST {{baseUrl}}/api/auth/reset-password
+POST {{baseUrl}}/api/v1/auth/reset-password
 Content-Type: application/json
 
 {

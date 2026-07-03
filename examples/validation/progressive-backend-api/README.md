@@ -21,7 +21,7 @@
 - เพิ่ม error response ที่มี `code` และ `traceId`
 - เพิ่ม register/login, password hashing และ JWT
 - เพิ่ม email verification และ reset password พร้อม token hash, resend endpoint, revoke refresh token หลัง reset และ test email sender
-- เพิ่ม `GET /api/auth/me`
+- เพิ่ม `GET /api/v1/auth/me`
 - ป้องกัน `UsersController` ด้วย `[Authorize]`
 - เพิ่ม admin role และ `AdminUsersController`
 - เพิ่ม admin user list, change role/status, self-protection และ audit log
@@ -69,72 +69,72 @@ dotnet tool run dotnet-ef database update
 ## Endpoint สำคัญ
 
 ```text
-GET    /api/users
-GET    /api/users/{id}
-POST   /api/users
-PUT    /api/users/{id}
-DELETE /api/users/{id}
+GET    /api/v1/users
+GET    /api/v1/users/{id}
+POST   /api/v1/users
+PUT    /api/v1/users/{id}
+DELETE /api/v1/users/{id}
 
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/verify-email
-POST   /api/auth/resend-email-verification
-POST   /api/auth/forgot-password
-POST   /api/auth/reset-password
-POST   /api/auth/refresh
-POST   /api/auth/revoke
-GET    /api/auth/me
-GET    /api/auth/sessions
-DELETE /api/auth/sessions/{familyId}
-DELETE /api/auth/sessions
+POST   /api/v1/auth/register
+POST   /api/v1/auth/login
+POST   /api/v1/auth/verify-email
+POST   /api/v1/auth/resend-email-verification
+POST   /api/v1/auth/forgot-password
+POST   /api/v1/auth/reset-password
+POST   /api/v1/auth/refresh
+POST   /api/v1/auth/revoke
+GET    /api/v1/auth/me
+GET    /api/v1/auth/sessions
+DELETE /api/v1/auth/sessions/{familyId}
+DELETE /api/v1/auth/sessions
 
-GET    /api/admin/users
-GET    /api/admin/users/{id}
-PATCH  /api/admin/users/{id}/role
-PATCH  /api/admin/users/{id}/status
+GET    /api/v1/admin/users
+GET    /api/v1/admin/users/{id}
+PATCH  /api/v1/admin/users/{id}/role
+PATCH  /api/v1/admin/users/{id}/status
 ```
 
-หมายเหตุ: `/api/users` เป็น endpoint CRUD จากบทต้น ๆ แต่ใน end-state นี้ถูกจำกัดให้ใช้ได้เฉพาะ `Admin` เพื่อไม่ให้ user ปกติอ่านหรือแก้ไขข้อมูลผู้ใช้อื่น
+หมายเหตุ: `/api/v1/users` เป็น endpoint CRUD จากบทต้น ๆ แต่ใน end-state นี้ถูกจำกัดให้ใช้ได้เฉพาะ `Admin` เพื่อไม่ให้ user ปกติอ่านหรือแก้ไขข้อมูลผู้ใช้อื่น
 
 ## Smoke Test ล่าสุด
 
 ```text
 SeededCount                                    2
-GET /api/users                                 200
-POST /api/users                                201
-POST /api/users email ซ้ำ                     409
-POST /api/users email ผิดรูปแบบ               400
-POST /api/users domain ต้องห้าม               400
-GET /api/users/{id}                            200
-GET /api/users/{id} ไม่พบ                     404
-PUT /api/users/{id}                            200
-PUT /api/users/{id} email ซ้ำ                 409
-DELETE /api/users/{id}                         204
-GET /api/users/{id} หลังลบ                    404
-POST /api/auth/login                           200
-POST /api/auth/verify-email                    200
-POST /api/auth/resend-email-verification       200
-POST /api/auth/forgot-password                 204
-POST /api/auth/reset-password                  204
-GET /api/auth/me ไม่มี token                   401
-GET /api/auth/me พร้อม token                   200
-GET /api/users ไม่มี token                     401
-GET /api/users พร้อม user token                403
-GET /api/users พร้อม admin token               200
-POST /api/auth/login password ผิด              401
-POST /api/auth/login inactive                  403
-POST /api/auth/register                        200
-GET /api/admin/users/ping ไม่มี token          401
-GET /api/admin/users/ping user token           403
-GET /api/admin/users/ping admin token          200
-GET /api/admin/users                           200
-PATCH /api/admin/users/{id}/role               200
-PATCH /api/admin/users/{id}/status             200
+GET /api/v1/users                                 200
+POST /api/v1/users                                201
+POST /api/v1/users email ซ้ำ                     409
+POST /api/v1/users email ผิดรูปแบบ               400
+POST /api/v1/users domain ต้องห้าม               400
+GET /api/v1/users/{id}                            200
+GET /api/v1/users/{id} ไม่พบ                     404
+PUT /api/v1/users/{id}                            200
+PUT /api/v1/users/{id} email ซ้ำ                 409
+DELETE /api/v1/users/{id}                         204
+GET /api/v1/users/{id} หลังลบ                    404
+POST /api/v1/auth/login                           200
+POST /api/v1/auth/verify-email                    200
+POST /api/v1/auth/resend-email-verification       200
+POST /api/v1/auth/forgot-password                 204
+POST /api/v1/auth/reset-password                  204
+GET /api/v1/auth/me ไม่มี token                   401
+GET /api/v1/auth/me พร้อม token                   200
+GET /api/v1/users ไม่มี token                     401
+GET /api/v1/users พร้อม user token                403
+GET /api/v1/users พร้อม admin token               200
+POST /api/v1/auth/login password ผิด              401
+POST /api/v1/auth/login inactive                  403
+POST /api/v1/auth/register                        200
+GET /api/v1/admin/users/ping ไม่มี token          401
+GET /api/v1/admin/users/ping user token           403
+GET /api/v1/admin/users/ping admin token          200
+GET /api/v1/admin/users                           200
+PATCH /api/v1/admin/users/{id}/role               200
+PATCH /api/v1/admin/users/{id}/status             200
 AuditLogs หลังเปลี่ยน role/status             2 records
 dotnet test                                    49 passed
-published app /api/auth/me                     401
-Docker image /api/auth/me                      401
-Docker Compose /api/auth/me                    401
+published app /api/v1/auth/me                     401
+Docker image /api/v1/auth/me                      401
+Docker Compose /api/v1/auth/me                    401
 ```
 
 หมายเหตุ: ชื่อโฟลเดอร์ยังเป็น `progressive-backend-api` เพราะเริ่มสร้างตอนตรวจบท 1-15 แต่โปรเจกต์เดียวกันนี้ใช้ตรวจต่อเนื่องจนถึง end-state ล่าสุดของหนังสือ

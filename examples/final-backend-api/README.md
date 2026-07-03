@@ -130,22 +130,22 @@ dotnet run --project Backend.Api
 ```text
 GET  /health/live
 GET  /health/ready
-POST /api/auth/register
-POST /api/auth/login
-POST /api/auth/verify-email
-POST /api/auth/resend-email-verification
-POST /api/auth/forgot-password
-POST /api/auth/reset-password
-POST /api/auth/refresh
-POST /api/auth/revoke
-GET  /api/auth/me
-GET  /api/auth/sessions
-DELETE /api/auth/sessions/{familyId}
-DELETE /api/auth/sessions
-GET  /api/admin/users
-GET  /api/admin/users/{id}
-PATCH /api/admin/users/{id}/role
-PATCH /api/admin/users/{id}/status
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+POST /api/v1/auth/verify-email
+POST /api/v1/auth/resend-email-verification
+POST /api/v1/auth/forgot-password
+POST /api/v1/auth/reset-password
+POST /api/v1/auth/refresh
+POST /api/v1/auth/revoke
+GET  /api/v1/auth/me
+GET  /api/v1/auth/sessions
+DELETE /api/v1/auth/sessions/{familyId}
+DELETE /api/v1/auth/sessions
+GET  /api/v1/admin/users
+GET  /api/v1/admin/users/{id}
+PATCH /api/v1/admin/users/{id}/role
+PATCH /api/v1/admin/users/{id}/status
 ```
 
 ## Production hardening baseline

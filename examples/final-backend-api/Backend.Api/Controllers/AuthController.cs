@@ -7,7 +7,7 @@ using Backend.Api.Services;
 namespace Backend.Api.Controllers;
 
 [ApiController]
-[Route("api/auth")]
+[Route("api/v1/auth")]
 [EnableRateLimiting("auth")]
 public class AuthController(IAuthService authService) : ControllerBase
 {
