@@ -1,0 +1,110 @@
+---
+title: "Introduction"
+description: "โครงสร้างเนื้อหา ASP.NET Core Web API Tutorial Book ตั้งแต่พื้นฐานจนพร้อมทำงานจริง"
+chapter: 0
+icon: book-open
+---
+
+# Introduction
+
+หนังสือเล่มนี้วางเป็นหนังสือเล่มเดียว โดยสอนผ่านโปรเจกต์ **Secure Admin Web API** ตั้งแต่สร้างโปรเจกต์เปล่าจนเป็น backend ที่มี authentication, authorization, database, validation, tests และ Docker
+
+เป้าหมายไม่ใช่แค่ทำตามแล้วรันได้ แต่ต้องเข้าใจว่าแต่ละชั้นของระบบมีหน้าที่อะไร ทำไมต้องแยกไฟล์แบบนั้น และเวลาเจอปัญหาจะแก้จากจุดไหน
+
+## ภาค 1: พื้นฐานก่อนสร้าง API
+
+1. ASP.NET Core Web API คืออะไร
+2. ติดตั้งเครื่องมือที่จำเป็น
+3. สร้างโปรเจกต์แรก
+4. เข้าใจโครงสร้างไฟล์ของ ASP.NET Core
+5. พื้นฐาน HTTP, REST และ JSON
+
+## ภาค 2: Controller และ REST API
+
+6. สร้าง Controller แรก
+7. ทำ GET, POST, PUT, DELETE
+8. Routing และ Route Parameter
+9. Request, Response และ Status Code
+10. ทดสอบ API ด้วย REST Client หรือ Postman
+
+## ภาค 3: จัดโครงสร้างโปรเจกต์ให้พร้อมโต
+
+11. แยก Controller, Service, Repository
+12. Dependency Injection
+13. DTO คืออะไรและใช้เมื่อไหร่
+14. Mapping ระหว่าง Entity กับ DTO
+15. Response Format ที่อ่านง่ายและดูแลต่อได้
+
+## ภาค 4: เชื่อมต่อฐานข้อมูลด้วย EF Core
+
+16. ติดตั้ง Entity Framework Core
+17. สร้าง User Entity
+18. สร้าง DbContext
+19. ตั้งค่า Connection String
+20. ใช้ Migration
+21. ทำ CRUD กับฐานข้อมูลจริง
+22. Seed ข้อมูลเริ่มต้น
+
+## ภาค 5: Validation และ Error Handling
+
+23. Validation ด้วย Data Annotations
+24. Custom Validation
+25. Global Exception Handler
+26. Error Response Format
+27. เลือกใช้ HTTP Status Code ให้ถูกต้อง
+
+## ภาค 6: Authentication ด้วย JWT
+
+28. ออกแบบ Register และ Login
+29. Hash Password
+30. สร้าง Login API
+31. สร้าง JWT Token
+32. อ่านข้อมูลผู้ใช้ปัจจุบันจาก Token
+33. ป้องกัน API ด้วย `[Authorize]`
+
+## ภาค 7: Admin API และ Authorization
+
+34. ออกแบบ Role และ Permission
+35. สร้าง Admin Endpoint
+36. ดูรายการผู้ใช้สำหรับ Admin
+37. เปลี่ยน Role หรือสถานะผู้ใช้
+38. ป้องกันไม่ให้ Admin ลบตัวเองผิดพลาด
+39. ทำ Audit Log
+40. Pagination, Filtering และ Sorting
+
+## ภาค 8: เตรียมโปรเจกต์ให้พร้อมใช้งานจริง
+
+41. Logging
+42. Configuration และ Environment Variables
+43. appsettings หลาย environment
+44. OpenAPI และเอกสาร API
+45. Unit Test
+46. Integration Test
+47. Dockerfile
+48. Docker Compose
+49. Build และ Publish
+50. Checklist ก่อน deploy
+
+## ภาค 9: Production Hardening
+
+51. Production-grade User Model
+52. Refresh Token Rotation
+53. Account Lockout และ Password Policy
+54. Email Verification และ Reset Password
+55. CORS, Rate Limiting และ Security Headers
+56. Liveness และ Readiness Health Checks
+57. Secrets และ CI/CD
+58. Observability, Backup และ Runbook
+
+## ภาคผนวก
+
+- โครงสร้าง Final Project
+- Minimal API เทียบกับ Controller
+- ปัญหาที่พบบ่อยใน EF Core
+- ปัญหาที่พบบ่อยใน JWT
+- ตาราง HTTP Status Code ที่ใช้บ่อย
+- ตัวอย่าง REST Client และ Postman Collection
+
+## ผลลัพธ์หลังอ่านจบ
+
+เมื่อทำครบทั้งเล่ม ผู้อ่านควรสามารถสร้าง ASP.NET Core Web API ที่มีโครงสร้างชัดเจน เชื่อมฐานข้อมูล มีระบบ login, register, JWT, role admin, validation, error handling, tests และ Docker ได้ด้วยตัวเอง

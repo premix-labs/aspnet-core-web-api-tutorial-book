@@ -1,0 +1,11 @@
+---
+// Tab.astro — A single panel inside <Tabs>. Give it a label; Tabs builds the buttons.
+interface Props {
+  label: string;
+}
+const { label } = Astro.props;
+---
+
+<div class="tab-panel" data-tab-label={label} role="tabpanel" hidden>
+  <slot />
+</div>

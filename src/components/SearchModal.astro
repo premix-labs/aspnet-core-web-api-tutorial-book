@@ -1,0 +1,137 @@
+---
+// SearchModal.astro
+import { X } from '@lucide/astro';
+import { withBase } from '../utils/url';
+const isProd = import.meta.env.PROD;
+---
+
+<div
+  id="search-modal"
+  class="fixed inset-0 z-[9999] flex items-start justify-center pt-[10vh] opacity-0 pointer-events-none transition-opacity duration-300 ease-in [&.active]:opacity-100 [&.active]:pointer-events-auto"
+  aria-hidden="true"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Search"
+>
+  <div class="absolute inset-0 bg-black/60 -z-10" id="search-modal-close-area"></div>
+  <div
+    id="search-modal-panel"
+    class="w-full max-w-[600px] bg-surface-card border border-line-def rounded-lg overflow-hidden shadow-lg mx-4 relative"
+  >
+    <button
+      id="search-modal-close-btn"
+      class="absolute top-3 right-3 z-10 flex items-center justify-center w-8 h-8 rounded-md text-content-mut transition-colors duration-150 hover:bg-surface-elev hover:text-content-main"
+      aria-label="Close Search"
+    >
+      <X class="w-4 h-4" />
+    </button>
+    <div id="search-ui">
+      {
+        !isProd && (
+          <div class="p-8 text-center text-content-mut">
+            <div class="text-[2rem] mb-4">🔍</div>
+            <p>Search is disabled in Development mode.</p>
+            <p class="text-[0.85rem] mt-2">
+              Run <code class="bg-surface-elev px-1.5 py-0.5 rounded font-code">npm run build</code> and{' '}
+              <code class="bg-surface-elev px-1.5 py-0.5 rounded font-code">npm run preview</code> to test search.
+            </p>
+          </div>
+        )
+      }
+    </div>
+    <div class="py-3 px-5 text-[0.75rem] text-content-mut border-t border-line-sub flex justify-end">
+      <span
+        ><kbd class="bg-surface-elev border border-line-sub rounded-md py-[2px] px-1.5 mr-1 font-code">Esc</kbd> to close</span
+      >
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  /* Override Pagefind Default Styles for Dark Mode */
+  .pagefind-ui {
+    --pagefind-ui-scale: 0.9;
+    --pagefind-ui-primary: var(--primary-400);
+    --pagefind-ui-text: var(--text-primary);
+    --pagefind-ui-background: var(--bg-card);
+    --pagefind-ui-border: var(--border-default);
+    --pagefind-ui-tag: var(--bg-elevated);
+    --pagefind-ui-border-width: 1px;
+    --pagefind-ui-border-radius: var(--radius-md);
+    --pagefind-ui-image-border-radius: var(--radius-sm);
+    --pagefind-ui-font: var(--font-sans);
+  }
+</style>
+
+{
+  isProd && (
+    <>
+      <link href={withBase('pagefind/pagefind-ui.css')} rel="stylesheet" />
+      <script is:inline src={withBase('pagefind/pagefind-ui.js')} />
+    </>
+  )
+}
+
+<script>
+  import { trapFocus } from '../utils/focusTrap';
+
+  let searchKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
+
+  document.addEventListener('astro:page-load', () => {
+    const searchUiContainer = document.getElementById('search-ui');
+    if (searchUiContainer && searchUiContainer.innerHTML === '') {
+      try {
+        // @ts-ignore
+        new PagefindUI({ element: '#search-ui', showSubResults: true, showImages: false });
+      } catch (e) {
+        console.warn('Pagefind UI not loaded. Run build first.');
+      }
+    }
+
+    const modal = document.getElementById('search-modal');
+    const panel = document.getElementById('search-modal-panel');
+    const closeArea = document.getElementById('search-modal-close-area');
+    const closeBtn = document.getElementById('search-modal-close-btn');
+    let lastFocusedTrigger: HTMLElement | null = null;
+    let releaseFocusTrap: (() => void) | null = null;
+
+    const openSearch = (e?: Event) => {
+      lastFocusedTrigger = (e?.currentTarget as HTMLElement) ?? (document.activeElement as HTMLElement);
+      modal?.classList.add('active');
+      modal?.setAttribute('aria-hidden', 'false');
+      if (panel) releaseFocusTrap = trapFocus(panel);
+      const input = document.querySelector('.pagefind-ui__search-input') as HTMLInputElement | null;
+      if (input) setTimeout(() => input.focus(), 100);
+    };
+
+    const closeSearch = () => {
+      modal?.classList.remove('active');
+      modal?.setAttribute('aria-hidden', 'true');
+      releaseFocusTrap?.();
+      releaseFocusTrap = null;
+      lastFocusedTrigger?.focus();
+    };
+
+    if (searchKeydownHandler) {
+      window.removeEventListener('keydown', searchKeydownHandler);
+    }
+
+    searchKeydownHandler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        openSearch();
+      }
+      if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeSearch();
+      }
+    };
+
+    window.addEventListener('keydown', searchKeydownHandler);
+
+    closeArea?.addEventListener('click', closeSearch);
+    closeBtn?.addEventListener('click', closeSearch);
+
+    const searchBtns = document.querySelectorAll('.open-search-btn');
+    searchBtns.forEach((btn) => btn.addEventListener('click', openSearch));
+  });
+</script>

@@ -1,0 +1,559 @@
+---
+title: "Mapping ระหว่าง Entity กับ DTO"
+description: "แปลงข้อมูลระหว่าง object ภายในระบบกับ object ที่ใช้ใน API"
+chapter: 17
+icon: layout-dashboard
+part: "ภาค 3: Architecture"
+---
+
+# Mapping ระหว่าง Entity กับ DTO
+
+Mapping คือการแปลงข้อมูลจาก object รูปแบบหนึ่งไปเป็นอีกรูปแบบหนึ่ง เช่นแปลง `User` model เป็น `UserResponse`
+
+หลังจากเราแยก DTO แล้ว ต้องมีจุดที่แปลงข้อมูลภายในระบบให้เป็นข้อมูลที่ API ส่งออกได้อย่างปลอดภัย
+
+## วิธีเรียนบทนี้
+
+บทนี้ให้แก้จากไฟล์เดิมของบท 12 และ 13 ห้ามเริ่มจากคัดลอก service ใหม่ทั้งไฟล์
+
+ให้ทำทีละจุด:
+
+1. เปลี่ยน return type ใน interface
+2. เพิ่ม method แปลง `User` เป็น `UserResponse`
+3. แก้ service ให้คืน DTO
+4. แก้ controller เฉพาะจุดที่ส่ง request เข้า service
+
+## ก่อนเริ่มบทนี้
+
+ให้ทำบท 13 ให้จบก่อน แล้ว build ตรวจว่า DTO แยกไฟล์เรียบร้อย:
+
+```powershell
+dotnet build
+```
+
+ก่อนเริ่มบทนี้ควรมีไฟล์ DTO ใน `Dtos/Users` แล้ว และ `UsersController` ควร import `Backend.Api.Dtos.Users`
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+บทนี้แก้ไฟล์เดิมเพื่อให้ response ผ่าน DTO:
+
+```text
+Services/IUserService.cs       แก้ return type และ parameter ให้ใช้ DTO
+Services/UserService.cs        เพิ่ม mapping และคืน UserResponse
+Controllers/UsersController.cs ส่ง request DTO เข้า service
+```
+
+บทนี้ยังไม่เพิ่ม validation attribute และยังไม่เพิ่ม error format กลาง เรื่องนั้นจะอยู่ในภาค Validation/Error Handling
+
+## สิ่งที่จะใช้ในบทนี้
+
+ก่อนแก้ code ให้รู้จักสิ่งที่จะเห็นใน mapping ก่อน:
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `ToResponse(User user)` | method ที่แปลง `User` model เป็น `UserResponse` DTO |
+| `private static` | method นี้ใช้เฉพาะใน class เดียวกัน และไม่ต้องใช้ state ของ object |
+| `Select(ToResponse)` | แปลง user ทุกตัวใน list เป็น response DTO |
+| `ToList()` | แปลงผลลัพธ์จาก query กลับเป็น list |
+| `user is null ? null : ToResponse(user)` | ถ้าไม่พบ user ให้คืน `null` ถ้าพบให้แปลงเป็น DTO |
+| `CreateUserRequest request` | ส่ง request DTO เข้า service แทนส่งแค่ string |
+| `UpdateUserRequest request` | ส่ง request DTO เข้า service เพื่อให้ use case ชัดเจนขึ้น |
+
+เป้าหมายคือ Controller ไม่ต้องรู้จัก model ภายในโดยตรง และ response ที่ออกจาก API ต้องผ่าน DTO เสมอ
+
+## ตัวอย่าง Model
+
+ตอนนี้ model ของเรายังเรียบง่าย
+
+```csharp
+namespace Backend.Api.Models;
+
+public class User
+{
+    public int Id { get; set; }
+
+    // Internal model field. More fields will be added in later parts.
+    public string Email { get; set; } = string.Empty;
+}
+```
+
+ในระบบจริง `User` จะมี field มากกว่านี้ เช่น `PasswordHash`, `Role`, `IsActive` และ `CreatedAt`
+
+## ตัวอย่าง DTO
+
+```csharp
+namespace Backend.Api.Dtos.Users;
+
+// Response DTO contains only fields that should leave the API.
+public record UserResponse(int Id, string Email);
+```
+
+`UserResponse` คือสิ่งที่ API ส่งกลับไปหา client ไม่จำเป็นต้องเหมือน model ทุก field
+
+## Mapping แบบ manual
+
+วิธีที่เข้าใจง่ายที่สุดคือเขียน mapping เอง
+
+```csharp
+private static UserResponse ToResponse(User user)
+{
+    return new UserResponse(
+        user.Id,
+        user.Email);
+}
+```
+
+ข้อดีของ manual mapping:
+
+- อ่านง่าย
+- เห็นชัดว่าส่ง field ไหนออก API
+- debug ง่าย
+- ไม่มี magic ซ่อนอยู่
+- เหมาะกับมือใหม่และโปรเจกต์ที่ยังไม่ซับซ้อนมาก
+
+## เพิ่ม mapping ใน UserService
+
+เราจะไม่คัดลอก service ทั้งไฟล์ใหม่ ให้แก้จากไฟล์เดิมของบท 12 ทีละจุด
+
+ลำดับการแก้คือ:
+
+```text
+แก้ IUserService ให้พูดกับ DTO
+  -> เพิ่ม ToResponse ใน UserService
+  -> แก้ method อ่านข้อมูลให้คืน UserResponse
+  -> แก้ method สร้าง/แก้ไขให้รับ request DTO
+  -> แก้ Controller ให้ส่ง request object เข้า service
+  -> build และทดสอบ response
+```
+
+## ขั้นที่ 1: แก้ IUserService ให้ return DTO
+
+เปิดไฟล์:
+
+```text
+Services/IUserService.cs
+```
+
+เพิ่ม using นี้ไว้ด้านบน:
+
+```csharp
+// Import request and response DTOs.
+using Backend.Api.Dtos.Users;
+```
+
+ถ้าไฟล์นี้ยังมี `using Backend.Api.Models;` และไม่ได้ใช้ `User` แล้ว ให้ลบออก
+
+จากนั้นแก้ method สำหรับอ่านข้อมูลให้คืน `UserResponse` แทน `User`:
+
+```csharp
+// Return DTOs instead of internal User models.
+IReadOnlyList<UserResponse> GetUsers();
+
+UserResponse? GetUserById(int id);
+```
+
+ความหมาย:
+
+- `GetUsers()` คืน list ของ response DTO
+- `GetUserById(int id)` อาจคืน `UserResponse` หรือ `null` ถ้าไม่พบ user
+
+แก้ method สำหรับ create/update ให้รับ request DTO:
+
+```csharp
+// Accept request DTOs so service methods match API use cases.
+UserResponse CreateUser(CreateUserRequest request);
+
+UserResponse? UpdateUser(int id, UpdateUserRequest request);
+```
+
+ความหมาย:
+
+- `CreateUser` รับข้อมูลจาก `CreateUserRequest` ทั้ง object
+- `UpdateUser` รับข้อมูลจาก `UpdateUserRequest` ทั้ง object
+- service จะเป็นคนอ่าน `request.Email` เอง
+
+method delete ยังเหมือนเดิม:
+
+```csharp
+// Delete succeeds or fails, but does not need a response DTO.
+bool DeleteUser(int id);
+```
+
+ตรวจไฟล์ `IUserService.cs` หลังแก้:
+
+```text
+IUserService
+  - ไม่ควร return User model แล้ว
+  - ควร return UserResponse สำหรับ endpoint ที่มี body
+  - ควรรับ CreateUserRequest / UpdateUserRequest แทน string email
+```
+
+การเปลี่ยน interface นี้มีความหมายสำคัญ:
+
+- Controller จะได้รับ `UserResponse` แทน `User`
+- Service เป็นคนตัดสินใจว่า field ไหนถูกส่งออก API
+- request DTO ถูกส่งเข้ามาที่ service เพื่อให้ service เห็น use case ชัดเจน
+
+## ขั้นที่ 2: เตรียม UserService ให้รู้จัก DTO และ Model
+
+เปิดไฟล์:
+
+```text
+Services/UserService.cs
+```
+
+ด้านบนไฟล์ควรมี using เหล่านี้:
+
+```csharp
+using Backend.Api.Dtos.Users;
+// User model is needed only for mapping from model to DTO.
+using Backend.Api.Models;
+using Backend.Api.Repositories;
+```
+
+ทำไมต้องมีทั้ง DTO และ Model:
+
+- `Backend.Api.Dtos.Users` ใช้กับ `CreateUserRequest`, `UpdateUserRequest`, `UserResponse`
+- `Backend.Api.Models` ใช้กับ `User` ใน mapping method
+- `Backend.Api.Repositories` ใช้กับ `IUserRepository`
+
+บรรทัดประกาศ class ยังเป็นแบบเดิมได้:
+
+```csharp
+// DI still provides the repository dependency.
+public class UserService(IUserRepository userRepository) : IUserService
+```
+
+ความหมายคือ service ยังรับ repository ผ่าน DI เหมือนบทก่อน
+
+## ขั้นที่ 3: เพิ่ม method ToResponse
+
+เพิ่ม method นี้ไว้ท้าย class `UserService` ก่อนปีกกาปิด class:
+
+```csharp
+private static UserResponse ToResponse(User user)
+{
+    // Explicitly choose which model fields become API response fields.
+    return new UserResponse(
+        user.Id,
+        user.Email);
+}
+```
+
+method นี้เป็นจุดเดียวที่กำหนดว่า `User` ภายในระบบจะถูกส่งออกเป็น response แบบไหน
+
+คำที่ใช้ใน method นี้:
+
+- `private` แปลว่าใช้ได้เฉพาะใน `UserService`
+- `static` แปลว่า method นี้ไม่ต้องใช้ state ของ object
+- `User user` คือ model ภายในระบบ
+- `UserResponse` คือ DTO ที่ส่งออก API
+
+## ขั้นที่ 4: แก้ GetUsers ให้ map list เป็น DTO
+
+หา method `GetUsers()` เดิมใน `UserService` แล้วแก้ให้เป็นแบบนี้:
+
+```csharp
+public IReadOnlyList<UserResponse> GetUsers()
+{
+    // Convert each User model from the repository into a UserResponse DTO.
+    return userRepository.GetAll()
+        .Select(ToResponse)
+        .ToList();
+}
+```
+
+อ่าน code นี้ทีละบรรทัด:
+
+```text
+userRepository.GetAll()  อ่าน User model ทั้งหมด
+Select(ToResponse)       แปลง User แต่ละตัวเป็น UserResponse
+ToList()                 ทำผลลัพธ์ให้เป็น list
+```
+
+## ขั้นที่ 5: แก้ GetUserById ให้ map กรณีพบข้อมูล
+
+หา method `GetUserById(int id)` แล้วแก้ให้เป็นแบบนี้:
+
+```csharp
+public UserResponse? GetUserById(int id)
+{
+    var user = userRepository.GetById(id);
+
+    // Preserve null so the controller can still return 404 Not Found.
+    return user is null ? null : ToResponse(user);
+}
+```
+
+บรรทัดนี้:
+
+```csharp
+return user is null ? null : ToResponse(user);
+```
+
+อ่านว่า “ถ้า `user` เป็น `null` ให้คืน `null`; ถ้าไม่ใช่ `null` ให้แปลงเป็น `UserResponse`”
+
+การคืน `null` ยังสำคัญ เพราะ Controller ต้องใช้เพื่อตัดสินใจตอบ `404 Not Found`
+
+## ขั้นที่ 6: แก้ CreateUser ให้รับ CreateUserRequest
+
+หา method `CreateUser` เดิม แล้วเปลี่ยนจากรับ `string email` เป็นรับ `CreateUserRequest request`
+
+```csharp
+public UserResponse CreateUser(CreateUserRequest request)
+{
+    // Repository still receives simple data, not API request DTOs.
+    var user = userRepository.Add(request.Email);
+
+    return ToResponse(user);
+}
+```
+
+สิ่งที่เปลี่ยน:
+
+- Controller ส่ง request object ทั้งก้อนเข้ามา
+- service อ่านค่า `request.Email`
+- repository ยังรับแค่ email เพราะ repository ไม่ควรรู้จัก API DTO
+
+## ขั้นที่ 7: แก้ UpdateUser ให้รับ UpdateUserRequest
+
+หา method `UpdateUser` เดิม แล้วเปลี่ยนให้รับ `UpdateUserRequest request`
+
+```csharp
+public UserResponse? UpdateUser(int id, UpdateUserRequest request)
+{
+    // Update returns null when the id does not exist.
+    var user = userRepository.Update(id, request.Email);
+
+    return user is null ? null : ToResponse(user);
+}
+```
+
+ถ้า repository คืน `null` แปลว่าไม่พบ user service ก็คืน `null` ต่อให้ Controller
+
+## ขั้นที่ 8: DeleteUser ยังไม่ต้อง map
+
+method delete ไม่ต้องแก้เป็น DTO เพราะ `DELETE` สำเร็จจะตอบ `204 No Content`
+
+```csharp
+public bool DeleteUser(int id)
+{
+    // Delete has no response body, so no mapping is needed.
+    return userRepository.Delete(id);
+}
+```
+
+หลังจบขั้นนี้ `UserService` ควรมี method หลักแบบนี้:
+
+```text
+GetUsers()       return IReadOnlyList<UserResponse>
+GetUserById()    return UserResponse?
+CreateUser()     รับ CreateUserRequest และ return UserResponse
+UpdateUser()     รับ UpdateUserRequest และ return UserResponse?
+DeleteUser()     return bool
+ToResponse()     แปลง User เป็น UserResponse
+```
+
+ตอนนี้ Controller ไม่ต้องรู้จัก `User` model โดยตรงแล้ว Controller คุยกับ DTO ผ่าน service
+
+## แก้ Controller ให้ส่ง DTO เข้า Service
+
+เปิดไฟล์:
+
+```text
+Controllers/UsersController.cs
+```
+
+เราไม่ต้องเขียน Controller ใหม่ทั้งไฟล์ ให้แก้เฉพาะจุดที่เรียก service
+
+## ขั้นที่ 9: ตรวจ using ของ Controller
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+// Import DTOs used by action parameters.
+using Backend.Api.Dtos.Users;
+using Backend.Api.Services;
+```
+
+`Backend.Api.Dtos.Users` ทำให้ Controller รู้จัก `CreateUserRequest` และ `UpdateUserRequest`
+
+## ขั้นที่ 10: GET ยังแทบไม่ต้องแก้
+
+method `GetUsers` และ `GetUserById` ยังเรียก service เหมือนเดิมได้ เพราะ service เปลี่ยนเป็นคนคืน `UserResponse` แล้ว
+
+ตัวอย่าง `GetUserById` ยังเป็นแนวนี้:
+
+```csharp
+// The service already returns UserResponse or null.
+var user = userService.GetUserById(id);
+
+if (user is null)
+{
+    return NotFound();
+}
+
+return Ok(user);
+```
+
+## ขั้นที่ 11: แก้ POST ให้ส่ง request ทั้ง object
+
+ใน method `CreateUser` ให้เปลี่ยนจากส่ง `request.Email` เป็นส่ง `request`
+
+```csharp
+// Pass the whole request DTO into the service.
+var user = userService.CreateUser(request);
+```
+
+เพราะตอนนี้ interface ของ service รับ `CreateUserRequest` ทั้ง object แล้ว
+
+บรรทัด `CreatedAtAction(...)` ยังเหมือนเดิม:
+
+```csharp
+// Location header points to the GET action for the new resource.
+return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+```
+
+## ขั้นที่ 12: แก้ PUT ให้ส่ง request ทั้ง object
+
+ใน method `UpdateUser` ให้เปลี่ยนจากส่ง `request.Email` เป็นส่ง `request`
+
+```csharp
+// Pass the whole update request DTO into the service.
+var user = userService.UpdateUser(id, request);
+```
+
+ส่วน logic `NotFound()` และ `Ok(user)` ยังเหมือนเดิม
+
+## ขั้นที่ 13: DELETE ยังเหมือนเดิม
+
+method `DeleteUser` ยังเรียก service แบบเดิมได้:
+
+```csharp
+// Delete still returns a boolean because success uses 204 No Content.
+var deleted = userService.DeleteUser(id);
+```
+
+เพราะ delete ไม่ต้องใช้ request DTO และไม่มี response DTO ตอนสำเร็จ
+
+## ตรวจ Controller หลังแก้
+
+หลังจบบทนี้ Controller ควรมีลักษณะนี้:
+
+```text
+UsersController
+  - ไม่ควรมี using Backend.Api.Models
+  - ไม่ควร return User model โดยตรง
+  - POST ควรส่ง CreateUserRequest เข้า service
+  - PUT ควรส่ง UpdateUserRequest เข้า service
+  - GET ควรได้ UserResponse จาก service
+```
+
+ตรวจ `IUserService.cs` หลัง mapping:
+
+```text
+GetUsers()       -> IReadOnlyList<UserResponse>
+GetUserById(id)  -> UserResponse?
+CreateUser(...)  -> รับ CreateUserRequest และ return UserResponse
+UpdateUser(...)  -> รับ UpdateUserRequest และ return UserResponse?
+DeleteUser(id)   -> bool
+```
+
+ตรวจ `UserService.cs` หลัง mapping:
+
+```text
+ควรมี using Backend.Api.Dtos.Users;
+ควรมี using Backend.Api.Models;
+ควรมี ToResponse(User user)
+GetUsers()     ใช้ Select(ToResponse).ToList()
+GetUserById()  คืน null หรือ ToResponse(user)
+CreateUser()   อ่าน request.Email แล้วคืน ToResponse(user)
+UpdateUser()   อ่าน request.Email แล้วคืน null หรือ ToResponse(user)
+```
+
+ตรวจ `UsersController.cs` หลัง mapping:
+
+```text
+POST ส่ง request เข้า userService.CreateUser(request)
+PUT  ส่ง request เข้า userService.UpdateUser(id, request)
+GET  ไม่ map เอง เพราะ service คืน UserResponse แล้ว
+DELETE ยังใช้ bool เพื่อเลือก NotFound() หรือ NoContent()
+```
+
+หลังแก้ครบ ให้รัน:
+
+```powershell
+dotnet build
+```
+
+จากนั้นทดสอบ request เดิมใน `.http` ผลลัพธ์ควรเหมือนเดิม แต่ตอนนี้ response ถูกสร้างผ่าน `UserResponse` แล้ว
+
+ตัวอย่างหลังเรียก `GET /api/v1/users/1`:
+
+```json
+{
+  "id": 1,
+  "email": "admin@example.com"
+}
+```
+
+สิ่งที่ต้องตรวจคือ response มีเฉพาะ field ที่ `UserResponse` อนุญาตให้ส่งออก ตอนนี้คือ `id` และ `email`
+
+ถ้าในอนาคต `User` model มี field ภายใน เช่น `passwordHash`, `role` หรือ `isActive` field เหล่านี้ไม่ควรหลุดออกมาจาก endpoint user ธรรมดา เว้นแต่เราตั้งใจเพิ่มลงใน response DTO สำหรับ use case นั้นจริง ๆ
+
+ใช้ตารางนี้ตรวจหลัง mapping:
+
+| Request | Status code | สิ่งที่ต้องดู |
+| --- | --- | --- |
+| `GET /api/v1/users` | `200 OK` | แต่ละ item เป็น `UserResponse` |
+| `GET /api/v1/users/1` | `200 OK` | body มี `id` และ `email` |
+| `GET /api/v1/users/999` | `404 Not Found` | ไม่พบข้อมูลยังตอบ error ถูกต้อง |
+| `POST /api/v1/users` | `201 Created` | response body เป็น `UserResponse` และมี `Location` header |
+| `PUT /api/v1/users/1` | `200 OK` | response body เป็น `UserResponse` หลังแก้ไข |
+| `DELETE /api/v1/users/1` | `204 No Content` | สำเร็จโดยไม่มี response body |
+
+## Mapping ควรอยู่ที่ไหน
+
+ในโปรเจกต์เล็ก mapping อยู่ใน service ได้
+
+ในโปรเจกต์ที่ใหญ่ขึ้น อาจแยกเป็น extension method หรือ mapper class เช่น
+
+```text
+Mappings/UserMappings.cs
+```
+
+แต่สำหรับหนังสือนี้จะเริ่มจาก manual mapping ใน service เพื่อให้ flow ชัด
+
+## ควรใช้ AutoMapper ไหม
+
+library mapping เช่น AutoMapper มีประโยชน์ในบางโปรเจกต์ แต่สำหรับมือใหม่ควรเริ่มจาก manual mapping ก่อน
+
+เหตุผลคือ manual mapping ทำให้เห็นชัดว่า field ไหนถูกส่งออก และช่วยให้เข้าใจ boundary ระหว่าง model กับ DTO
+
+เมื่อเข้าใจพื้นฐานแล้ว คุณค่อยตัดสินใจได้ว่าทีมของคุณควรใช้ library หรือเขียน mapping เอง
+
+## ข้อผิดพลาดที่เจอบ่อย
+
+ถ้า build error ว่า `UserResponse` ไม่รู้จัก ให้ตรวจว่า service มี using นี้:
+
+```csharp
+using Backend.Api.Dtos.Users;
+```
+
+ถ้า Controller ยังส่ง `request.Email` เข้า service แต่ interface เปลี่ยนเป็นรับ `CreateUserRequest` แล้ว ให้แก้ Controller ให้ส่ง `request` ทั้ง object:
+
+```csharp
+// Correct: send the request DTO, not just request.Email.
+var user = userService.CreateUser(request);
+```
+
+ถ้า response ยังมี field จาก model หลุดออกมา ให้ตรวจว่า Controller return model ตรง ๆ อยู่หรือไม่
+
+## Checkpoint
+
+ก่อนอ่านบทต่อไป คุณควรตอบได้ว่า
+
+- Mapping ช่วยป้องกันข้อมูลรั่วได้อย่างไร
+- ทำไม `PasswordHash` ไม่ควรอยู่ใน response DTO
+- Manual mapping มีข้อดีอะไรสำหรับมือใหม่
+- Controller ควรรู้จัก entity ภายในระบบโดยตรงหรือไม่
+- Mapping ควรอยู่ที่ไหนในโปรเจกต์ขนาดเล็ก

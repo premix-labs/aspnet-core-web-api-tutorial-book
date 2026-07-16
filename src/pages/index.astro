@@ -1,0 +1,412 @@
+---
+// index.astro — Landing Page
+import '@fontsource/inter/latin.css';
+import '@fontsource/jetbrains-mono/latin.css';
+import '@fontsource/space-grotesk/500.css';
+import '@fontsource/space-grotesk/700.css';
+import '../styles/global.css';
+import { getCollection } from 'astro:content';
+import { ClientRouter } from 'astro:transitions';
+import SearchModal from '../components/SearchModal.astro';
+import { siteConfig } from '../site.config';
+import { getIcon } from '../utils/icons';
+import { absoluteUrl, absoluteUrlFromFullPath, withBase } from '../utils/url';
+import { Moon, Sun, Search, ArrowRight, BookOpen, LayoutDashboard } from '@lucide/astro';
+
+const allChapters = await getCollection('chapters', ({ data }) => !data.draft);
+const chapters = allChapters
+  .sort((a, b) => a.data.chapter - b.data.chapter)
+  .map((entry) => ({
+    num: entry.data.chapter.toString().padStart(2, '0'),
+    href: withBase(entry.id),
+    icon: entry.data.icon,
+    level: entry.data.chapter === 0 ? 'Introduction' : 'Core',
+    title: entry.data.title,
+    desc: entry.data.description,
+    tags: entry.data.tags ?? [],
+    part: entry.data.part,
+  }));
+
+const hasParts = chapters.some((ch) => ch.part);
+
+interface ChapterCard {
+  num: string;
+  href: string;
+  icon?: string;
+  level: string;
+  title: string;
+  desc?: string;
+  tags: string[];
+  part?: string;
+}
+interface ChapterGroup {
+  label: string | null;
+  items: ChapterCard[];
+}
+const chapterGroups: ChapterGroup[] = [];
+for (const ch of chapters) {
+  const label = ch.part ?? null;
+  const last = chapterGroups[chapterGroups.length - 1];
+  if (last && last.label === label) {
+    last.items.push(ch);
+  } else {
+    chapterGroups.push({ label, items: [ch] });
+  }
+}
+
+const startHref = chapters[0]?.href ?? withBase('');
+const stats = [
+  { value: String(chapters.length), label: chapters.length === 1 ? 'Chapter' : 'Chapters' },
+  ...siteConfig.extraStats,
+];
+
+const ogImageUrl = siteConfig.ogImage ? absoluteUrl(siteConfig.ogImage, Astro.site) : '';
+const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang={siteConfig.lang}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={siteConfig.description} />
+    <title>{siteConfig.hero.prefix} {siteConfig.hero.accent} {siteConfig.hero.suffix}</title>
+
+    <link rel="canonical" href={canonicalUrl} />
+
+    <!-- Open Graph -->
+    <meta
+      property="og:title"
+      content={`${siteConfig.hero.prefix} ${siteConfig.hero.accent} ${siteConfig.hero.suffix}`}
+    />
+    <meta property="og:description" content={siteConfig.description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalUrl} />
+    {
+      ogImageUrl && (
+        <>
+          <meta property="og:image" content={ogImageUrl} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:image" content={ogImageUrl} />
+        </>
+      )
+    }
+    <meta name="theme-color" content="#0a0b0e" id="theme-color-meta" />
+
+    <script is:inline define:vars={{ defaultTheme: siteConfig.defaultTheme }}>
+      const applyTheme = () => {
+        const savedTheme = localStorage.getItem('site-theme') || defaultTheme;
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      };
+      applyTheme();
+      document.addEventListener('astro:after-swap', applyTheme);
+    </script>
+
+    <link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
+    <ClientRouter />
+  </head>
+  <body>
+    <div class="bg-grid fixed inset-0 w-full h-full -z-10 pointer-events-none opacity-60"></div>
+
+    <!-- ═══ HEADER ══════════════════════════════════ -->
+    <header
+      class="fixed w-full top-0 z-50 h-[var(--header-height)] flex items-center px-4 lg:px-6 gap-3 bg-surface-base/70 backdrop-blur-xl border-b border-line-sub"
+    >
+      <a
+        href={withBase('')}
+        class="flex items-center gap-2.5 no-underline text-content-main font-bold shrink-0"
+        aria-label="Back to Home"
+      >
+        <div
+          class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-lg flex items-center justify-center shrink-0 text-white"
+          aria-hidden="true"
+        >
+          <BookOpen class="w-4.5 h-4.5" />
+        </div>
+        <div class="flex flex-col leading-tight">
+          <span class="text-[0.95rem] font-bold text-content-main">{siteConfig.title}</span>
+          <span class="text-[0.7rem] text-content-mut font-normal">{siteConfig.tagline}</span>
+        </div>
+      </a>
+      <div class="flex-1"></div>
+
+      <!-- 🔍 SEARCH -->
+      <button
+        class="open-search-btn cursor-pointer px-3 py-2 bg-surface-elev border border-line-def rounded-md text-content-sec text-[0.82rem] flex items-center gap-1.5 transition-colors duration-200 hover:bg-surface-hover hover:text-content-main"
+        aria-label="Search Book"
+      >
+        <Search class="w-4 h-4" />
+        <span class="desktop-only"
+          >Search <kbd class="font-code text-[0.7rem] bg-surface-card px-1 py-0.5 rounded border border-line-sub ml-1"
+            >Ctrl K</kbd
+          ></span
+        >
+      </button>
+
+      <!-- 🌓 THEME -->
+      <button
+        class="cursor-pointer w-9 h-9 bg-surface-elev border border-line-def rounded-md text-content-sec flex items-center justify-center transition-colors duration-200 hover:bg-surface-hover hover:text-content-main"
+        id="theme-switcher-btn"
+        aria-label="Switch to light mode"
+        aria-pressed="false"
+      >
+        <span class="flex items-center" id="theme-btn-icon">
+          <Moon id="theme-icon-moon" class="w-4 h-4 block" />
+          <Sun id="theme-icon-sun" class="w-4 h-4 hidden" />
+        </span>
+      </button>
+
+      <a
+        href={startHref}
+        class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 text-[0.85rem] font-semibold text-white no-underline bg-gradient-to-br from-indigo-500 to-violet-500 rounded-md transition-transform duration-200 hover:-translate-y-0.5"
+      >
+        <span>Start Reading</span>
+        <ArrowRight class="w-3.5 h-3.5" />
+      </a>
+    </header>
+
+    <!-- ═══ HERO ══════════════════════════════════ -->
+    <section
+      class="min-h-[92vh] flex flex-col items-center justify-center py-24 px-6 text-center relative"
+      aria-label="Introduction"
+    >
+      <div class="max-w-[720px] w-full mx-auto flex flex-col items-center">
+        <div
+          class="inline-flex items-center gap-2 py-1 px-3 border border-line-def rounded-full text-[0.75rem] font-medium text-content-mut mb-8"
+          style="animation: fadeInUp 0.6s var(--ease-smooth) both;"
+        >
+          <span class="w-1.5 h-1.5 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500"></span>
+          <span>{siteConfig.hero.eyebrow}</span>
+        </div>
+
+        <h1
+          class="font-display text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.08] tracking-tight text-content-main mb-6"
+          style="animation: fadeInUp 0.6s var(--ease-smooth) 0.08s both;"
+        >
+          {siteConfig.hero.prefix}{' '}
+          <span class="bg-clip-text text-transparent bg-gradient-to-br from-indigo-400 via-indigo-500 to-violet-500"
+            >{siteConfig.hero.accent}</span
+          >{' '}
+          {siteConfig.hero.suffix}
+        </h1>
+
+        <p
+          class="text-[1.12rem] text-content-sec leading-[1.75] max-w-[560px] mx-auto mb-10"
+          style="animation: fadeInUp 0.6s var(--ease-smooth) 0.16s both;"
+        >
+          {siteConfig.hero.subtitle}
+        </p>
+
+        <div
+          class="flex gap-3 justify-center flex-wrap"
+          style="animation: fadeInUp 0.6s var(--ease-smooth) 0.24s both;"
+        >
+          <a
+            href={startHref}
+            class="inline-flex items-center gap-2 py-3 px-6 bg-gradient-to-br from-indigo-500 to-violet-500 text-white font-semibold rounded-lg no-underline transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--glow-primary)]"
+          >
+            <span>Start Reading</span>
+            <ArrowRight class="w-4 h-4" />
+          </a>
+          <a
+            href="#chapters"
+            class="inline-flex items-center gap-2 py-3 px-6 bg-surface-elev border border-line-def text-content-sec font-semibold rounded-lg no-underline transition-colors duration-200 hover:bg-surface-hover hover:text-content-main"
+          >
+            <LayoutDashboard class="w-4 h-4" />
+            <span>Table of Contents</span>
+          </a>
+        </div>
+      </div>
+
+      <div
+        class="flex gap-10 lg:gap-16 justify-center mt-20"
+        style="animation: fadeInUp 0.6s var(--ease-smooth) 0.32s both;"
+        aria-label="Book Stats"
+      >
+        {
+          stats.map((stat) => (
+            <div>
+              <div class="font-display text-2xl lg:text-3xl font-bold text-content-main">{stat.value}</div>
+              <div class="text-[0.78rem] font-medium uppercase tracking-wider text-content-mut mt-1">{stat.label}</div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ═══ FEATURES STRIP ══════════════════════════ -->
+    <section class="py-14 px-6 border-y border-line-sub bg-surface-sec/50">
+      <div class="max-w-[1000px] mx-auto grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-10">
+        {
+          siteConfig.features.map((f) => {
+            const IconComponent = getIcon(f.icon);
+            return (
+              <div class="flex flex-col gap-2">
+                <IconComponent class="w-5 h-5 text-content-acc" />
+                <div class="font-semibold text-content-main">{f.title}</div>
+                <div class="text-[0.88rem] text-content-mut leading-relaxed">{f.desc}</div>
+              </div>
+            );
+          })
+        }
+      </div>
+    </section>
+
+    <!-- ═══ CHAPTERS GRID ════════════════════════════ -->
+    <section id="chapters" aria-labelledby="chapters-title" class="py-20 px-6">
+      <div class="text-center mb-12">
+        <h2 id="chapters-title" class="font-display text-3xl font-bold text-content-main mb-3">Table of Contents</h2>
+        <p class="text-content-mut">Everything you need, one chapter at a time.</p>
+      </div>
+
+      <div class="max-w-[1080px] mx-auto flex flex-col gap-10">
+        {
+          chapterGroups.map((group) => (
+            <div>
+              {group.label && <h3 class="font-display text-lg font-bold text-content-main mb-4 pl-1">{group.label}</h3>}
+              <div class="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-4 chapters-grid">
+                {group.items.map((ch) => {
+                  const IconComponent = getIcon(ch.icon);
+                  return (
+                    <a
+                      href={ch.href}
+                      class="group rounded-xl p-6 flex flex-col gap-3 transition-all duration-300 relative no-underline hover:-translate-y-1 hover:border-indigo-500/30 chapter-card spotlight-card"
+                      id={`chapter-${ch.num}`}
+                    >
+                      <div class="spotlight-content flex flex-col gap-3">
+                        <div class="flex items-center justify-between">
+                          <div class="w-10 h-10 flex items-center justify-center bg-indigo-500/10 rounded-lg text-content-acc border border-indigo-500/15 transition-colors duration-300 group-hover:bg-indigo-500 group-hover:text-white group-hover:border-transparent">
+                            <IconComponent class="w-5 h-5" />
+                          </div>
+                          <span class="font-code text-[0.72rem] font-semibold text-content-mut">
+                            {hasParts ? `Ch. ${ch.num}` : `${ch.level} · ${ch.num}`}
+                          </span>
+                        </div>
+                        <div class="font-display text-[1.25rem] font-bold text-content-main leading-tight">
+                          {ch.title}
+                        </div>
+                        <div class="text-[0.92rem] text-content-sec leading-relaxed">{ch.desc}</div>
+                        {ch.tags.length > 0 && (
+                          <div class="flex flex-wrap gap-2 mt-1">
+                            {ch.tags.map((tag) => (
+                              <span class="text-[0.7rem] px-2 py-0.5 rounded font-medium text-content-mut border border-line-sub">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div
+                          class="flex items-center gap-1 text-[0.82rem] font-semibold text-content-acc mt-1 opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0"
+                          aria-hidden="true"
+                        >
+                          <span>Read chapter</span>
+                          <ArrowRight class="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- ═══ FOOTER ══════════════════════════════════ -->
+    <footer class="text-center py-12 px-6 border-t border-line-sub text-content-mut text-[0.85rem]">
+      <div>
+        Built with <a href="https://astro.build" class="text-content-acc no-underline">Astro</a> · {
+          siteConfig.footer.text
+        }
+      </div>
+      <div class="mt-2 opacity-70">{siteConfig.title} — {new Date().getFullYear()}</div>
+    </footer>
+
+    <script>
+      document.addEventListener('astro:page-load', () => {
+        // DOM-based guard (not a pathname check) so this still works under a subpath `base`.
+        if (!document.getElementById('chapters')) return;
+
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // ─── SCROLL REVEAL ───
+        const chapterCards = document.querySelectorAll('.chapter-card');
+        if (chapterCards.length > 0) {
+          if (reduceMotion) {
+            chapterCards.forEach((card) => card.classList.add('reveal-active'));
+          } else {
+            const cardObserver = new IntersectionObserver(
+              (entries, observer) => {
+                entries.forEach((entry, index) => {
+                  if (entry.isIntersecting) {
+                    const el = entry.target as HTMLElement;
+                    el.style.transitionDelay = `${Math.min(index, 6) * 70}ms`;
+                    el.classList.add('reveal-active');
+                    observer.unobserve(el);
+                  }
+                });
+              },
+              { rootMargin: '0px 0px -10% 0px', threshold: 0 }
+            );
+            chapterCards.forEach((card) => {
+              card.classList.add('reveal-item');
+              cardObserver.observe(card);
+            });
+          }
+        }
+
+        // ─── SPOTLIGHT CARDS: track cursor for the subtle radial glow ───
+        if (!reduceMotion && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          document.querySelectorAll('.spotlight-card').forEach((card) => {
+            card.addEventListener('mousemove', (e) => {
+              const rect = card.getBoundingClientRect();
+              (card as HTMLElement).style.setProperty('--mouse-x', `${(e as MouseEvent).clientX - rect.left}px`);
+              (card as HTMLElement).style.setProperty('--mouse-y', `${(e as MouseEvent).clientY - rect.top}px`);
+            });
+          });
+        }
+
+        // ─── THEME SWITCHER ───
+        const themeBtn = document.querySelector('#theme-switcher-btn') as HTMLElement | null;
+        const themeIconMoon = document.querySelector('#theme-icon-moon') as HTMLElement | null;
+        const themeIconSun = document.querySelector('#theme-icon-sun') as HTMLElement | null;
+        const themeColorMeta = document.querySelector('#theme-color-meta') as HTMLMetaElement | null;
+        const themeColors: Record<string, string> = { dark: '#0a0b0e', light: '#fcfcfd' };
+
+        if (themeBtn) {
+          const themes = ['dark', 'light'];
+          const updateThemeButton = (currentTheme: string) => {
+            const isLight = currentTheme === 'light';
+            if (themeIconMoon && themeIconSun) {
+              themeIconMoon.style.display = isLight ? 'none' : 'block';
+              themeIconSun.style.display = isLight ? 'block' : 'none';
+            }
+            if (themeColorMeta) themeColorMeta.content = themeColors[currentTheme] ?? themeColors.dark;
+            themeBtn.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
+            themeBtn.setAttribute('aria-pressed', String(isLight));
+          };
+
+          let currentTheme = localStorage.getItem('site-theme') || 'dark';
+          updateThemeButton(currentTheme);
+
+          themeBtn.addEventListener('click', () => {
+            const nextTheme = themes[(themes.indexOf(currentTheme) + 1) % themes.length];
+            document.documentElement.setAttribute('data-theme', nextTheme);
+            localStorage.setItem('site-theme', nextTheme);
+            currentTheme = nextTheme;
+            updateThemeButton(nextTheme);
+
+            const iconWrapper = document.querySelector('#theme-btn-icon') as HTMLElement | null;
+            if (iconWrapper) {
+              iconWrapper.classList.remove('theme-icon-animate');
+              void iconWrapper.offsetWidth;
+              iconWrapper.classList.add('theme-icon-animate');
+            }
+          });
+        }
+      });
+    </script>
+    <SearchModal />
+  </body>
+</html>

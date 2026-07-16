@@ -94,4 +94,3 @@ docker compose config
 docs/internal/manuscript-status.md
 docs/internal/validation-report.md
 ```
-

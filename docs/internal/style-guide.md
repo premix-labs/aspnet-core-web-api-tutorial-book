@@ -68,4 +68,3 @@ dotnet tool run dotnet-ef database update
 - ห้ามสื่อว่า secret ใน `appsettings.json` เป็น production best practice
 - แยก local development, test และ production configuration
 - อธิบายว่าการป้องกันจริงต้อง enforce ที่ backend ไม่ใช่แค่ client
-

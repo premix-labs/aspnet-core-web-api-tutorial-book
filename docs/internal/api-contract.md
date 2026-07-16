@@ -118,9 +118,7 @@ API ควรใช้ `ProblemDetails` และ `ValidationProblemDetails`
   "code": "VALIDATION_FAILED",
   "traceId": "trace-id",
   "errors": {
-    "email": [
-      "Email is required."
-    ]
+    "email": ["Email is required."]
   }
 }
 ```
@@ -135,4 +133,3 @@ status code ที่ต้องรักษา:
 409 conflict เช่น email ซ้ำ
 500 unexpected server error
 ```
-

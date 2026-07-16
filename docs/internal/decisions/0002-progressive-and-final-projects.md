@@ -1,5 +1,5 @@
 ---
-title: "0002 - Progressive and Final Projects"
+title: '0002 - Progressive and Final Projects'
 description: เหตุผลในการมีทั้ง validation/progressive project และ final project
 ---
 
@@ -26,4 +26,3 @@ repo ต้องมีสอง project tracks:
 - final project ใช้เป็น source of truth สำหรับ end-state
 - ความต่างระหว่าง progressive และ final ต้องอธิบายในบทที่เกี่ยวข้อง
 - validation report ต้องบันทึกผลทำตามจริง
-

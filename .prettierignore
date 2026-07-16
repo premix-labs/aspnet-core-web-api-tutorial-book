@@ -1,0 +1,8 @@
+dist/
+.astro/
+node_modules/
+package-lock.json
+
+# Chapter content is authored by hand — Prettier reflows Markdown prose, collapses
+# numbered lists inside <Steps>, and flattens fenced code inside <Tab>. Leave it alone.
+src/content/

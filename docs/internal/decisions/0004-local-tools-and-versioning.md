@@ -1,5 +1,5 @@
 ---
-title: "0004 - Local Tools and Versioning"
+title: '0004 - Local Tools and Versioning'
 description: เหตุผลในการใช้ dotnet local tools และล็อก version สำคัญ
 ---
 
@@ -29,4 +29,3 @@ Accepted
 
 - ต้องสอน `dotnet tool restore`
 - command ยาวกว่า `dotnet ef`
-

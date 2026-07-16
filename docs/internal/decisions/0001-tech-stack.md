@@ -1,5 +1,5 @@
 ---
-title: "0001 - Tech Stack"
+title: '0001 - Tech Stack'
 description: เหตุผลในการเลือก stack หลักของหนังสือ
 ---
 

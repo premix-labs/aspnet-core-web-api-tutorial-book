@@ -55,4 +55,3 @@ description: รายการตรวจ security สำหรับหนั
 - CORS ไม่เปิด wildcard สำหรับ production
 - rate limiting และ security headers ถูกเปิดใน end-state
 - health checks แยก liveness/readiness
-

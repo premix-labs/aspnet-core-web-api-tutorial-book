@@ -1,0 +1,77 @@
+---
+// ChapterNavList.astro — Table of contents links shared by the desktop sidebar and mobile menu.
+// Chapters sharing a `part` are grouped under one heading; books with no `part` set render
+// the original flat list under a single "Table of Contents" heading.
+import { getIcon } from '../utils/icons';
+
+interface ChapterLink {
+  num: number;
+  title: string;
+  href: string;
+  icon?: string;
+  part?: string;
+}
+
+interface Props {
+  chapters: ChapterLink[];
+  currentPath: string;
+}
+
+const { chapters, currentPath } = Astro.props;
+
+const hasParts = chapters.some((ch) => ch.part);
+
+interface Group {
+  label: string | null;
+  items: ChapterLink[];
+}
+
+const groups: Group[] = [];
+for (const ch of chapters) {
+  const label = ch.part ?? null;
+  const last = groups[groups.length - 1];
+  if (last && last.label === label) {
+    last.items.push(ch);
+  } else {
+    groups.push({ label, items: [ch] });
+  }
+}
+---
+
+<div class="mb-6">
+  {
+    !hasParts && (
+      <div class="text-[0.7rem] font-bold uppercase tracking-wider text-content-mut mb-3 px-6">Table of Contents</div>
+    )
+  }
+  {
+    groups.map((group) => (
+      <div class="mb-4 last:mb-0">
+        {group.label && (
+          <div class="text-[0.7rem] font-bold uppercase tracking-wider text-content-mut mb-2 px-6 mt-4 first:mt-0">
+            {group.label}
+          </div>
+        )}
+        {group.items.map((ch) => {
+          const isActive = currentPath === ch.href || currentPath === ch.href + '/';
+          const IconComponent = getIcon(ch.icon);
+          return (
+            <a
+              href={ch.href}
+              class={`flex items-center gap-4 py-2 px-6 text-[0.88rem] no-underline transition-all duration-200 border-l-[3px] hover:bg-surface-elev hover:text-content-main ${isActive ? 'bg-indigo-500/10 border-indigo-500 text-content-acc font-semibold' : 'border-transparent text-content-sec'}`}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <span class="font-code text-[0.7rem] opacity-50" aria-hidden="true">
+                {String(ch.num).padStart(2, '0')}
+              </span>
+              <span class="flex items-center gap-2">
+                <IconComponent class="w-4 h-4 shrink-0 text-[currentColor]" />
+                <span>{ch.title}</span>
+              </span>
+            </a>
+          );
+        })}
+      </div>
+    ))
+  }
+</div>

@@ -1,0 +1,553 @@
+---
+title: "ทำ GET, POST, PUT, DELETE"
+description: "สร้าง CRUD API พื้นฐานด้วย Controller"
+chapter: 9
+icon: server
+part: "ภาค 2: REST API"
+---
+
+# ทำ GET, POST, PUT, DELETE
+
+บทนี้เราจะเพิ่ม endpoint CRUD ให้ `UsersController` ทีละส่วน โดยใช้ list ใน memory เพื่อให้เห็นหลักการก่อนเชื่อมต่อ database ในภาคถัดไป
+
+CRUD ย่อมาจาก:
+
+```text
+Create  สร้างข้อมูล
+Read    อ่านข้อมูล
+Update  แก้ไขข้อมูล
+Delete  ลบข้อมูล
+```
+
+## วิธีเรียนบทนี้
+
+บทนี้เป็นบทแรกที่ code เยอะขึ้น ให้ทำทีละ step และรันตรวจหลังจบ action สำคัญ อย่าคัดลอกไฟล์เต็มรวดเดียว
+
+ลำดับที่แนะนำ:
+
+1. เพิ่ม DTO และ list ใน memory
+2. ทำ `GET` ให้ผ่านก่อน
+3. เพิ่ม `POST`
+4. เพิ่ม `PUT`
+5. เพิ่ม `DELETE`
+6. ค่อยตรวจไฟล์รวมท้ายบท
+
+ถ้า build พัง ให้แก้ error แรกก่อน อย่าแก้หลายจุดพร้อมกัน
+
+## ก่อนเริ่มบทนี้
+
+ให้ตรวจว่าบทที่ 6 ผ่านแล้ว:
+
+```powershell
+dotnet build
+```
+
+และ `GET /api/v1/users` ต้องตอบ JSON array ได้แล้ว ถ้า endpoint แรกยังไม่ทำงาน ให้แก้ `UsersController` จากบทก่อนก่อนเริ่มเพิ่ม CRUD
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+บทนี้แก้ไฟล์เดียว:
+
+```text
+Controllers/UsersController.cs
+```
+
+เราจะยังไม่สร้างโฟลเดอร์ `Dtos`, `Models`, `Services` หรือ `Repositories` ในบทนี้ เพราะภาคนี้ต้องการให้เห็น HTTP และ Controller ก่อน โครงสร้างเหล่านั้นจะเริ่มในภาค Architecture
+
+## สิ่งที่จะใช้ในบทนี้
+
+ก่อนเขียน code ให้รู้จัก attribute และ helper method ที่จะใช้ก่อน
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `[HttpGet]` | รับ request แบบ `GET` เพื่ออ่านข้อมูล |
+| `[HttpGet("{id:int}")]` | รับ `GET` พร้อม id จาก URL เช่น `/api/v1/users/1` |
+| `[HttpPost]` | รับ `POST` เพื่อสร้างข้อมูลใหม่ โดยข้อมูลมักอยู่ใน request body |
+| `[HttpPut("{id:int}")]` | รับ `PUT` เพื่อแก้ไขข้อมูลตาม id |
+| `[HttpDelete("{id:int}")]` | รับ `DELETE` เพื่อลบข้อมูลตาม id |
+| `Ok(value)` | ตอบ `200 OK` พร้อมข้อมูล |
+| `NotFound()` | ตอบ `404 Not Found` เมื่อหา resource ไม่เจอ |
+| `CreatedAtAction(...)` | ตอบ `201 Created` หลังสร้าง resource ใหม่ |
+| `NoContent()` | ตอบ `204 No Content` เมื่อทำสำเร็จแต่ไม่ต้องส่ง body |
+
+เราจะใช้ method ของ `List<T>` และ LINQ เหล่านี้ด้วย:
+
+| Method | ใช้ทำอะไร |
+| --- | --- |
+| `FirstOrDefault(...)` | หา item ตัวแรกที่ตรงเงื่อนไข ถ้าไม่เจอจะได้ `null` |
+| `Max(...)` | หาเลข id สูงสุด เพื่อสร้าง id ถัดไป |
+| `FindIndex(...)` | หาตำแหน่งของ item ใน list เพื่อแก้ไข |
+| `Add(...)` | เพิ่ม item เข้า list |
+| `Remove(...)` | ลบ item ออกจาก list |
+
+ถ้ายังจำไม่ได้ทั้งหมดไม่เป็นไร ให้ดูตารางนี้ประกอบระหว่างเขียน code
+
+## ใช้ข้อมูลใน memory ก่อน
+
+ช่วงนี้ยังไม่เชื่อม database เราจะใช้ `static List<T>` เก็บข้อมูลชั่วคราว
+
+ข้อควรรู้:
+
+- ข้อมูลจะอยู่ระหว่างที่ application ยังรัน
+- ถ้า restart server ข้อมูลจะกลับไปเป็นค่าเริ่มต้น
+- วิธีนี้เหมาะสำหรับเรียน Controller แต่ไม่เหมาะกับ production
+- ภาค database จะเปลี่ยนไปใช้ EF Core และ SQL Server
+
+## จุดเริ่มต้นจากบทก่อน
+
+เปิดไฟล์นี้:
+
+```text
+Controllers/UsersController.cs
+```
+
+จากบทก่อน เรามี `UsersController` ที่ตอบ `GET /api/v1/users` ด้วย array ชั่วคราวอยู่ใน method
+
+บทนี้จะค่อย ๆ เปลี่ยนให้ controller มี endpoint ครบ:
+
+```text
+GET    /api/v1/users
+GET    /api/v1/users/{id}
+POST   /api/v1/users
+PUT    /api/v1/users/{id}
+DELETE /api/v1/users/{id}
+```
+
+ก่อนเริ่มแก้ code ให้จำตำแหน่งของแต่ละส่วนในไฟล์นี้ไว้ก่อน:
+
+```text
+using Microsoft.AspNetCore.Mvc;
+
+namespace Backend.Api.Controllers;
+
+UserDto record
+CreateUserRequest record
+UpdateUserRequest record
+
+[ApiController]
+[Route("api/v1/[controller]")]
+public class UsersController : ControllerBase
+{
+    static Users list
+    GetUsers()
+    GetUserById(id)
+    CreateUser(request)
+    UpdateUser(id, request)
+    DeleteUser(id)
+}
+```
+
+จุดที่มือใหม่พลาดบ่อยคือวาง record ไว้ใน method หรือวาง method ไว้นอก class ให้เทียบกับแผนที่นี้ทุกครั้งก่อน build
+
+## Step 1: สร้าง DTO และข้อมูลใน memory
+
+เพิ่ม record เหล่านี้ไว้เหนือ class `UsersController`:
+
+```csharp
+// Response DTO returned to the client.
+public record UserDto(int Id, string Email);
+
+// Request body for POST /api/v1/users.
+public record CreateUserRequest(string Email);
+
+// Request body for PUT /api/v1/users/{id}.
+public record UpdateUserRequest(string Email);
+```
+
+ความหมาย:
+
+- `UserDto` ใช้เป็นข้อมูลที่ API ส่งกลับ
+- `CreateUserRequest` ใช้รับ JSON ตอนสร้าง user
+- `UpdateUserRequest` ใช้รับ JSON ตอนแก้ไข user
+
+จากนั้นเพิ่ม list นี้ไว้ใน class `UsersController`:
+
+```csharp
+// Temporary in-memory data. It resets when the app restarts.
+private static readonly List<UserDto> Users =
+[
+    new(1, "admin@example.com"),
+    new(2, "user@example.com")
+];
+```
+
+คำว่า `static` ทำให้ list นี้อยู่ร่วมกันระหว่าง request ต่าง ๆ ระหว่างที่ application ยังรันอยู่
+
+ตอนนี้อย่าตรวจทั้งไฟล์เป็นก้อน ให้ตรวจทีละส่วน:
+
+ส่วนที่ 1: ด้านบนไฟล์ควรมี `using`, `namespace` และ DTO ทั้ง 3 ตัว
+
+```text
+using Microsoft.AspNetCore.Mvc;
+namespace Backend.Api.Controllers;
+UserDto
+CreateUserRequest
+UpdateUserRequest
+```
+
+ส่วนที่ 2: ใน class `UsersController` ควรมี list ชื่อ `Users`
+
+```text
+private static readonly List<UserDto> Users = ...
+```
+
+ส่วนที่ 3: action `GET /api/v1/users` จากบทก่อนควรยังอยู่
+
+```csharp
+[HttpGet]
+public IActionResult GetUsers()
+{
+    // Return all users with 200 OK.
+    return Ok(Users);
+}
+```
+
+ถ้าเพิ่งเปลี่ยนจาก array ชั่วคราวของบท 6 มาใช้ `Users` list ให้รัน:
+
+```powershell
+dotnet build
+```
+
+ผลที่ต้องการคือ `Build succeeded.` เพื่อยืนยันว่า record, list และ method อยู่ถูกตำแหน่งก่อนเพิ่ม action ถัดไป
+
+## Step 2: GET รายการทั้งหมด
+
+endpoint แรกคืออ่าน user ทั้งหมด:
+
+```csharp
+[HttpGet]
+public IActionResult GetUsers()
+{
+    // Return all users with 200 OK.
+    return Ok(Users);
+}
+```
+
+endpoint:
+
+```text
+GET /api/v1/users
+```
+
+`Ok(Users)` หมายถึงตอบ `200 OK` พร้อม list ของ user เป็น JSON
+
+## Step 3: GET รายการเดียวด้วย id
+
+เพิ่ม action นี้ต่อจาก `GetUsers()`:
+
+```csharp
+[HttpGet("{id:int}")]
+public IActionResult GetUserById(int id)
+{
+    // Find the first user with a matching id, or null when not found.
+    var user = Users.FirstOrDefault(user => user.Id == id);
+
+    if (user is null)
+    {
+        // Translate missing data to 404 Not Found.
+        return NotFound();
+    }
+
+    // Return the matched user with 200 OK.
+    return Ok(user);
+}
+```
+
+endpoint:
+
+```text
+GET /api/v1/users/1
+```
+
+อธิบายทีละส่วน:
+
+- `[HttpGet("{id:int}")]` รับ `GET` ที่มี id เป็นตัวเลข
+- `int id` รับค่าจาก URL เช่น `/api/v1/users/1`
+- `FirstOrDefault(...)` หา user ที่ id ตรงกัน
+- `user is null` แปลว่าไม่พบ user
+- `NotFound()` ตอบ `404 Not Found`
+- `Ok(user)` ตอบ `200 OK` พร้อม user ที่เจอ
+
+ถ้าไม่พบข้อมูลให้ตอบ `404 Not Found` แทนการตอบ `200 OK` พร้อมค่า `null`
+
+## Step 4: POST สร้างข้อมูล
+
+เพิ่ม action นี้:
+
+```csharp
+[HttpPost]
+public IActionResult CreateUser(CreateUserRequest request)
+{
+    // Generate a simple next id for the in-memory list.
+    var nextId = Users.Count == 0 ? 1 : Users.Max(user => user.Id) + 1;
+    var user = new UserDto(nextId, request.Email);
+
+    // Save the new user in memory.
+    Users.Add(user);
+
+    // Return 201 Created and point to the GET endpoint for this new user.
+    return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, user);
+}
+```
+
+endpoint:
+
+```text
+POST /api/v1/users
+```
+
+body:
+
+```json
+{
+  "email": "new-user@example.com"
+}
+```
+
+อธิบายทีละส่วน:
+
+- `CreateUserRequest request` รับ JSON จาก request body
+- `Users.Count == 0 ? 1 : ...` ถ้า list ว่าง ให้ id เริ่มที่ `1`
+- `Users.Max(user => user.Id) + 1` หา id สูงสุดแล้วบวกหนึ่ง
+- `new UserDto(nextId, request.Email)` สร้าง user ใหม่
+- `Users.Add(user)` เพิ่ม user เข้า list
+- `CreatedAtAction(...)` ตอบ `201 Created` และบอกว่า resource ใหม่อ่านได้จาก action `GetUserById`
+
+เมื่อสร้างข้อมูลสำเร็จควรตอบ `201 Created` ไม่ใช่ `200 OK`
+
+## Step 5: PUT แก้ไขข้อมูล
+
+เพิ่ม action นี้:
+
+```csharp
+[HttpPut("{id:int}")]
+public IActionResult UpdateUser(int id, UpdateUserRequest request)
+{
+    // Find the index so we can replace the existing item in the list.
+    var index = Users.FindIndex(user => user.Id == id);
+
+    if (index == -1)
+    {
+        // No user with this id exists.
+        return NotFound();
+    }
+
+    var updatedUser = new UserDto(id, request.Email);
+    // Replace the old user at the same position.
+    Users[index] = updatedUser;
+
+    return Ok(updatedUser);
+}
+```
+
+endpoint:
+
+```text
+PUT /api/v1/users/1
+```
+
+body:
+
+```json
+{
+  "email": "updated-user@example.com"
+}
+```
+
+อธิบายทีละส่วน:
+
+- `[HttpPut("{id:int}")]` รับ `PUT` ที่มี id เป็นตัวเลข
+- `UpdateUserRequest request` รับ JSON จาก request body
+- `FindIndex(...)` หาตำแหน่งของ user ใน list
+- ถ้า `FindIndex` ได้ `-1` แปลว่าไม่พบ user
+- `Users[index] = updatedUser` แทนที่ user เดิมด้วยข้อมูลใหม่
+- `Ok(updatedUser)` ตอบ `200 OK` พร้อมข้อมูลที่แก้แล้ว
+
+ต้องเขียน `{id:int}` พร้อมวงเล็บปีกกา เพราะนี่คือ route parameter
+
+## Step 6: DELETE ลบข้อมูล
+
+เพิ่ม action นี้:
+
+```csharp
+[HttpDelete("{id:int}")]
+public IActionResult DeleteUser(int id)
+{
+    // Find the user before removing it.
+    var user = Users.FirstOrDefault(user => user.Id == id);
+
+    if (user is null)
+    {
+        // Cannot delete a user that does not exist.
+        return NotFound();
+    }
+
+    Users.Remove(user);
+
+    // Delete succeeded and there is no response body.
+    return NoContent();
+}
+```
+
+endpoint:
+
+```text
+DELETE /api/v1/users/1
+```
+
+อธิบายทีละส่วน:
+
+- `[HttpDelete("{id:int}")]` รับ `DELETE` ที่มี id เป็นตัวเลข
+- `FirstOrDefault(...)` หา user ที่ต้องการลบ
+- ถ้าไม่พบให้ `NotFound()`
+- `Users.Remove(user)` ลบ user ออกจาก list
+- `NoContent()` ตอบ `204 No Content`
+
+เมื่อลบสำเร็จนิยมตอบ `204 No Content` เพราะไม่จำเป็นต้องส่ง body กลับ
+
+## ไฟล์เต็มหลังจบบท
+
+ส่วนนี้ไม่ใช่ code ให้คัดลอกใหม่ทั้งไฟล์ แต่เป็น checklist สำหรับตรวจว่าไฟล์ของคุณมีชิ้นส่วนครบหลังทำทีละ step แล้ว
+
+ตรวจด้านบนของไฟล์:
+
+```text
+using Microsoft.AspNetCore.Mvc;
+namespace Backend.Api.Controllers;
+UserDto
+CreateUserRequest
+UpdateUserRequest
+```
+
+ตรวจใน class `UsersController`:
+
+```text
+Users list
+GetUsers()
+GetUserById(id)
+CreateUser(request)
+UpdateUser(id, request)
+DeleteUser(id)
+```
+
+ถ้าขาดส่วนไหน ให้ย้อนกลับไป step ของส่วนนั้นในบทนี้ แล้วค่อยเพิ่มเฉพาะ method ที่ขาด ไม่ต้องลบไฟล์แล้วเริ่มใหม่
+
+หลังตรวจครบ ให้รัน:
+
+```powershell
+dotnet build
+```
+
+ถ้า build ผ่าน แปลว่าโครงสร้าง code ถูกต้องพอที่จะเริ่มทดสอบ endpoint ได้
+
+ถ้า build ไม่ผ่าน ให้ดู error แรกและเทียบกับแผนที่ตำแหน่งโค้ดด้านบนก่อน จุดที่เจอบ่อยคือ:
+
+- ลืมปิด `}` ของ method ก่อนเพิ่ม method ถัดไป
+- วาง `public record ...` ไว้ใน class หรือ method โดยไม่ตั้งใจ
+- พิมพ์ route เป็น `"id:int"` แทน `"{id:int}"`
+- ชื่อ method ใน `CreatedAtAction(nameof(GetUserById), ...)` ไม่ตรงกับ method จริง
+
+## ลำดับการทดสอบที่แนะนำ
+
+ให้รัน API แล้วทดสอบตามลำดับนี้:
+
+```text
+GET    /api/v1/users
+GET    /api/v1/users/1
+POST   /api/v1/users
+GET    /api/v1/users
+PUT    /api/v1/users/1
+GET    /api/v1/users/1
+DELETE /api/v1/users/1
+GET    /api/v1/users/1
+```
+
+การทดสอบตามลำดับนี้ทำให้เห็นว่าข้อมูลใน memory เปลี่ยนจริง
+
+เพราะข้อมูลอยู่ใน memory ลำดับการทดสอบจึงสำคัญ ถ้าคุณลบ user id `1` ด้วย `DELETE /api/v1/users/1` แล้วเรียก `GET /api/v1/users/1` หรือ `PUT /api/v1/users/1` ต่อทันที ผลลัพธ์ควรเป็น `404 Not Found` จนกว่าจะ restart application
+
+## ผลลัพธ์ที่ควรได้
+
+ใช้ตารางนี้ตรวจงานหลังเขียน code:
+
+| Request | กรณี | Status code ที่ควรได้ |
+| --- | --- | --- |
+| `GET /api/v1/users` | อ่านรายการทั้งหมด | `200 OK` |
+| `GET /api/v1/users/1` | พบ user | `200 OK` |
+| `GET /api/v1/users/999` | ไม่พบ user | `404 Not Found` |
+| `POST /api/v1/users` | สร้าง user สำเร็จ | `201 Created` |
+| `PUT /api/v1/users/1` | พบ user และแก้ไขสำเร็จ | `200 OK` |
+| `PUT /api/v1/users/999` | ไม่พบ user | `404 Not Found` |
+| `DELETE /api/v1/users/1` | พบ user และลบสำเร็จ | `204 No Content` |
+| `DELETE /api/v1/users/999` | ไม่พบ user | `404 Not Found` |
+
+## ข้อผิดพลาดที่เจอบ่อย
+
+ถ้า `PUT /api/v1/users/1` ได้ `405 Method Not Allowed` ให้ตรวจว่า attribute เขียนเป็น route parameter จริงหรือไม่:
+
+```csharp
+[HttpPut("{id:int}")]
+```
+
+ไม่ใช่:
+
+```csharp
+[HttpPut("id:int")]
+```
+
+แบบแรกหมายถึงรับค่า `id` จาก URL ส่วนแบบหลังหมายถึง path ต้องเป็นข้อความ `/api/v1/users/id:int`
+
+ถ้า `GET /api/v1/users/1` ได้ `404 Not Found` หลังจากทดสอบ `DELETE` ไปแล้ว ให้ restart API เพราะข้อมูลใน memory ถูกลบไปจริงระหว่างที่ application ยังรันอยู่
+
+ถ้า `POST` หรือ `PUT` ได้ `400 Bad Request` ให้ตรวจว่า JSON body ถูกต้องหรือไม่ เช่น key ต้องอยู่ใน double quote และไม่มี comma เกินท้าย object
+
+ถ้าเปลี่ยน code แล้วผลลัพธ์ไม่เปลี่ยน ให้หยุด server แล้วรันใหม่ เพราะบางครั้ง application ที่กำลัง debug อยู่ยังใช้ binary เก่า
+
+## แบบฝึกหัด
+
+ลองเพิ่ม endpoint สำหรับค้นหา user ด้วย email:
+
+```text
+GET /api/v1/users/by-email/admin@example.com
+```
+
+แนวทางคือสร้าง action ใหม่ที่ใช้ route ชัดเจน ไม่ชนกับ `GET /api/v1/users/{id}`:
+
+ในตัวอย่างนี้ `StringComparison.OrdinalIgnoreCase` หมายถึงให้เปรียบเทียบ email แบบไม่สนตัวพิมพ์เล็กหรือใหญ่ เช่น `ADMIN@example.com` และ `admin@example.com` ถือว่าตรงกัน
+
+```csharp
+[HttpGet("by-email/{email}")]
+public IActionResult GetUserByEmail(string email)
+{
+    var user = Users.FirstOrDefault(user =>
+        string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase));
+
+    if (user is null)
+    {
+        return NotFound();
+    }
+
+    return Ok(user);
+}
+```
+
+แบบฝึกหัดนี้ช่วยให้เห็นว่าทำไม route ที่ชัด เช่น `by-email/{email}` ดีกว่าการใช้ route ซ้ำแบบ `{value}`
+
+## Checkpoint
+
+เมื่อจบบทนี้ คุณควรมี endpoint เหล่านี้:
+
+```text
+GET    /api/v1/users
+GET    /api/v1/users/{id}
+POST   /api/v1/users
+PUT    /api/v1/users/{id}
+DELETE /api/v1/users/{id}
+```
+
+และควรอธิบายได้ว่า:
+
+- attribute `[HttpGet]`, `[HttpPost]`, `[HttpPut]`, `[HttpDelete]` ใช้ทำอะไร
+- `Ok`, `NotFound`, `CreatedAtAction`, `NoContent` ตอบ status code อะไร
+- `FirstOrDefault`, `Max`, `FindIndex`, `Add`, `Remove` ใช้ทำอะไร
+- `200`, `201`, `204` และ `404` ถูกใช้ในกรณีใด

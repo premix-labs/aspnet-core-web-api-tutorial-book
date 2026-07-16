@@ -1,0 +1,33 @@
+---
+// Callout.astro — Reusable callout/alert component
+import { Info, TriangleAlert, Lightbulb, OctagonAlert } from '@lucide/astro';
+
+interface Props {
+  type?: 'info' | 'warning' | 'tip' | 'danger';
+  title?: string;
+}
+
+const { type = 'info', title } = Astro.props;
+
+const defaultTitles: Record<string, string> = {
+  info: 'Note',
+  warning: 'Warning',
+  tip: 'Tip',
+  danger: 'Danger',
+};
+---
+
+<div class={`callout callout--${type}`} role="note">
+  <span class="flex items-center justify-center mt-0.5" aria-hidden="true">
+    {type === 'info' && <Info class="w-5 h-5 stroke-[2.25px]" />}
+    {type === 'warning' && <TriangleAlert class="w-5 h-5 stroke-[2.25px]" />}
+    {type === 'tip' && <Lightbulb class="w-5 h-5 stroke-[2.25px]" />}
+    {type === 'danger' && <OctagonAlert class="w-5 h-5 stroke-[2.25px]" />}
+  </span>
+  <div class="callout-body">
+    <div class="callout-title">{title ?? defaultTitles[type]}</div>
+    <div class="callout-content">
+      <slot />
+    </div>
+  </div>
+</div>

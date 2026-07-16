@@ -2,22 +2,41 @@
   "name": "aspnet-core-web-api-tutorial-book",
   "type": "module",
   "version": "0.0.1",
+  "description": "หนังสือสอนสร้าง ASP.NET Core Web API สำหรับมือใหม่จนต่อยอดทำงานจริงได้",
+  "engines": {
+    "node": "^22.22.3 || ^24.16.0 || >=26.3.0"
+  },
   "scripts": {
     "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
+    "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "new-chapter": "node scripts/new-chapter.mjs"
   },
   "dependencies": {
-    "@astrojs/markdown-remark": "^7.2.0",
-    "@astrojs/starlight": "^0.40.0",
-    "astro": "^7.0.0",
-    "astro-mermaid": "^2.0.4",
-    "mermaid": "^11.15.0",
-    "sharp": "^0.34.5"
+    "@astrojs/check": "^0.9.9",
+    "@astrojs/mdx": "^7.0.2",
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
+    "@fontsource/space-grotesk": "^5.2.10",
+    "@lucide/astro": "^1.23.0",
+    "@tailwindcss/typography": "^0.5.20",
+    "astro": "^7.0.6",
+    "mermaid": "^11.16.0",
+    "typescript": "^6.0.3"
   },
-  "overrides": {
-    "esbuild": "0.28.1"
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "@types/node": "^24.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
+    "eslint": "^10.6.0",
+    "eslint-plugin-astro": "^2.1.1",
+    "pagefind": "^1.5.2",
+    "prettier": "^3.9.4",
+    "prettier-plugin-astro": "^0.14.1",
+    "tailwindcss": "^4.3.2"
   }
 }

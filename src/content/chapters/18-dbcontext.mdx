@@ -1,0 +1,289 @@
+---
+title: "สร้าง DbContext"
+description: "สร้าง AppDbContext และกำหนด mapping ของ User entity"
+chapter: 22
+icon: database
+part: "ภาค 4: Database"
+---
+
+# สร้าง DbContext
+
+`DbContext` คือ class หลักของ EF Core ใช้เป็นตัวกลางระหว่าง application กับ database
+
+ถ้าเปรียบแบบง่าย ๆ `DbContext` คือจุดที่บอก EF Core ว่าโปรเจกต์นี้มี entity อะไรบ้าง และ entity เหล่านั้นควรถูก map กับ database อย่างไร
+
+## วิธีเรียนบทนี้
+
+บทนี้มี code มากกว่าบทก่อน ให้ทำทีละขั้น:
+
+1. สร้างโฟลเดอร์ `Data`
+2. สร้าง class `AppDbContext`
+3. เพิ่ม `DbSet<User>`
+4. เพิ่ม mapping ของ `User` ทีละกลุ่ม
+5. รัน `dotnet build`
+
+ถ้า build error ให้แก้ทันที อย่ารอจนจบบท เพราะ `DbContext` เป็นพื้นฐานของ migration ในบทถัดไป
+
+## ก่อนเริ่มบทนี้
+
+ให้ทำบท 17 ให้จบก่อน และตรวจว่า `User` entity build ผ่าน:
+
+```powershell
+dotnet build
+```
+
+ถ้า `User` entity ยังไม่มี `PasswordHash`, `Role`, `IsActive`, `CreatedAtUtc` และ `UpdatedAtUtc` ให้กลับไปแก้บท 17 ก่อน เพราะ mapping ในบทนี้จะอ้างถึง property เหล่านั้น
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `DbContext` | class หลักของ EF Core ที่คุยกับ database |
+| `DbContextOptions<T>` | options ที่ ASP.NET Core ส่งเข้ามา เช่น provider และ connection string |
+| `DbSet<User>` | ชุดข้อมูลของ entity `User` ที่ EF Core จะ map เป็น table |
+| `OnModelCreating` | method สำหรับกำหนด schema เพิ่มเติม |
+| `ModelBuilder` | object ที่ใช้กำหนด mapping ของ entity |
+| `HasKey` | กำหนด primary key |
+| `Property` | กำหนดรายละเอียดของ column |
+| `HasIndex(...).IsUnique()` | สร้าง unique index |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Data/AppDbContext.cs
+```
+
+## สร้างโฟลเดอร์ Data
+
+ที่ root ของโปรเจกต์ `Backend.Api` ให้สร้างโฟลเดอร์นี้
+
+```text
+Data/
+```
+
+ให้รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path Data
+if (-not (Test-Path -LiteralPath Data/AppDbContext.cs)) {
+    New-Item -ItemType File -Path Data/AppDbContext.cs
+}
+```
+
+macOS/Linux Bash:
+
+```bash
+mkdir -p Data
+touch Data/AppDbContext.cs
+```
+
+จากนั้นเปิดไฟล์
+
+```text
+Data/AppDbContext.cs
+```
+
+## ขั้นที่ 1: เพิ่ม using และ class
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+using Backend.Api.Models;
+
+namespace Backend.Api.Data;
+
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+{
+}
+```
+
+บรรทัด `DbContextOptions<AppDbContext> options` คือค่าที่ ASP.NET Core จะส่งเข้ามาตอนสร้าง `AppDbContext` เช่น connection string และ provider ที่ใช้
+
+## ขั้นที่ 2: เพิ่ม DbSet
+
+เพิ่ม property นี้ไว้ใน class `AppDbContext`
+
+```csharp
+public DbSet<User> Users => Set<User>();
+```
+
+`DbSet<User>` บอก EF Core ว่าเราต้องการจัดการ entity `User` ผ่านชุดข้อมูลชื่อ `Users`
+
+## ขั้นที่ 3: เพิ่ม OnModelCreating
+
+เพิ่ม method นี้ไว้ใต้ `DbSet<User>`
+
+```csharp
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    base.OnModelCreating(modelBuilder);
+
+    modelBuilder.Entity<User>(entity =>
+    {
+        // User mapping will be added in the next steps.
+    });
+}
+```
+
+`OnModelCreating` คือที่สำหรับบอกรายละเอียดของ schema เช่น column ไหนจำเป็น, column ไหนยาวได้เท่าไร และ field ไหนห้ามซ้ำ
+
+## ขั้นที่ 4: กำหนด primary key
+
+เพิ่ม code นี้ไว้ใน block `modelBuilder.Entity<User>(entity => { ... })`
+
+```csharp
+entity.HasKey(user => user.Id);
+```
+
+`HasKey` บอกว่า `Id` คือ primary key ของ table `Users`
+
+## ขั้นที่ 5: กำหนด Email
+
+เพิ่ม code นี้ต่อจาก `HasKey`
+
+```csharp
+entity.Property(user => user.Email)
+    .IsRequired()
+    .HasMaxLength(256);
+
+entity.HasIndex(user => user.Email)
+    .IsUnique();
+```
+
+ความหมาย:
+
+- `IsRequired()` ทำให้ column นี้ห้ามเป็น `NULL`
+- `HasMaxLength(256)` จำกัดความยาว email
+- `HasIndex(...).IsUnique()` ทำให้ email ซ้ำกันไม่ได้
+
+## ขั้นที่ 6: กำหนด field สำหรับ auth และ audit เวลา
+
+เพิ่ม code นี้ต่อจาก email mapping
+
+```csharp
+entity.Property(user => user.PasswordHash)
+    .IsRequired()
+    .HasMaxLength(500);
+
+entity.Property(user => user.Role)
+    .IsRequired()
+    .HasMaxLength(50);
+
+entity.Property(user => user.CreatedAtUtc)
+    .IsRequired();
+
+entity.Property(user => user.UpdatedAtUtc);
+```
+
+`PasswordHash` ให้ความยาวมากกว่า email เพราะ hash บางรูปแบบยาวได้มาก ส่วน `Role` จำกัดไว้สั้น ๆ เพราะค่าควรเป็น role name เช่น `User` หรือ `Admin`
+
+`UpdatedAtUtc` เป็น nullable อยู่แล้ว จึงไม่ต้องเรียก `IsRequired()` เพราะ user ที่เพิ่งสร้างอาจยังไม่เคยถูกแก้ไข
+
+## ตรวจภาพรวมของ AppDbContext
+
+เมื่อทำครบทุกขั้น ไฟล์ควรมีโครงสร้างประมาณนี้
+
+```text
+AppDbContext
+  - DbSet<User> Users
+  - OnModelCreating(...)
+    - HasKey(Id)
+    - Email required + max length + unique index
+    - PasswordHash required + max length
+    - Role required + max length
+    - CreatedAtUtc required
+    - UpdatedAtUtc nullable
+```
+
+ถ้าต้องเทียบกับ code ให้ตรวจเป็นสองส่วน อย่าคัดลอกทั้งไฟล์ใหม่ถ้าไฟล์ของคุณมี code อยู่แล้ว
+
+ส่วนโครง class:
+
+```csharp
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+{
+    public DbSet<User> Users => Set<User>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            // User mapping should be here.
+        });
+    }
+}
+```
+
+ส่วน mapping ภายใน `modelBuilder.Entity<User>(entity => { ... })`:
+
+```csharp
+entity.HasKey(user => user.Id);
+
+entity.Property(user => user.Email)
+    .IsRequired()
+    .HasMaxLength(256);
+
+entity.HasIndex(user => user.Email)
+    .IsUnique();
+
+entity.Property(user => user.PasswordHash)
+    .IsRequired()
+    .HasMaxLength(500);
+
+entity.Property(user => user.Role)
+    .IsRequired()
+    .HasMaxLength(50);
+
+entity.Property(user => user.CreatedAtUtc)
+    .IsRequired();
+
+entity.Property(user => user.UpdatedAtUtc);
+```
+
+## อธิบาย code สำคัญ
+
+`DbSet<User> Users` บอก EF Core ว่าเราต้องการจัดการ entity `User` ผ่าน table ชื่อ `Users`
+
+`OnModelCreating` ใช้กำหนดรายละเอียดของ schema เช่นความยาว column, required field และ unique index
+
+`HasIndex(user => user.Email).IsUnique()` ทำให้ email ซ้ำกันไม่ได้ใน database ซึ่งสำคัญมากสำหรับระบบ login
+
+## ทำไมต้องกำหนด MaxLength
+
+ถ้าไม่กำหนดความยาว string EF Core อาจสร้าง column เป็นชนิดที่กว้างเกินจำเป็น เช่น `nvarchar(max)`
+
+สำหรับ field อย่าง email และ role เรารู้ขนาดโดยประมาณ จึงกำหนด `HasMaxLength` เพื่อให้ database schema ชัดเจนกว่า
+
+## ตรวจหลังสร้าง DbContext
+
+รันคำสั่งนี้จากโฟลเดอร์ `Backend.Api`
+
+```powershell
+dotnet build
+```
+
+ถ้า error ว่าไม่รู้จัก `DbContext` หรือ `DbSet` ให้ตรวจว่าติดตั้ง package `Microsoft.EntityFrameworkCore` แล้ว และไฟล์มี using นี้:
+
+```csharp
+using Microsoft.EntityFrameworkCore;
+```
+
+ถ้า error ว่าไม่รู้จัก `User` ให้ตรวจ using นี้:
+
+```csharp
+using Backend.Api.Models;
+```
+
+## Checkpoint
+
+ก่อนอ่านบทต่อไป ให้ตรวจว่าทำได้ครบตามนี้
+
+- มีไฟล์ `Data/AppDbContext.cs`
+- มี `DbSet<User> Users`
+- email ถูกกำหนดเป็น unique index
+- string field สำคัญมี `HasMaxLength`
+- `CreatedAtUtc` ถูกกำหนดเป็น required
+- `UpdatedAtUtc` เป็น nullable และไม่ถูกกำหนด `IsRequired()`

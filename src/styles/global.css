@@ -1,0 +1,760 @@
+@import 'tailwindcss';
+@variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@plugin "@tailwindcss/typography";
+@theme {
+  --color-surface-base: var(--bg-primary);
+  --color-surface-sec: var(--bg-secondary);
+  --color-surface-card: var(--bg-card);
+  --color-surface-elev: var(--bg-elevated);
+  --color-surface-hover: var(--bg-hover);
+
+  --color-content-main: var(--text-primary);
+  --color-content-sec: var(--text-secondary);
+  --color-content-mut: var(--text-muted);
+  --color-content-acc: var(--text-accent);
+
+  --color-line-sub: var(--border-subtle);
+  --color-line-def: var(--border-default);
+  --color-line-str: var(--border-strong);
+
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-code: var(--font-code);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+/* ============================================
+   Book Template — Editorial Design System
+   Philosophy: calm, typography-led, one confident accent.
+   ============================================ */
+
+/* ─── Design Tokens ─────────────────────────── */
+:root {
+  /* Accent — a single indigo→violet family, used with restraint */
+  --primary-600: #4f46e5;
+  --primary-500: #6366f1;
+  --primary-400: #818cf8;
+  --primary-300: #a5b4fc;
+  --primary-200: #c7d2fe;
+  --primary-100: #e0e7ff;
+
+  --accent-500: #8b5cf6;
+  --accent-400: #a78bfa;
+
+  /* Neutral dark palette — subtly cool for reading ergonomics */
+  --gray-950: #0a0b0e;
+  --gray-900: #121418;
+  --gray-850: #191c22;
+  --gray-800: #22262e;
+  --gray-750: #2d323c;
+  --gray-700: #3a4150;
+  --gray-600: #4b5263;
+  --gray-500: #5a5a80;
+  --gray-400: #8888ac;
+  --gray-300: #b0b0cc;
+  --gray-200: #c8c8e0;
+  --gray-100: #e8e8f0;
+  --gray-50: #f4f4f8;
+
+  /* Semantic tokens (dark, default) */
+  --bg-primary: var(--gray-950);
+  --bg-secondary: var(--gray-900);
+  --bg-card: var(--gray-850);
+  --bg-elevated: var(--gray-800);
+  --bg-hover: var(--gray-750);
+
+  --text-primary: #f2f2fa;
+  --text-secondary: #c4c6d8;
+  --text-muted: #8a8ca6;
+  --text-accent: var(--primary-300);
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  /* One restrained two-stop accent gradient (no third hue, never animated) */
+  --accent-gradient: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-500) 100%);
+  /* Soft, low-key glows — presence without spectacle */
+  --glow-primary: 0 0 28px rgba(99, 102, 241, 0.12);
+  --ambient: rgba(99, 102, 241, 0.06);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-code: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Spacing */
+  --header-height: 64px;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
+
+  /* Easing */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Light Mode ─────────────────────────────── */
+[data-theme='light'] {
+  --bg-primary: #fcfcfd;
+  --bg-secondary: #f5f6f8;
+  --bg-card: #ffffff;
+  --bg-elevated: #f0f1f4;
+  --bg-hover: #e7e9ef;
+
+  --text-primary: #1a1a24;
+  --text-secondary: #3c4250;
+  /* #5b6472 clears WCAG AA 4.5:1 for small text on --bg-primary */
+  --text-muted: #5b6472;
+  --text-accent: var(--primary-600);
+
+  --border-subtle: rgba(17, 20, 30, 0.06);
+  --border-default: rgba(17, 20, 30, 0.1);
+  --border-strong: rgba(17, 20, 30, 0.16);
+
+  --accent-gradient: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-500) 100%);
+  --glow-primary: 0 6px 20px rgba(99, 102, 241, 0.12);
+  --ambient: rgba(99, 102, 241, 0.05);
+
+  --shadow-sm: 0 1px 3px rgba(17, 20, 30, 0.06);
+  --shadow-md: 0 6px 20px rgba(17, 20, 30, 0.08);
+  --shadow-lg: 0 16px 48px rgba(17, 20, 30, 0.1);
+}
+
+/* ─── Reset & Base ──────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* Fluid base: 15px (mobile) → 18px (desktop) */
+  font-size: clamp(15px, 0.35vw + 14px, 18px);
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  transition:
+    background-color 0.4s var(--ease-smooth),
+    color 0.4s var(--ease-smooth);
+}
+
+/* A single, still, barely-there ambient wash — the only background flourish. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse 90% 55% at 50% -10%, var(--ambient) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Theme-shift transition for surfaces that change colour between themes */
+.chapter-card,
+pre,
+.callout,
+table,
+tr,
+td,
+th,
+.toc-item {
+  transition:
+    background-color 0.4s var(--ease-smooth),
+    color 0.4s var(--ease-smooth),
+    border-color 0.4s var(--ease-smooth);
+}
+
+/* ─── Scroll Reveal ─────────────────────────── */
+.reveal-item {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 0.7s var(--ease-smooth),
+    transform 0.7s var(--ease-smooth);
+  will-change: opacity, transform;
+}
+.reveal-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes themeIconSpin {
+  0% {
+    transform: scale(0.6) rotate(-90deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12) rotate(12deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+.theme-icon-animate {
+  animation: themeIconSpin 0.45s var(--ease-spring) forwards;
+}
+
+/* ─── Reduced Motion (A11y) ──────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal-item {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ─── Focus Visible (A11y) ───────────────────── */
+:focus-visible {
+  outline: 2px solid var(--primary-400);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Scrollbar ─────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-600);
+}
+
+/* ─── Selection ─────────────────────────────── */
+::selection {
+  background: rgba(99, 102, 241, 0.25);
+  color: var(--text-primary);
+}
+
+/* ════════════════════════════════════════════
+   READING TYPOGRAPHY — the heart of the book
+   ════════════════════════════════════════════ */
+.prose {
+  --tw-prose-body: var(--text-secondary);
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+.prose p {
+  margin: 0 0 1.4em;
+}
+
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: var(--font-display);
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  scroll-margin-top: calc(var(--header-height) + 24px);
+}
+.prose h2 {
+  font-size: 1.55rem;
+  margin: 2.6em 0 0.85em;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.prose h3 {
+  font-size: 1.22rem;
+  margin: 2em 0 0.7em;
+}
+.prose h4 {
+  font-size: 1.02rem;
+  margin: 1.7em 0 0.5em;
+}
+
+.prose a {
+  color: var(--text-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--text-accent) 38%, transparent);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color 0.15s var(--ease-smooth);
+}
+.prose a:hover {
+  text-decoration-color: var(--text-accent);
+}
+
+.prose strong {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.prose blockquote {
+  margin: 1.75em 0;
+  padding: 0.2em 0 0.2em 1.25em;
+  border-left: 3px solid var(--primary-400);
+  color: var(--text-muted);
+  font-style: italic;
+}
+.prose blockquote p {
+  margin: 0.5em 0;
+}
+
+.prose ul,
+.prose ol {
+  margin: 1.25em 0;
+  padding-left: 1.5em;
+}
+.prose li {
+  margin: 0.45em 0;
+  padding-left: 0.25em;
+}
+.prose ul > li::marker {
+  color: var(--primary-400);
+}
+.prose ol > li::marker {
+  color: var(--text-muted);
+  font-family: var(--font-code);
+  font-size: 0.9em;
+}
+
+.prose hr {
+  margin: 3em 0;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.prose img {
+  border-radius: var(--radius-md);
+}
+
+/* Tables read as clean data, not boxed grids */
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.75em 0;
+  font-size: 0.92em;
+}
+.prose th,
+.prose td {
+  padding: 0.6em 0.9em;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.prose th {
+  color: var(--text-primary);
+  font-weight: 600;
+  border-bottom-color: var(--border-default);
+}
+
+/* Inline code */
+.prose :not(pre) > code {
+  font-family: var(--font-code);
+  font-size: 0.85em;
+  padding: 0.14em 0.42em;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--primary-400) 12%, transparent);
+  color: var(--text-accent);
+  border: 1px solid var(--border-subtle);
+  word-break: break-word;
+}
+
+/* ─── Drop Cap (editorial signature) ─────────── */
+.prose > p:first-of-type::first-letter {
+  font-family: var(--font-display);
+  font-size: 3.2em;
+  font-weight: 700;
+  float: left;
+  line-height: 0.78;
+  margin: 0.05em 0.12em 0 0;
+  color: var(--text-accent);
+}
+
+/* ─── Code Blocks (clean card + header) ──────── */
+.code-block-wrapper {
+  position: relative;
+  margin: 1.6em 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.code-block-header {
+  @apply flex items-center justify-between py-2.5 px-4 bg-[var(--bg-hover)] border-b border-[var(--border-subtle)] font-code text-[0.78rem] text-[var(--text-muted)];
+}
+.code-block-lang {
+  @apply flex items-center gap-2;
+}
+.code-block-lang-dot {
+  @apply w-2 h-2 rounded-full bg-[var(--primary-400)];
+}
+.code-copy-btn {
+  @apply cursor-pointer py-1 px-2.5 border border-[var(--border-subtle)] rounded-md bg-transparent text-[var(--text-muted)] text-[0.75rem] font-sans transition-all duration-150;
+}
+.code-copy-btn:hover {
+  @apply border-[var(--border-default)] text-[var(--text-secondary)] bg-[var(--bg-elevated)];
+}
+.prose pre {
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+.prose pre > code {
+  @apply block py-5 px-6 font-code text-[0.875rem] leading-[1.7] overflow-x-auto;
+}
+
+[data-theme='light'] .prose pre {
+  background: #f5f6f8 !important;
+}
+
+/* ─── Mermaid Diagrams ────────────────────────── */
+/* ```mermaid fenced blocks render as this once JS runs; see src/utils/mermaid.ts.
+   Sized to breathe like a Figure, not cramped like a code block. */
+.mermaid-diagram {
+  margin: 1.75em 0;
+  padding: 1.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+.mermaid-diagram[aria-busy='true'] {
+  min-height: 120px;
+  align-items: center;
+}
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+.mermaid-error {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  font-style: italic;
+}
+
+/* ─── Callouts ─────────────────────────────── */
+.callout {
+  @apply rounded-lg py-5 px-6 my-7 flex gap-4 border;
+}
+.callout-icon {
+  @apply text-[1.2rem] shrink-0 mt-[1px];
+}
+.callout-body {
+  @apply flex-1 min-w-0;
+}
+.callout-title {
+  @apply font-bold text-[0.82rem] uppercase tracking-wider mb-1.5;
+}
+.callout-content {
+  @apply text-[0.95rem] leading-relaxed;
+}
+.callout-content p {
+  @apply m-0 text-inherit;
+}
+.callout-content code {
+  @apply font-code text-[0.875em] px-1.5 py-[1px] rounded;
+}
+
+/* Info */
+.callout--info {
+  @apply bg-blue-500/10 border-blue-500/25 text-blue-300;
+}
+.callout--info .callout-title {
+  @apply text-blue-400;
+}
+.callout--info .callout-content code {
+  @apply bg-blue-500/15 text-blue-300;
+}
+/* Warning */
+.callout--warning {
+  @apply bg-amber-500/10 border-amber-500/25 text-amber-300;
+}
+.callout--warning .callout-title {
+  @apply text-amber-400;
+}
+.callout--warning .callout-content code {
+  @apply bg-amber-500/15 text-amber-300;
+}
+/* Tip */
+.callout--tip {
+  @apply bg-green-500/10 border-green-500/25 text-green-300;
+}
+.callout--tip .callout-title {
+  @apply text-green-400;
+}
+.callout--tip .callout-content code {
+  @apply bg-green-500/15 text-green-300;
+}
+/* Danger */
+.callout--danger {
+  @apply bg-red-500/10 border-red-500/25 text-red-300;
+}
+.callout--danger .callout-title {
+  @apply text-red-400;
+}
+.callout--danger .callout-content code {
+  @apply bg-red-500/15 text-red-300;
+}
+
+/* ─── Chapter Cards (landing) ────────────────── */
+.chapter-card {
+  text-decoration: none;
+}
+.chapter-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-gradient);
+  opacity: 0;
+  transition: opacity 0.25s var(--ease-smooth);
+}
+.chapter-card:hover::before {
+  opacity: 1;
+}
+
+/* ─── Heading Anchor Links ────────────────────── */
+.prose h2,
+.prose h3 {
+  position: relative;
+}
+.heading-anchor {
+  position: absolute;
+  left: -1.1em;
+  top: 0;
+  opacity: 0;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 400;
+  transition: opacity 0.15s var(--ease-smooth);
+}
+.prose h2:hover .heading-anchor,
+.prose h3:hover .heading-anchor,
+.heading-anchor:focus-visible {
+  opacity: 1;
+}
+@media (max-width: 768px) {
+  .heading-anchor {
+    display: none;
+  }
+}
+
+/* ─── Skip to Content (A11y) ─────────────────── */
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: var(--accent-gradient);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  z-index: 9999;
+  text-decoration: none;
+  transition: top 0.3s var(--ease-spring);
+}
+.skip-link:focus {
+  top: 0;
+  outline: none;
+}
+
+/* ─── Reading Progress Bar ─────────────────── */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0%;
+  height: 2px;
+  background: var(--accent-gradient);
+  z-index: 9998;
+  transition: width 0.1s linear;
+}
+
+/* ─── Right Table of Contents ────────────────── */
+.toc-item {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 5px 12px;
+  border-left: 2px solid transparent;
+  transition: all 0.15s var(--ease-smooth);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toc-item:hover {
+  color: var(--text-primary);
+  border-left-color: var(--border-strong);
+}
+.toc-item.active {
+  color: var(--text-accent);
+  border-left-color: var(--primary-400);
+  font-weight: 600;
+}
+.toc-item--h3 {
+  padding-left: 24px;
+  font-size: 0.76rem;
+  opacity: 0.9;
+}
+
+/* ─── Mobile Overlay Menu ───────────────────── */
+.mobile-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease-smooth);
+  display: flex;
+  flex-direction: column;
+  padding: 80px 24px 24px;
+  overflow-y: auto;
+}
+.mobile-menu-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+body.menu-open {
+  overflow: hidden;
+}
+
+.hamburger-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 8px;
+  z-index: 201;
+}
+@media (max-width: 768px) {
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ─── Faint Grid Background ───────────────────── */
+.bg-grid {
+  background-size: 56px 56px;
+  background-image:
+    linear-gradient(to right, var(--border-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border-subtle) 1px, transparent 1px);
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+}
+
+/* ─── Spotlight Cards (subtle, hover-only) ───── */
+.spotlight-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-card);
+}
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    color-mix(in srgb, var(--primary-400) 10%, transparent),
+    transparent 40%
+  );
+  z-index: 1;
+  transition: opacity 0.3s var(--ease-smooth);
+  opacity: 0;
+  pointer-events: none;
+}
+.spotlight-card:hover::before {
+  opacity: 1;
+}
+.spotlight-content {
+  position: relative;
+  z-index: 2;
+}
+@media (hover: none) and (pointer: coarse) {
+  .spotlight-card::before {
+    display: none;
+  }
+}
+
+/* ─── Utilities ─────────────────────────────── */
+.text-gradient {
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.desktop-only {
+  display: none;
+}
+@media (min-width: 640px) {
+  .desktop-only {
+    display: inline;
+  }
+}

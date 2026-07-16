@@ -1,0 +1,117 @@
+---
+// Tabs.astro — Switchable content panels, e.g. npm / pnpm / yarn or JS / TS.
+//
+//   <Tabs>
+//     <Tab label="npm">...</Tab>
+//     <Tab label="pnpm">...</Tab>
+//   </Tabs>
+//
+// Progressive enhancement: without JS every panel simply stacks and stays readable.
+---
+
+<div class="tabs" data-tabs>
+  <div class="tab-list" role="tablist"></div>
+  <div class="tab-panels">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .tabs {
+    margin: 1.5rem 0;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .tab-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 6px 6px 0;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .tab-list:empty {
+    display: none;
+  }
+  .tab-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    cursor: pointer;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: all 0.15s var(--ease-smooth);
+  }
+  .tab-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+  .tab-btn[aria-selected='true'] {
+    color: var(--text-accent);
+    background: var(--bg-card);
+  }
+  .tab-panels :global(.tab-panel) {
+    padding: 1.25rem;
+  }
+  /* Trim the leading/trailing margins the Markdown content adds inside a panel. */
+  .tab-panels :global(.tab-panel > :first-child) {
+    margin-top: 0;
+  }
+  .tab-panels :global(.tab-panel > :last-child) {
+    margin-bottom: 0;
+  }
+</style>
+
+<script>
+  function initTabs(tabs: HTMLElement) {
+    if (tabs.dataset.tabsInit === 'true') return;
+    tabs.dataset.tabsInit = 'true';
+
+    const list = tabs.querySelector('.tab-list');
+    const panels = Array.from(tabs.querySelectorAll<HTMLElement>('.tab-panel'));
+    if (!list || panels.length === 0) return;
+
+    const buttons: HTMLButtonElement[] = [];
+
+    const select = (index: number) => {
+      panels.forEach((panel, i) => {
+        const active = i === index;
+        panel.hidden = !active;
+        buttons[i].setAttribute('aria-selected', String(active));
+        buttons[i].tabIndex = active ? 0 : -1;
+      });
+    };
+
+    panels.forEach((panel, i) => {
+      const label = panel.dataset.tabLabel ?? `Tab ${i + 1}`;
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn';
+      btn.textContent = label;
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-selected', 'false');
+      btn.type = 'button';
+      btn.addEventListener('click', () => select(i));
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const dir = e.key === 'ArrowRight' ? 1 : -1;
+          const next = (i + dir + buttons.length) % buttons.length;
+          select(next);
+          buttons[next].focus();
+        }
+      });
+      list.appendChild(btn);
+      buttons.push(btn);
+    });
+
+    select(0);
+  }
+
+  const setup = () => document.querySelectorAll<HTMLElement>('[data-tabs]').forEach(initTabs);
+  document.addEventListener('astro:page-load', setup);
+</script>

@@ -1,0 +1,209 @@
+---
+title: "Build และ Publish"
+description: "ตรวจ build, test, publish และ Docker image ก่อน deploy"
+chapter: 57
+icon: rocket
+part: "ภาค 8: Production Ready"
+---
+
+# Build และ Publish
+
+ก่อน deploy ต้องตรวจว่า project build ผ่าน test ผ่าน และสามารถ publish เป็น output สำหรับ runtime ได้
+
+บทนี้รวบรวมคำสั่งปิดงานก่อนส่ง API ไปใช้งานจริง
+
+## วิธีเรียนบทนี้
+
+ให้มองบทนี้เป็น release checklist แบบสั้น:
+
+1. restore dependency
+2. build แบบ Release
+3. run test แบบ Release
+4. publish output
+5. run published app
+6. build Docker image
+7. run smoke test
+
+ถ้าขั้นไหน fail ให้หยุดแก้ตรงนั้นก่อน อย่าข้ามไป deploy
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `dotnet restore` | ดาวน์โหลด dependency |
+| `dotnet build -c Release` | compile ด้วย configuration ใกล้ production |
+| `dotnet test -c Release` | รัน test ด้วย configuration เดียวกับ release |
+| `dotnet publish` | สร้าง output สำหรับ runtime |
+| smoke test | ทดสอบสั้น ๆ ว่า app ที่รันอยู่ตอบสนองได้ |
+| Docker image | artifact สำหรับ deploy แบบ container |
+
+## ขั้นที่ 1: Restore
+
+รันจาก root ของ solution:
+
+```powershell
+dotnet restore
+```
+
+`dotnet build`, `dotnet test` และ `dotnet publish` restore ให้อัตโนมัติได้ แต่การแยก restore ชัดเจนมีประโยชน์ใน CI/CD
+
+## ขั้นที่ 2: Build
+
+```powershell
+dotnet build -c Release
+```
+
+ใช้ `Release` configuration เพื่อให้ใกล้กับตอน deploy จริง
+
+ถ้ามี warning สำคัญ ให้แก้หรือบันทึกเหตุผล อย่าปล่อย warning ที่เกี่ยวกับ security หรือ nullable ไปเฉย ๆ
+
+## ขั้นที่ 3: Test
+
+```powershell
+dotnet test -c Release
+```
+
+ถ้า test ต้องใช้ database ให้แน่ใจว่า test database พร้อมก่อนรัน
+
+test ที่ fail ในเครื่อง release คือสัญญาณว่าไม่ควร deploy ต่อ
+
+## ขั้นที่ 4: Publish
+
+ถ้าอยู่ที่ root ของ solution ให้ระบุ path ไปยัง project
+
+Windows PowerShell:
+
+```powershell
+dotnet publish Backend.Api\Backend.Api.csproj -c Release -o .\publish
+```
+
+macOS/Linux Bash:
+
+```bash
+dotnet publish Backend.Api/Backend.Api.csproj -c Release -o ./publish
+```
+
+`dotnet publish` จะ compile application, อ่าน dependency และสร้าง output ที่พร้อมนำไปรันบน hosting system
+
+## ขั้นที่ 5: ตรวจ publish output
+
+หลัง publish แล้วควรเห็นไฟล์ประมาณนี้ในโฟลเดอร์ `publish`
+
+```text
+Backend.Api.dll
+Backend.Api.deps.json
+Backend.Api.runtimeconfig.json
+appsettings.json
+```
+
+ถ้าไม่มี `Backend.Api.dll` แปลว่า publish ไม่สมบูรณ์
+
+## ขั้นที่ 6: Run published app
+
+ทดสอบ output ที่ publish แล้ว
+
+ก่อนรัน published app ให้ตั้งค่า config สำคัญก่อน เพราะหลังบทที่ 42 เราไม่เก็บ connection string และ JWT signing key ไว้ใน `appsettings.json` แล้ว
+
+ให้รันจากโฟลเดอร์ `publish` เพื่อให้ content root ตรงกับไฟล์ที่ถูก publish จริง
+
+ถ้าเครื่องยังไม่มี SQL Server ที่ `localhost:1433` ให้เปิด database จาก Docker Compose ในบทที่ 48 ก่อน หรือเปลี่ยน connection string ให้ชี้ไปยัง database ที่พร้อมใช้งาน
+
+Windows PowerShell:
+
+```powershell
+$env:ASPNETCORE_ENVIRONMENT="Production"
+$env:LOCAL_SQL_PASSWORD="Replace_With_Strong_Local_Password_123!"
+$env:Jwt__SigningKey="replace-with-local-development-signing-key-at-least-32-bytes"
+$env:ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=BackendApiDb;User Id=sa;Password=$($env:LOCAL_SQL_PASSWORD);TrustServerCertificate=True;"
+$env:Cors__AllowedOrigins__0="http://localhost:3000"
+Push-Location .\publish
+dotnet .\Backend.Api.dll
+Pop-Location
+```
+
+macOS/Linux Bash:
+
+```bash
+export ASPNETCORE_ENVIRONMENT=Production
+export LOCAL_SQL_PASSWORD='Replace_With_Strong_Local_Password_123!'
+export Jwt__SigningKey='replace-with-local-development-signing-key-at-least-32-bytes'
+export ConnectionStrings__DefaultConnection="Server=localhost,1433;Database=BackendApiDb;User Id=sa;Password=${LOCAL_SQL_PASSWORD};TrustServerCertificate=True;"
+export Cors__AllowedOrigins__0='http://localhost:3000'
+cd ./publish
+dotnet ./Backend.Api.dll
+cd ..
+```
+
+ถ้ารันไม่ได้ ให้แก้ก่อน deploy เพราะนี่คือสิ่งที่ server หรือ container จะรันจริง
+
+## ขั้นที่ 7: Build Docker image
+
+Dockerfile ของบทที่ 47 อยู่ใน `Backend.Api/` ดังนั้นถ้าอยู่ที่ root ของ solution ให้ระบุ context เป็นโฟลเดอร์นั้น
+
+Windows PowerShell:
+
+```powershell
+docker build -t backend-api:release .\Backend.Api
+```
+
+macOS/Linux Bash:
+
+```bash
+docker build -t backend-api:release ./Backend.Api
+```
+
+ตรวจ image:
+
+```powershell
+docker images backend-api
+```
+
+## ขั้นที่ 8: Run smoke test
+
+หลังรัน container หรือ compose แล้ว ให้ทดสอบ endpoint สำคัญ
+
+ถ้า OpenAPI เปิดใน environment นั้น:
+
+```http
+GET http://localhost:18080/openapi/v1.json
+```
+
+ถ้า OpenAPI ปิดใน production ให้ทดสอบ login validation แทน:
+
+```http
+POST http://localhost:18080/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "wrong@example.com",
+  "password": "wrong"
+}
+```
+
+ควรได้ response ที่ควบคุมได้ ไม่ใช่ stack trace
+
+## ลำดับคำสั่งสรุป
+
+รันจาก root ของ solution:
+
+```powershell
+dotnet restore
+dotnet build -c Release
+dotnet test -c Release
+dotnet publish Backend.Api\Backend.Api.csproj -c Release -o .\publish
+docker build -t backend-api:release .\Backend.Api
+```
+
+ถ้าใช้ macOS/Linux ให้เปลี่ยน path separator จาก `\` เป็น `/`
+
+## Checkpoint
+
+ก่อนอ่านบทสุดท้าย ให้ตรวจว่าทำได้ครบตามนี้
+
+- `dotnet restore` ผ่าน
+- `dotnet build -c Release` ผ่าน
+- `dotnet test -c Release` ผ่าน
+- `dotnet publish` ผ่าน
+- run published app ได้
+- build Docker image ได้
+- smoke test endpoint สำคัญได้

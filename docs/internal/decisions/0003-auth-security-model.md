@@ -1,5 +1,5 @@
 ---
-title: "0003 - Auth and Security Model"
+title: '0003 - Auth and Security Model'
 description: เหตุผลของแนวทาง auth, token และ production hardening
 ---
 
@@ -39,4 +39,3 @@ Accepted
 
 - เนื้อหายาวและซับซ้อนขึ้น
 - ต้องระวัง progressive chapters ไม่กระโดดไป production hardening ก่อนเวลา
-

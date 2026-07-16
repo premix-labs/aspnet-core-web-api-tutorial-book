@@ -1,0 +1,87 @@
+---
+// Figure.astro — Image/diagram with caption, theme-aware source, and zero layout shift.
+// Provide width & height (intrinsic pixel size) so the browser reserves space before load.
+interface Props {
+  src: string;
+  alt: string;
+  /** Optional caption rendered under the image. */
+  caption?: string;
+  /** Optional alternate source shown in dark mode (falls back to `src`). */
+  darkSrc?: string;
+  width?: number;
+  height?: number;
+  /** Draw a subtle border + padding — good for screenshots on busy backgrounds. */
+  bordered?: boolean;
+}
+
+const { src, alt, caption, darkSrc, width, height, bordered = false } = Astro.props;
+const hasThemeVariants = Boolean(darkSrc);
+---
+
+<figure class={`figure ${bordered ? 'figure--bordered' : ''}`}>
+  {
+    hasThemeVariants ? (
+      <>
+        <img
+          class="figure-img figure-img--light"
+          src={src}
+          alt={alt}
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
+        />
+        <img
+          class="figure-img figure-img--dark"
+          src={darkSrc}
+          alt={alt}
+          width={width}
+          height={height}
+          loading="lazy"
+          decoding="async"
+        />
+      </>
+    ) : (
+      <img class="figure-img" src={src} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
+    )
+  }
+  {caption && <figcaption class="figure-caption">{caption}</figcaption>}
+</figure>
+
+<style>
+  .figure {
+    margin: 2rem 0;
+    text-align: center;
+  }
+  .figure-img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    display: inline-block;
+  }
+  .figure--bordered .figure-img {
+    border: 1px solid var(--border-default);
+    background: var(--bg-secondary);
+    padding: 8px;
+  }
+  .figure-caption {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* Theme-aware variants: default (dark-first) shows the dark image. */
+  .figure-img--light {
+    display: none;
+  }
+  .figure-img--dark {
+    display: inline-block;
+  }
+  :global([data-theme='light']) .figure-img--light {
+    display: inline-block;
+  }
+  :global([data-theme='light']) .figure-img--dark {
+    display: none;
+  }
+</style>

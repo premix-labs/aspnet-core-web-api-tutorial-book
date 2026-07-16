@@ -32,10 +32,25 @@ jobs:
             echo "BASE_PATH=/${{ github.event.repository.name }}" >> "$GITHUB_ENV"
           fi
 
-      - name: Install, build, and upload site
-        uses: withastro/action@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Explicit `npm run build` (not a generic Astro action) because this build is
+      # `astro build && pagefind --site dist` — search silently breaks without the
+      # pagefind step, so it must not be skipped by an action's own build detection.
+      - name: Build site (astro build + pagefind index)
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
 
   deploy:
     needs: build

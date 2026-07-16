@@ -73,4 +73,3 @@ dotnet publish -c Release
 ```powershell
 docker compose config
 ```
-

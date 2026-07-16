@@ -1,5 +1,5 @@
 ---
-title: "0005 - Deployment Target"
+title: '0005 - Deployment Target'
 description: เหตุผลของ GitHub Pages และ Docker Compose deployment path
 ---
 
@@ -30,4 +30,3 @@ Accepted
 - ต้องจัดการ base path ของ GitHub Pages
 - Docker ต้องพร้อมในเครื่องผู้ตรวจ
 - production hosting จริงยังต้องอธิบายเป็น checklist มากกว่าเจาะ provider เดียว
-

@@ -41,4 +41,3 @@ Mobile: 390x844
 - table อ่านได้บน mobile
 - search คืนผลลัพธ์
 - ไม่มี console error สำคัญ
-

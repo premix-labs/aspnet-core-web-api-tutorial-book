@@ -18,8 +18,8 @@ aspnet-core-web-api-tutorial-book
 - OpenAPI
 - xUnit และ integration tests
 - Docker Compose
-- Astro/Starlight สำหรับเว็บไซต์หนังสือ
-- Mermaid diagrams สำหรับอธิบาย flow สำคัญ
+- Astro + Tailwind 4 สำหรับเว็บไซต์หนังสือ (จาก `astro-book-template`)
+- Mermaid diagrams สำหรับอธิบาย flow สำคัญ — เขียนเป็น ` ```mermaid ` fenced block ปกติ
 
 ## คำสั่ง
 
@@ -28,6 +28,18 @@ npm install
 npm run dev
 npm run build
 ```
+
+| Command                           | Action                                      |
+| --------------------------------- | ------------------------------------------- |
+| `npm run new-chapter -- "ชื่อบท"` | สร้างไฟล์บทใหม่พร้อม frontmatter ที่ถูกต้อง |
+| `npm run lint`                    | Run lint checks                             |
+| `npm run preview`                 | Preview production build locally            |
+
+เนื้อหาหนังสือเก็บใน `src/content/chapters/` เป็น Astro Content Collection ที่ validate ด้วย Zod
+(`src/content.config.ts`) Frontmatter รองรับ `part` สำหรับจัดกลุ่มบทตามภาค — sidebar และหน้าแรกจัดกลุ่มให้อัตโนมัติ
+
+ทุกบทใช้ component ได้โดยไม่ต้อง import: `<Callout>`, `<Steps>`, `<Tabs>`/`<Tab>`, `<Figure>`, `<Kbd>`, `<Badge>`
+รีแบรนด์ได้ที่ `src/site.config.ts`
 
 ## เอกสารควบคุมคุณภาพ
 

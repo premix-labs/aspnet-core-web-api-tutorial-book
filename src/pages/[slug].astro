@@ -1,0 +1,44 @@
+---
+// [slug].astro — Dynamic Route
+import { getCollection, render } from 'astro:content';
+import BookLayout from '../layouts/BookLayout.astro';
+import { calculateReadingTime } from '../utils/readingTime';
+import { mdxComponents } from '../components/mdxComponents';
+import { withBase } from '../utils/url';
+
+export async function getStaticPaths() {
+  const allChapters = await getCollection('chapters', ({ data }) => !data.draft);
+  const chapters = allChapters.sort((a, b) => a.data.chapter - b.data.chapter);
+
+  return chapters.map((entry, index) => {
+    const prev =
+      index > 0 ? { href: withBase(chapters[index - 1].id), title: chapters[index - 1].data.title } : undefined;
+    const next =
+      index < chapters.length - 1
+        ? { href: withBase(chapters[index + 1].id), title: chapters[index + 1].data.title }
+        : undefined;
+
+    return {
+      params: { slug: entry.id },
+      props: { entry, prev, next },
+    };
+  });
+}
+
+const { entry, prev, next } = Astro.props;
+const { title, description, chapter, readingTime } = entry.data;
+const { Content, headings } = await render(entry);
+const computedReadingTime = readingTime ?? `${calculateReadingTime(entry.body ?? '')} min`;
+---
+
+<BookLayout
+  title={title}
+  chapter={chapter}
+  description={description}
+  readingTime={computedReadingTime}
+  prev={prev}
+  next={next}
+  headings={headings}
+>
+  <Content components={mdxComponents} />
+</BookLayout>
