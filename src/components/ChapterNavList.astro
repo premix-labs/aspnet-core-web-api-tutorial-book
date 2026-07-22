@@ -1,14 +1,8 @@
 ---
-// ChapterNavList.astro — Table of contents links shared by the desktop sidebar and mobile menu.
-// Chapters sharing a `part` are grouped under one heading; books with no `part` set render
-// the original flat list under a single "Table of Contents" heading.
-import { getIcon } from '../utils/icons';
-
 interface ChapterLink {
   num: number;
   title: string;
   href: string;
-  icon?: string;
   part?: string;
 }
 
@@ -18,8 +12,7 @@ interface Props {
 }
 
 const { chapters, currentPath } = Astro.props;
-
-const hasParts = chapters.some((ch) => ch.part);
+const hasParts = chapters.some((chapter) => chapter.part);
 
 interface Group {
   label: string | null;
@@ -27,51 +20,104 @@ interface Group {
 }
 
 const groups: Group[] = [];
-for (const ch of chapters) {
-  const label = ch.part ?? null;
-  const last = groups[groups.length - 1];
-  if (last && last.label === label) {
-    last.items.push(ch);
-  } else {
-    groups.push({ label, items: [ch] });
-  }
+for (const chapter of chapters) {
+  const label = chapter.part ?? null;
+  const last = groups.at(-1);
+  if (last?.label === label) last.items.push(chapter);
+  else groups.push({ label, items: [chapter] });
 }
 ---
 
-<div class="mb-6">
-  {
-    !hasParts && (
-      <div class="text-[0.7rem] font-bold uppercase tracking-wider text-content-mut mb-3 px-6">Table of Contents</div>
-    )
-  }
+<nav class="chapter-navigation" aria-label="Chapters">
+  {!hasParts && <div class="chapter-navigation-label">Contents</div>}
   {
     groups.map((group) => (
-      <div class="mb-4 last:mb-0">
-        {group.label && (
-          <div class="text-[0.7rem] font-bold uppercase tracking-wider text-content-mut mb-2 px-6 mt-4 first:mt-0">
-            {group.label}
-          </div>
-        )}
-        {group.items.map((ch) => {
-          const isActive = currentPath === ch.href || currentPath === ch.href + '/';
-          const IconComponent = getIcon(ch.icon);
+      <section class="chapter-navigation-group" aria-label={group.label ?? 'Chapters'}>
+        {group.label && <div class="chapter-navigation-label">{group.label}</div>}
+        {group.items.map((chapter) => {
+          const isActive = currentPath === chapter.href || currentPath === `${chapter.href}/`;
           return (
             <a
-              href={ch.href}
-              class={`flex items-center gap-4 py-2 px-6 text-[0.88rem] no-underline transition-all duration-200 border-l-[3px] hover:bg-surface-elev hover:text-content-main ${isActive ? 'bg-indigo-500/10 border-indigo-500 text-content-acc font-semibold' : 'border-transparent text-content-sec'}`}
+              href={chapter.href}
+              class:list={['chapter-navigation-link', { 'is-active': isActive }]}
               aria-current={isActive ? 'page' : undefined}
             >
-              <span class="font-code text-[0.7rem] opacity-50" aria-hidden="true">
-                {String(ch.num).padStart(2, '0')}
+              <span class="chapter-navigation-number" aria-hidden="true">
+                {String(chapter.num).padStart(2, '0')}
               </span>
-              <span class="flex items-center gap-2">
-                <IconComponent class="w-4 h-4 shrink-0 text-[currentColor]" />
-                <span>{ch.title}</span>
-              </span>
+              <span>{chapter.title}</span>
             </a>
           );
         })}
-      </div>
+      </section>
     ))
   }
-</div>
+</nav>
+
+<style>
+  .chapter-navigation {
+    display: grid;
+    gap: 16px;
+    padding-bottom: 24px;
+  }
+
+  .chapter-navigation-group {
+    display: grid;
+    gap: 2px;
+  }
+
+  .chapter-navigation-label {
+    padding: 0 20px 7px;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 750;
+    text-transform: uppercase;
+  }
+
+  .chapter-navigation-link {
+    position: relative;
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    padding: 7px 18px 7px 20px;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.35;
+    text-decoration: none;
+    transition:
+      background-color 130ms var(--ease-standard),
+      color 130ms var(--ease-standard);
+  }
+
+  .chapter-navigation-link:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+  }
+
+  .chapter-navigation-link.is-active {
+    background: var(--bg-hover);
+    color: var(--text-accent);
+    font-weight: 700;
+  }
+
+  .chapter-navigation-link.is-active::before {
+    content: '';
+    position: absolute;
+    inset: 7px auto 7px 0;
+    width: 3px;
+    background: var(--teal-600);
+  }
+
+  .chapter-navigation-number {
+    color: var(--text-muted);
+    font-family: var(--book-font-code);
+    font-size: 0.67rem;
+    font-weight: 600;
+  }
+
+  .chapter-navigation-link.is-active .chapter-navigation-number {
+    color: var(--text-accent);
+  }
+</style>

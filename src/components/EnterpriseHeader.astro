@@ -1,0 +1,84 @@
+---
+import { GitFork, Menu, Moon, Search, Sun } from '@lucide/astro';
+import { siteConfig } from '../site.config';
+import { withBase } from '../utils/url';
+
+interface Props {
+  showMenu?: boolean;
+}
+
+const { showMenu = false } = Astro.props;
+---
+
+<header class="enterprise-header col-span-full">
+  <a href={withBase('')} class="brand-link" aria-label={`${siteConfig.title} home`}>
+    <img src={withBase('favicon.svg')} width="32" height="32" alt="" class="brand-mark" />
+    <span class="brand-copy">
+      <strong>{siteConfig.shortTitle}</strong>
+      <span>{siteConfig.tagline}</span>
+    </span>
+  </a>
+
+  <div class="flex-1"></div>
+
+  <button class="open-search-btn icon-command search-command" aria-label="Search book">
+    <Search class="size-4" />
+    <span class="desktop-only">Search</span>
+    <kbd class="desktop-only">Ctrl K</kbd>
+  </button>
+
+  <button id="theme-switcher-btn" class="icon-command" aria-label="Switch to dark mode" aria-pressed="false">
+    <span class="theme-icon flex items-center" id="theme-btn-icon">
+      <Moon id="theme-icon-moon" class="size-4" />
+      <Sun id="theme-icon-sun" class="size-4 hidden" />
+    </span>
+  </button>
+
+  {
+    siteConfig.github && (
+      <a href={siteConfig.github} class="icon-command" aria-label="GitHub repository">
+        <GitFork class="size-4" />
+      </a>
+    )
+  }
+
+  {
+    showMenu && (
+      <button id="mobile-menu-btn" class="hamburger-btn" aria-label="Menu">
+        <Menu />
+      </button>
+    )
+  }
+</header>
+
+<script>
+  import { rerenderMermaidTheme } from '../utils/mermaid';
+
+  document.addEventListener('astro:page-load', () => {
+    const button = document.getElementById('theme-switcher-btn');
+    const moon = document.getElementById('theme-icon-moon');
+    const sun = document.getElementById('theme-icon-sun');
+    const themeMeta = document.getElementById('theme-color-meta') as HTMLMetaElement | null;
+    if (!button || button.dataset.bound === 'true') return;
+    button.dataset.bound = 'true';
+
+    const update = (theme: string) => {
+      const isLight = theme === 'light';
+      moon?.classList.toggle('hidden', isLight);
+      sun?.classList.toggle('hidden', !isLight);
+      button.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
+      button.setAttribute('aria-pressed', String(!isLight));
+      if (themeMeta) themeMeta.content = isLight ? '#ffffff' : '#171b1a';
+    };
+
+    let theme = document.documentElement.getAttribute('data-theme') ?? 'light';
+    update(theme);
+    button.addEventListener('click', () => {
+      theme = theme === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('site-theme', theme);
+      update(theme);
+      void rerenderMermaidTheme();
+    });
+  });
+</script>

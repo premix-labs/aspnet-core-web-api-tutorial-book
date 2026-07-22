@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package version
+        shell: bash
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+
+      - name: Install browser runtimes
+        run: npx playwright install --with-deps chromium firefox webkit
+
+      - name: Run enterprise release gate
+        run: npm run verify:enterprise
+
+      - name: Run full cross-browser release gate
+        run: npm run test:e2e
+
+      - name: Build release artifacts
+        shell: bash
+        run: |
+          tar -czf site.tar.gz -C dist .
+          npm sbom --sbom-format cyclonedx > sbom.cdx.json
+          sha256sum site.tar.gz sbom.cdx.json > checksums.sha256
+
+      - name: Attest release artifacts
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v3
+        with:
+          subject-path: |
+            site.tar.gz
+            sbom.cdx.json
+            checksums.sha256
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" site.tar.gz sbom.cdx.json checksums.sha256 --verify-tag --generate-notes

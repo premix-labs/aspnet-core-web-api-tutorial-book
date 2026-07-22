@@ -1,0 +1,13 @@
+---
+import { siteConfig } from '../site.config';
+---
+
+<meta name="theme-color" content="#ffffff" id="theme-color-meta" />
+<script is:inline define:vars={{ defaultTheme: siteConfig.defaultTheme }}>
+  const applyTheme = () => {
+    const savedTheme = localStorage.getItem('site-theme') || defaultTheme;
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  };
+  applyTheme();
+  document.addEventListener('astro:after-swap', applyTheme);
+</script>

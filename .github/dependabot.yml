@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 5
+    groups:
+      astro-toolchain:
+        patterns: ['astro', '@astrojs/*']
+      quality-toolchain:
+        patterns: ['eslint*', 'prettier*', '@typescript-eslint/*', '@playwright/*', '@axe-core/*']
+    ignore:
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:15'
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 5

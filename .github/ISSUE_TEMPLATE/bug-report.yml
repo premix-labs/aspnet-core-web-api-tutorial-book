@@ -1,0 +1,38 @@
+name: Platform bug
+description: Report a reproducible problem in the book site or authoring tools.
+title: '[Bug] '
+labels: ['bug', 'needs-triage']
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include the route, command and smallest repeatable sequence.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Template version
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser or runtime
+      options: [Chromium, Firefox, WebKit, Node.js, Not applicable]
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add logs, screenshots or failing test output without credentials.

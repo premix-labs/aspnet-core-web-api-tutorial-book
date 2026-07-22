@@ -30,18 +30,16 @@
     margin: 0;
   }
 
-  /* Connector rail between step badges. */
   .steps :global(ol > li:not(:last-child))::after {
     content: '';
     position: absolute;
     left: 0.94rem;
     top: 2rem;
     bottom: 0;
-    width: 2px;
+    width: 1px;
     background: var(--border-default);
   }
 
-  /* Numbered badge. */
   .steps :global(ol > li)::before {
     content: counter(step);
     position: absolute;
@@ -52,13 +50,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
-    background: var(--accent-gradient);
-    color: #fff;
+    border: 1px solid var(--teal-600);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-accent);
     font-family: var(--font-code);
     font-size: 0.8rem;
     font-weight: 700;
-    box-shadow: var(--glow-primary);
   }
 
   .steps :global(ol > li:last-child) {

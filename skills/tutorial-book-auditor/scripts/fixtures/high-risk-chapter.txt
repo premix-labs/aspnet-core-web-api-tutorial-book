@@ -1,0 +1,13 @@
+---
+title: Deploy The Application
+description: Deploy the application.
+chapter: 9
+status: published
+---
+
+TODO: finish this chapter later.
+
+Use the files from C:\Users\author\Desktop\private-project and configure this value:
+
+```
+password = "production-secret-value"

@@ -15,16 +15,16 @@ const { variant = 'default' } = Astro.props;
     font-size: 0.7rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0;
     padding: 0.15em 0.55em;
-    border-radius: 999px;
+    border-radius: var(--radius-sm);
     border: 1px solid;
     vertical-align: middle;
   }
   .badge--default {
     color: var(--text-accent);
-    background: rgba(99, 102, 241, 0.1);
-    border-color: rgba(99, 102, 241, 0.25);
+    background: var(--bg-hover);
+    border-color: var(--border-default);
   }
   .badge--new {
     color: #4ade80;

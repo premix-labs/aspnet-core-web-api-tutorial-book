@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://premix-labs.github.io/astro-book-template/schemas/book-template.schema.json",
+  "title": "Book template metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "templateVersion", "templateRepository", "generatedAt", "managedFiles"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "type": "integer", "minimum": 1 },
+    "templateVersion": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "templateRepository": { "type": "string", "format": "uri" },
+    "generatedAt": { "type": "string", "format": "date" },
+    "managedFiles": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Teaching Principles for 10/10 Tutorial Books
 
-## Table of Contents
+## Contents
 
 - [Goal](#goal)
 - [Definition of Done](#definition-of-done)
@@ -13,131 +13,130 @@
 
 ## Goal
 
-หนังสือสอนเขียนเว็บที่ดีต้องทำให้ผู้เรียนสร้างของที่รันได้จริง แต่ไม่ปล่อยให้พิมพ์ตามแบบไม่เข้าใจ ทุกครั้งก่อนใช้ concept ใหม่ เช่น Controller, Service, Repository, DTO, Validation, Authentication, Docker หรือ Deployment ต้องตอบให้ได้ว่า:
+A strong programming tutorial enables learners to build something that runs without reducing the experience to unexplained copying. Before introducing a new concept such as a route, controller, component, service, repository, DTO, validation rule, authentication mechanism, container, deployment target, or configuration option, explain:
 
-- มันแก้ปัญหาอะไร
-- ถ้าไม่มีมันจะเกิดปัญหาอะไร
-- ในงานจริงใช้มันเพื่ออะไร
-- ในบทนี้ใช้เฉพาะส่วนไหนก่อน
-- implementation ตอนนี้ยังมีข้อจำกัดอะไร
+- what problem it solves
+- what happens without it
+- how it is used in professional work
+- which part of it the chapter uses
+- what limitations remain in the current implementation
 
 ## Definition of Done
 
-บทต้องสอนได้ครบจากเนื้อหาในหนังสือเอง ผู้เรียนไม่ควรต้องเปิดไฟล์ใน `examples/` เพื่อรู้ว่าต้องเขียนอะไร เขียนที่ไฟล์ไหน หรือตรวจผลอย่างไร ไฟล์ example ใช้เป็น source of truth สำหรับผู้เขียนและ reviewer เพื่อตรวจว่าเนื้อหาในหนังสือถูกต้อง build/test ได้จริง และใช้เป็น optional reference หลังเรียนจบเท่านั้น
+A chapter must be complete within the book. Readers should not need to inspect `examples/` to discover what to write, where to write it, or how to verify it. Examples are the source of truth for authors and reviewers, buildable verification targets, and optional references after the lesson.
 
-บทหนึ่งจะถือว่าพร้อมสอนเมื่อผ่านทุกข้อ:
+A chapter is ready to teach only when it meets every requirement:
 
-- มีเป้าหมายบทที่ชัดเจน
-- บอก prerequisites ก่อนเริ่ม
-- บอกไฟล์ที่จะเปลี่ยนหลังจบบท
-- อธิบายคำใหม่, method, attribute, annotation, package หรือ configuration ก่อนใช้
-- ถ้าสร้าง folder/file ต้องมีคำสั่งที่ copy ได้
-- ถ้าคำสั่งต่างกันตาม OS ต้องมี Windows PowerShell และ macOS/Linux Bash
-- โค้ดถูกแบ่งเป็นขั้น ไม่แปะ class หรือ method ยาวรวดเดียว
-- code block ยาวไม่เกินประมาณ 30 บรรทัด เว้นแต่มีเหตุผลชัดเจน
-- มีคำสั่ง run/test/build สำหรับตรวจผล
-- มี expected result เช่น status code, response body, log หรือไฟล์ที่ควรเห็น
-- มี common errors หรือคำแนะนำเมื่อผลไม่ตรง
-- มี checkpoint ก่อนอ่านบทต่อไป
-- เนื้อหาตรงกับ progressive project ณ จุดนั้นของหนังสือ
-- example/final/validation project build หรือ test ผ่านตาม scope ของบท
+- It has a clear chapter outcome.
+- It states prerequisites before the first step.
+- It lists the files that will change.
+- It explains new terms, methods, attributes, annotations, hooks, packages, and configuration before use.
+- It provides copyable commands when creating folders or files.
+- It provides Windows PowerShell and macOS/Linux Bash commands when syntax differs.
+- It divides code into steps instead of presenting an unexplained complete file.
+- Code blocks remain near 30 lines unless a longer block is necessary and justified.
+- It provides run, test, or build commands.
+- It states observable expected results such as a status code, response body, log entry, file, or screen.
+- It covers common failures or diagnostic guidance.
+- It includes a checkpoint before the next chapter.
+- It matches the progressive project at that point in the book.
+- The example, final, or validation project builds or tests within the chapter's scope.
 
 ## Chapter Structure
 
-บทที่มีการลงมือเขียนโค้ดควรเรียงแบบนี้:
+Hands-on chapters should use this sequence:
 
-1. บทนี้จะทำอะไร
-2. ก่อนเริ่มบทนี้
-3. สิ่งที่จะใช้ในบทนี้
-4. หลังจบบทนี้ ไฟล์ที่เปลี่ยน
-5. flow หรือ diagram ถ้าช่วยให้เข้าใจ
-6. ขั้นที่ 1: สร้าง folder/file
-7. ขั้นที่ 2: เพิ่ม code ส่วนเล็ก
-8. ขั้นที่ 3: ต่อเข้ากับ service/config/DI
-9. ขั้นที่ 4: ทดสอบ
-10. ผลลัพธ์ที่ควรเห็น
-11. ปัญหาที่พบบ่อย
+1. What the chapter will accomplish
+2. Starting prerequisites and state
+3. Concepts used in the chapter
+4. Files changed by the chapter
+5. A flow or diagram when it improves understanding
+6. Step 1: create folders or files
+7. Step 2: add a small section of code
+8. Step 3: connect it to a service, configuration, route, or UI
+9. Step 4: verify behavior
+10. Expected result
+11. Common failures
 12. Checkpoint
 
-บทที่เป็น concept ล้วนไม่จำเป็นต้องมีทุกหัวข้อ แต่ยังควรมีเป้าหมาย ตัวอย่าง และ checkpoint
+Concept-only chapters do not need every heading, but still require a clear outcome, examples, and a checkpoint.
 
 ## Code Teaching Method
 
-สอนโค้ดเป็นชั้น:
+Teach code in layers:
 
-1. สร้าง folder
-2. สร้าง file
-3. เพิ่ม using/import
-4. เพิ่ม class/record/interface
-5. เพิ่ม property หรือ field
-6. เพิ่ม constructor หรือ dependency
-7. เพิ่ม method ทีละ method
-8. ต่อเข้ากับ dependency injection หรือ configuration
-9. ต่อเข้ากับ controller/route/endpoint
-10. ทดสอบผลลัพธ์
+1. Create the folder.
+2. Create the file.
+3. Add imports or using directives.
+4. Add a class, function, component, record, or interface.
+5. Add properties, fields, schemas, or types.
+6. Add constructors, dependencies, hooks, or helpers.
+7. Add behavior incrementally.
+8. Connect it to dependency injection, configuration, routing, controllers, UI, or an API client.
+9. Verify the result.
 
-ห้ามให้ผู้เรียนเพิ่มโค้ดใหญ่ทั้งไฟล์โดยไม่มีจุดหยุดอธิบาย ถ้าโค้ดยาว ให้แตกเป็นหลาย block และอธิบายระหว่างทาง
+Do not ask learners to insert a large file without explanation. Split long code into focused blocks and explain the important decisions between them.
 
 ## 10-Point Rubric
 
-| หมวด                                          | คะแนน |
-| --------------------------------------------- | ----: |
-| เป้าหมายและบริบทชัด                           |     1 |
-| อธิบาย concept/method/attribute ก่อนใช้       |     2 |
-| ขั้นตอนลงมือทำละเอียดและไม่กระโดด             |     2 |
-| โค้ดแตกเป็นส่วนอ่านง่าย                       |     1 |
-| คำสั่งตรวจและ expected result ชัด             |   1.5 |
-| common errors/checkpoint ช่วยตรวจตัวเองได้    |     1 |
-| ตรงกับ example project และ build/test ได้จริง |   1.5 |
+| Category                                                  | Score |
+| --------------------------------------------------------- | ----: |
+| Clear outcome and context                                 |     1 |
+| Concepts, methods, and configuration explained before use |     2 |
+| Detailed steps without unexplained jumps                  |     2 |
+| Code divided into readable sections                       |     1 |
+| Explicit verification commands and expected results       |   1.5 |
+| Common failures and checkpoints support self-diagnosis    |     1 |
+| Examples match the chapter and genuinely build or test    |   1.5 |
 
-การตีความคะแนน:
+Interpret scores consistently:
 
-- 10/10: ผู้เรียนใหม่ทำตามได้ เข้าใจเหตุผล และตรวจงานเองได้
-- 8/10: เนื้อหาถูก แต่ยังมีบางช่วงที่ต้องเดาเอง
-- 6/10: มีโค้ดและคำอธิบาย แต่ยังเหมือนให้ copy ตาม
-- ต่ำกว่า 6/10: เสี่ยงทำให้ผู้เรียนหลงทางหรือเข้าใจผิด
+- 10/10: a new learner can complete the work, understand the reasoning, and verify it independently
+- 8/10: the content is correct, but some steps still require inference
+- 6/10: code and explanation exist, but the lesson still behaves like a copy exercise
+- below 6/10: the chapter risks confusing learners or teaching an incorrect mental model
 
 ## Review Checklist
 
-ใช้รายการนี้ขณะตรวจทีละบท:
+Use this list while reviewing each chapter:
 
-- บทนี้มีเป้าหมายชัดหรือไม่
-- ผู้เรียนรู้ไหมว่าต้องเปิดไฟล์ไหน
-- ถ้าต้องสร้าง folder/file มีคำสั่งครบหรือไม่
-- มีคำสั่งทั้ง Windows และ macOS/Linux เมื่อจำเป็นหรือไม่
-- มีคำใหม่ที่ยังไม่ได้อธิบายก่อนใช้หรือไม่
-- มีโค้ดยาวเกินไปหรือไม่
-- มีจุดที่บอกให้ลบ/แก้โค้ด แต่ไม่บอกโค้ดที่เหลือควรเป็นอย่างไรหรือไม่
-- route, port, filename และ project name ตรงกับของจริงหรือไม่
-- expected response/status code ถูกต้องหรือไม่
-- checkpoint ตรวจได้จริงหรือเป็นแค่ข้อความกว้าง ๆ
-- มีคำเตือนเรื่อง demo vs production เมื่อใช้วิธีที่ยังไม่ปลอดภัยหรือไม่
-- progressive project ทำตามบทนี้แล้ว compile/test ผ่านหรือไม่
-- final project สอดคล้องกับบทนี้หรือมีเหตุผลเมื่อแตกต่างหรือไม่
+- Is the outcome explicit?
+- Does the learner know which file to open?
+- Are folder and file creation commands complete?
+- Are Windows and macOS/Linux commands included when needed?
+- Is every new term explained before use?
+- Are any code blocks unnecessarily long?
+- When code is removed or changed, is the resulting state clear?
+- Do routes, ports, filenames, and project names match the implementation?
+- Are expected responses, status codes, screens, and logs accurate?
+- Is the checkpoint observable rather than vague?
+- Does demo guidance clearly differ from production guidance where security matters?
+- Does the progressive project compile or test after the chapter?
+- Does the final project agree with the chapter, or document a justified difference?
 
 ## Common Failure Patterns
 
-ถ้าเจอสิ่งเหล่านี้ ให้ถือว่าเป็นจุดที่ต้องขัดเกลา:
+Treat these as issues that require revision:
 
-- แปะโค้ดยาวทั้งไฟล์โดยไม่อธิบาย
-- ใช้คำว่า "เพิ่มโค้ดนี้" แต่ไม่บอกตำแหน่ง
-- ใช้ class หรือ field ที่ยังไม่เคยสร้าง
-- ใช้ package/library แต่ไม่บอกคำสั่งติดตั้ง
-- สอน command ที่ใช้ได้เฉพาะ OS เดียวโดยไม่บอก
-- response ตัวอย่างไม่ตรงกับโค้ดจริง
-- port ในหนังสือไม่ตรงกับ launch settings หรือ project จริง
-- checkpoint ตรวจไม่ได้จริง
-- warning/error ที่ผู้เรียนเจอบ่อยไม่มีคำอธิบาย
-- production warning ไม่ชัด เช่น secret, CORS เปิดกว้าง, logging sensitive data
+- presenting a long complete file without explanation
+- saying "add this code" without naming the location
+- using a class, component, hook, helper, or field before creating it
+- using a package without an installation command
+- teaching commands for one operating system without stating the limitation
+- showing a response or screen that does not match the code
+- documenting a port that disagrees with actual development settings
+- using a checkpoint that cannot be verified
+- omitting common warnings or errors readers are likely to encounter
+- omitting production warnings for secrets, permissive CORS, sensitive logging, or token storage
 
 ## Verification Gates
 
-ก่อนบอกว่างานขัดเกลาเสร็จ ให้ตรวจตาม scope:
+Before declaring an audit complete, verify the applicable scope:
 
-- book/docs changes: `npm run build`
-- ASP.NET example changes: relevant `dotnet test`; run `dotnet publish` when deployment/runtime behavior changes
-- Spring Boot example changes: relevant Gradle tests
-- Docker/Compose changes: `docker compose config`
-- behavior changes: update README, validation report, `.http`/Postman, migration notes, and expected responses
+- book or documentation changes: `npm run build`
+- example changes: run the relevant build or test command
+- Docker or Compose changes: `docker compose config`
+- dependency changes: run install, build, and audit commands for the package manager
+- behavior changes: update the README, validation report, API contract, QA notes, migration notes, and expected responses
 
-อย่าใช้คำว่า "เสร็จแล้ว" ถ้ายังไม่ได้ตรวจด้วยหลักฐานที่เหมาะกับงานนั้น
+Do not call the work complete without evidence appropriate to the change.

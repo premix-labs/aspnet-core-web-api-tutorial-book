@@ -8,6 +8,8 @@ These instructions apply to this repository.
 
 - Use `skills/tutorial-book-auditor` for any request that reviews or edits tutorial content, example projects, README files, validation reports, API contracts, internal planning docs, QA checklists, or teaching quality.
 - Read `skills/tutorial-book-auditor/SKILL.md` first. Load `skills/tutorial-book-auditor/references/teaching-principles.md` before scoring or rewriting chapters.
+- Load `skills/tutorial-book-auditor/references/scoring-policy.md` and `skills/tutorial-book-auditor/references/report-contract.md` before assigning a score or release decision.
+- Run `npm run audit:book` for chapter or full-book reviews and treat automated findings as evidence requiring human review.
 - Keep lessons step by step: explain new ASP.NET Core concepts, attributes, methods, packages, commands, and configuration before using them.
 - Keep progressive examples aligned with the chapter state and final examples aligned with production-grade reference behavior.
 - Keep book chapters self-contained. Learners should be able to understand and complete a chapter from the book without opening example source files.
@@ -25,11 +27,12 @@ These instructions apply to this repository.
 
 ## Verification
 
-- Run `npm run build` after docs, navigation, or frontmatter changes.
+- Run `npm run verify` after docs, navigation, frontmatter, dependency, script, skill, or template changes.
 - Run relevant `dotnet test` projects when ASP.NET example code changes.
 - Run `dotnet publish` for touched runnable APIs when publishing or deployment behavior changes.
 - Run `docker compose config` in touched compose directories when Docker Compose changes.
-- Report commands that were run and any command that could not be run.
+- Run `npm audit --audit-level=moderate` after dependency changes.
+- Record commands, results, dates, scope, and remaining risks in `docs/internal/validation-report.md`.
 
 ## Git
 

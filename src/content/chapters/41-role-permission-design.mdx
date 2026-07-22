@@ -1,0 +1,269 @@
+---
+title: "ออกแบบ Role และ Permission"
+description: "สร้าง role constants และปรับ seed data ให้มี admin สำหรับทดสอบ"
+chapter: 41
+icon: user-cog
+part: "ภาค 7: Admin System"
+difficulty: intermediate
+prerequisites: ["ภาค 7 - Admin API และ Authorization"]
+learningOutcomes: ["อธิบายและลงมือทำหัวข้อ ออกแบบ Role และ Permission ได้"]
+testedWith: [".NET 10 SDK", "ASP.NET Core 10"]
+lastVerified: 2026-07-06
+status: review
+---
+
+Authentication ตอบคำถามว่า "คุณเป็นใคร" ส่วน Authorization ตอบคำถามว่า "คุณมีสิทธิ์ทำอะไร"
+
+ในภาคที่แล้ว JWT ของเรามี claim ชื่อ `role` แล้ว ภาคนี้จะใช้ role นั้นกับ `[Authorize(Roles = ...)]`
+
+## วิธีเรียนบทนี้
+
+บทนี้ยังไม่สร้าง admin endpoint จริง เป้าหมายคือเตรียม role ให้พร้อมก่อน:
+
+1. รวมชื่อ role ไว้ใน `Roles`
+2. ปรับ `User.Role` ให้ใช้ค่า default จาก `Roles`
+3. ปรับ register ให้สร้าง user ด้วย `Roles.User`
+4. ปรับ seed data ให้มี admin สำหรับทดสอบ
+5. login ด้วย admin แล้วตรวจว่า token มี role เป็น `Admin`
+
+## สิ่งที่จะใช้ในบทนี้
+
+| สิ่งที่จะใช้ | ความหมาย |
+| --- | --- |
+| `Roles.User` | role ของผู้ใช้ทั่วไป |
+| `Roles.Admin` | role ของผู้ดูแลระบบ |
+| `const string` | string คงที่ที่ใช้ใน attribute ได้ |
+| `Roles.IsValid(...)` | ตรวจว่า role ที่ส่งมาเป็น role ที่ระบบรู้จัก |
+| `Roles.Normalize(...)` | ปรับ role ให้เป็นรูปแบบมาตรฐาน เช่น `admin` เป็น `Admin` |
+| seed admin | admin account สำหรับทดสอบ local development |
+
+## หลังจบบทนี้ ไฟล์ที่เปลี่ยน
+
+```text
+Constants/Roles.cs
+Models/User.cs
+Services/AuthService.cs
+Data/DataSeeder.cs
+```
+
+## ขั้นที่ 1: สร้าง Role Constants
+
+การเขียน string role กระจายหลายไฟล์ เช่น `"Admin"` และ `"User"` ทำให้พิมพ์ผิดง่าย
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+Windows PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path Constants
+New-Item -ItemType File -Path Constants/Roles.cs
+```
+
+macOS/Linux Bash:
+
+```bash
+mkdir -p Constants
+touch Constants/Roles.cs
+```
+
+เปิดไฟล์:
+
+```text
+Constants/Roles.cs
+```
+
+เพิ่ม code นี้:
+
+```csharp
+namespace Backend.Api.Constants;
+
+public static class Roles
+{
+    public const string User = "User";
+    public const string Admin = "Admin";
+}
+```
+
+ใช้ `const` เพื่อให้เอาไปใช้ใน attribute ได้ เช่น `[Authorize(Roles = Roles.Admin)]`
+
+## ขั้นที่ 2: เพิ่ม helper ตรวจ role
+
+เพิ่ม property และ method เหล่านี้ใน class `Roles`
+
+```csharp
+public static readonly string[] All = [User, Admin];
+
+public static bool IsValid(string role)
+{
+    return All.Contains(role, StringComparer.OrdinalIgnoreCase);
+}
+```
+
+`IsValid` จะใช้ตอน admin ส่ง role เข้ามาทาง request เพื่อกันค่าที่ระบบไม่รู้จัก เช่น `SuperAdmin`
+
+## ขั้นที่ 3: เพิ่ม Normalize
+
+เพิ่ม method นี้ต่อจาก `IsValid`
+
+```csharp
+public static string Normalize(string role)
+{
+    return All.FirstOrDefault(
+        value => value.Equals(role, StringComparison.OrdinalIgnoreCase)) ?? role;
+}
+```
+
+ถ้า client ส่ง `"admin"` เราจะเก็บเป็น `"Admin"` ตามรูปแบบมาตรฐานของระบบ
+
+## ขั้นที่ 4: ปรับ User Entity
+
+เปิด `Models/User.cs` แล้วเพิ่ม using:
+
+```csharp
+using Backend.Api.Constants;
+```
+
+เปลี่ยนค่า default ของ role:
+
+```csharp
+public string Role { get; set; } = Roles.User;
+```
+
+## ขั้นที่ 5: ปรับ AuthService
+
+เปิด `Services/AuthService.cs` แล้วเพิ่ม using:
+
+```csharp
+using Backend.Api.Constants;
+```
+
+เปลี่ยนตอน register จาก:
+
+```csharp
+Role = "User",
+```
+
+เป็น:
+
+```csharp
+Role = Roles.User,
+```
+
+## ขั้นที่ 6: ปรับ DataSeeder ให้มี admin
+
+เปิด `Data/DataSeeder.cs` แล้วเพิ่ม using:
+
+```csharp
+using Backend.Api.Constants;
+```
+
+ใน `SeedAsync` ให้เรียก helper สำหรับ admin และ user:
+
+```csharp
+await EnsureUserAsync(
+    "admin@example.com",
+    "Admin1234!",
+    Roles.Admin,
+    isActive: true);
+
+await EnsureUserAsync(
+    "demo-user@example.com",
+    "User1234!",
+    Roles.User,
+    isActive: true);
+```
+
+## ขั้นที่ 7: ปรับ EnsureUserAsync ให้รับ password และ role
+
+ปรับ signature ของ helper:
+
+```csharp
+private async Task EnsureUserAsync(
+    string email,
+    string password,
+    string role,
+    bool isActive)
+```
+
+ตอนสร้าง user ใหม่ ให้กำหนด role จาก parameter:
+
+```csharp
+var user = new User
+{
+    Email = email,
+    Role = role,
+    IsActive = isActive
+};
+
+user.PasswordHash = passwordHasher.HashPassword(user, password);
+db.Users.Add(user);
+```
+
+ถ้า user มีอยู่แล้ว ให้ update role และ status:
+
+```csharp
+if (user.PasswordHash == "pending-auth")
+{
+    user.PasswordHash = passwordHasher.HashPassword(user, password);
+}
+
+user.Role = role;
+user.IsActive = isActive;
+```
+
+วิธีนี้รองรับกรณีที่ database มี seed เดิมอยู่แล้ว ไม่ใช่เจอ user แล้ว `return` ทันที
+
+## บัญชีสำหรับทดสอบ
+
+Admin:
+
+```text
+Email: admin@example.com
+Password: Admin1234!
+```
+
+User:
+
+```text
+Email: demo-user@example.com
+Password: User1234!
+```
+
+รหัสผ่าน seed data ใช้เพื่อ local development เท่านั้น อย่าใช้รหัสผ่านตัวอย่างนี้ใน production
+
+## ตรวจ build และทดสอบ
+
+รันจากโฟลเดอร์ `Backend.Api`
+
+```powershell
+dotnet build
+dotnet run
+```
+
+login ด้วย admin:
+
+```http
+@baseUrl = http://localhost:<http-port>
+@authPath = {{baseUrl}}/api/v1/auth
+
+### Login as admin
+POST {{authPath}}/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "Admin1234!"
+}
+```
+
+token ที่ได้ควรมี role เป็น `Admin`
+
+## Checkpoint
+
+ก่อนอ่านบทต่อไป ให้ตรวจว่าทำได้ครบตามนี้
+
+- มี `Constants/Roles.cs`
+- `User.Role` ใช้ `Roles.User` เป็นค่า default
+- `AuthService.RegisterAsync` ใช้ `Roles.User`
+- `DataSeeder` สร้าง admin และ user สำหรับทดสอบ
+- login ด้วย `admin@example.com` แล้ว token มี role เป็น `Admin`

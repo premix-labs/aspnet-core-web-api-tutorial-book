@@ -1,12 +1,12 @@
 ---
-// 404.astro — Branded not-found page, styled with the shared design system.
 import '@fontsource/inter/latin.css';
-import '@fontsource/space-grotesk/700.css';
+import '@fontsource-variable/noto-sans-thai/index.css';
+import '@fontsource-variable/noto-serif-thai/index.css';
 import '../styles/global.css';
-import { siteConfig } from '../site.config';
 import { getCollection } from 'astro:content';
+import { ArrowRight, House } from '@lucide/astro';
+import { siteConfig } from '../site.config';
 import { withBase } from '../utils/url';
-import { Home, ArrowRight } from '@lucide/astro';
 
 const allChapters = await getCollection('chapters', ({ data }) => !data.draft);
 const firstChapter = allChapters.sort((a, b) => a.data.chapter - b.data.chapter)[0];
@@ -19,42 +19,42 @@ const startHref = withBase(firstChapter ? firstChapter.id : '');
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex" />
-    <title>Page not found — {siteConfig.title}</title>
-
+    <title>Page not found - {siteConfig.title}</title>
     <script is:inline define:vars={{ defaultTheme: siteConfig.defaultTheme }}>
       document.documentElement.setAttribute('data-theme', localStorage.getItem('site-theme') || defaultTheme);
     </script>
-
     <link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
   </head>
   <body>
-    <div class="bg-grid fixed inset-0 w-full h-full -z-10 pointer-events-none opacity-10"></div>
-    <main class="min-h-screen flex flex-col items-center justify-center text-center px-8">
-      <div
-        class="font-display text-[7rem] lg:text-[10rem] font-extrabold leading-none bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 text-transparent bg-clip-text"
+    <header class="enterprise-header">
+      <a href={withBase('')} class="brand-link" aria-label={`${siteConfig.title} home`}>
+        <img src={withBase('favicon.svg')} width="32" height="32" alt="" class="brand-mark" />
+        <span class="brand-copy"><strong>{siteConfig.shortTitle}</strong><span>{siteConfig.tagline}</span></span>
+      </a>
+    </header>
+    <main class="min-h-[calc(100vh-var(--header-height))] grid place-items-center px-5 py-16">
+      <section
+        class="w-full max-w-[640px] border-t-4 border-[var(--teal-600)] bg-surface-sec px-6 py-10 sm:px-10"
+        aria-labelledby="not-found-title"
       >
-        404
-      </div>
-      <h1 class="text-2xl lg:text-3xl font-bold text-content-main mt-4 mb-3">This page went missing</h1>
-      <p class="text-content-mut max-w-[440px] mb-8">
-        The page you're looking for doesn't exist or may have moved. Let's get you back on track.
-      </p>
-      <div class="flex gap-4 flex-wrap justify-center">
-        <a
-          href={withBase('')}
-          class="inline-flex items-center gap-2 py-3 px-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold rounded-lg no-underline transition-all duration-200 hover:-translate-y-0.5 shadow-[0_4px_16px_rgba(99,102,241,0.4)]"
+        <div class="font-code text-sm font-bold text-content-acc">ERROR 404</div>
+        <h1
+          id="not-found-title"
+          class="font-display text-[2.4rem] leading-tight font-semibold text-content-main mt-3 mb-3"
         >
-          <Home class="w-4 h-4" />
-          <span>Back to Home</span>
-        </a>
-        <a
-          href={startHref}
-          class="inline-flex items-center gap-2 py-3 px-6 bg-surface-elev border border-line-def text-content-sec font-semibold rounded-lg no-underline transition-all duration-200 hover:bg-surface-hover hover:text-content-main hover:-translate-y-0.5"
-        >
-          <span>Start Reading</span>
-          <ArrowRight class="w-4 h-4" />
-        </a>
-      </div>
+          Page not found
+        </h1>
+        <p class="text-content-sec leading-7 max-w-[520px] mb-7">
+          The requested page does not exist or its address has changed. Return to the book index or continue from the
+          first chapter.
+        </p>
+        <div class="flex gap-3 flex-wrap">
+          <a href={withBase('')} class="primary-command mt-0"><House class="size-4" /><span>Book home</span></a>
+          <a href={startHref} class="icon-command h-[42px] px-4 font-semibold"
+            ><span>Start reading</span><ArrowRight class="size-4" /></a
+          >
+        </div>
+      </section>
     </main>
   </body>
 </html>

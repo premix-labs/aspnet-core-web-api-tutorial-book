@@ -71,17 +71,17 @@ const hasThemeVariants = Boolean(darkSrc);
     line-height: 1.5;
   }
 
-  /* Theme-aware variants: default (dark-first) shows the dark image. */
+  /* Theme-aware variants: the light asset is the default. */
   .figure-img--light {
-    display: none;
+    display: inline-block;
   }
   .figure-img--dark {
-    display: inline-block;
-  }
-  :global([data-theme='light']) .figure-img--light {
-    display: inline-block;
-  }
-  :global([data-theme='light']) .figure-img--dark {
     display: none;
+  }
+  :global([data-theme='dark']) .figure-img--light {
+    display: none;
+  }
+  :global([data-theme='dark']) .figure-img--dark {
+    display: inline-block;
   }
 </style>

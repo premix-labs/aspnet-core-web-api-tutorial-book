@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .astro/
+playwright-report/
+test-results/
+.npm-cache/
 **/bin/
 **/obj/
 **/TestResults/
@@ -13,3 +16,5 @@ npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.DS_Store
+.idea/

@@ -1,17 +1,19 @@
 ---
 // BookLayout.astro — Main layout for all chapter pages
 import '@fontsource/inter/latin.css';
+import '@fontsource-variable/noto-sans-thai/index.css';
+import '@fontsource-variable/noto-serif-thai/index.css';
 import '@fontsource/jetbrains-mono/latin.css';
-import '@fontsource/space-grotesk/500.css';
-import '@fontsource/space-grotesk/700.css';
 import '../styles/global.css';
 import { getCollection } from 'astro:content';
 import { ClientRouter } from 'astro:transitions';
-import SearchModal from '../components/SearchModal.astro';
 import ChapterNavList from '../components/ChapterNavList.astro';
+import EnterpriseHeader from '../components/EnterpriseHeader.astro';
+import SearchModal from '../components/SearchModal.astro';
+import ThemeHead from '../components/ThemeHead.astro';
 import { siteConfig } from '../site.config';
 import { absoluteUrl, absoluteUrlFromFullPath, withBase } from '../utils/url';
-import { BookOpen, Clock, Languages, Menu, X, Moon, Sun, Search, ArrowUp } from '@lucide/astro';
+import { ArrowUp, Clock3, X } from '@lucide/astro';
 
 interface Heading {
   depth: number;
@@ -61,15 +63,7 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
     <meta name="description" content={description || `${title} — ${siteConfig.description}`} />
     <title>{title} — {siteConfig.title}</title>
 
-    <!-- Theme initialization script (prevents flash) -->
-    <script is:inline define:vars={{ defaultTheme: siteConfig.defaultTheme }}>
-      const applyTheme = () => {
-        const savedTheme = localStorage.getItem('site-theme') || defaultTheme;
-        document.documentElement.setAttribute('data-theme', savedTheme);
-      };
-      applyTheme();
-      document.addEventListener('astro:after-swap', applyTheme);
-    </script>
+    <ThemeHead />
 
     <link rel="canonical" href={canonicalUrl} />
 
@@ -87,138 +81,62 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
         </>
       )
     }
-    <meta name="theme-color" content="#0a0b0e" id="theme-color-meta" />
-
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href={withBase('favicon.svg')} />
     <ClientRouter />
   </head>
   <body>
-    <div class="bg-grid fixed inset-0 w-full h-full -z-10 pointer-events-none opacity-10"></div>
     <a href="#article-content" class="skip-link">Skip to Content</a>
     <div class="reading-progress" id="reading-progress" aria-hidden="true"></div>
     <div
-      class="layout grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[280px_1fr_240px] grid-rows-[var(--header-height)_1fr] min-h-screen"
+      class="layout grid grid-cols-1 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_220px] grid-rows-[var(--header-height)_1fr] min-h-screen"
     >
-      <!-- ═══ HEADER ═══════════════════════════════ -->
-      <!-- transition:persist: identical markup across all chapter pages, so it survives
-           client-side navigation without a flash. Not shared with index.astro's header,
-           which has different structure, so it never persists into/out of the landing page. -->
-      <header
-        class="col-span-full sticky top-0 z-[100] bg-surface-base/70 backdrop-blur-xl border-b border-line-sub h-[var(--header-height)] flex items-center px-4 lg:px-6 gap-4"
-        transition:persist
-        transition:name="book-header"
-      >
-        <a href={withBase('')} class="flex items-center gap-2.5 no-underline shrink-0" aria-label="Back to Home">
-          <div
-            class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-white flex items-center justify-center shrink-0"
-            aria-hidden="true"
-          >
-            <BookOpen class="w-4.5 h-4.5" />
-          </div>
-          <div class="flex flex-col leading-tight">
-            <span class="text-[0.95rem] font-bold text-content-main whitespace-nowrap">{siteConfig.title}</span>
-            <span class="text-[0.7rem] text-content-mut font-normal hidden lg:block">{siteConfig.tagline}</span>
-          </div>
-        </a>
-
-        <div class="flex-1"></div>
-
-        <!-- 🌓 THEME SWITCHER BUTTON ══════════════════ -->
-        <button
-          class="cursor-pointer px-3 py-2 bg-surface-elev border border-line-def rounded-md text-content-sec text-[0.82rem] flex items-center gap-[6px] transition-all duration-200 hover:bg-surface-hover hover:border-line-str hover:text-content-main"
-          id="theme-switcher-btn"
-          aria-label="Switch to light mode"
-          aria-pressed="false"
-        >
-          <span class="theme-icon flex items-center" id="theme-btn-icon">
-            <Moon id="theme-icon-moon" class="w-4 h-4 block" />
-            <Sun id="theme-icon-sun" class="w-4 h-4 hidden" />
-          </span>
-          <span class="theme-label" id="theme-btn-label">Dark Mode</span>
-        </button>
-
-        <!-- 🔍 SEARCH BUTTON ════════════════════════════ -->
-        <button
-          class="open-search-btn cursor-pointer px-3 py-2 bg-surface-elev border border-line-def rounded-md text-content-sec text-[0.82rem] flex items-center gap-[6px] transition-all duration-200 hover:bg-surface-hover hover:border-line-str hover:text-content-main mr-3"
-          aria-label="Search Book"
-        >
-          <Search class="w-4 h-4" />
-          <span class="desktop-only"
-            >Search <kbd class="font-code text-[0.7rem] bg-surface-card px-1 py-0.5 rounded border border-line-sub ml-1"
-              >Ctrl+K</kbd
-            ></span
-          >
-        </button>
-
-        {
-          siteConfig.github && (
-            <a
-              href={siteConfig.github}
-              class="flex items-center justify-center w-9 h-9 rounded-md bg-surface-elev border border-line-def text-content-sec transition-all duration-200 hover:bg-surface-hover hover:text-content-main hover:-translate-y-0.5"
-              aria-label="GitHub Repository"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                stroke="currentColor"
-                stroke-width="2"
-                fill="none"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-              </svg>
-            </a>
-          )
-        }
-
-        <button id="mobile-menu-btn" class="hamburger-btn" aria-label="Menu">
-          <Menu id="menu-icon" />
-        </button>
-      </header>
+      <EnterpriseHeader showMenu />
 
       <!-- ═══ MOBILE OVERLAY MENU ════════════════════ -->
       <div
         id="mobile-menu-overlay"
-        class="mobile-menu-overlay fixed inset-0 bg-surface-base/95 backdrop-blur-xl z-[200] opacity-0 pointer-events-none transition-all duration-300 flex flex-col justify-center px-8 lg:hidden"
+        class="mobile-menu-overlay fixed inset-0 z-[200] lg:hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Book Navigation"
+        aria-hidden="true"
+        inert
       >
-        <button
-          id="mobile-close-btn"
-          class="hamburger-btn absolute top-6 right-6 bg-surface-elev border border-line-def rounded-md p-2 cursor-pointer text-content-sec flex items-center justify-center z-[210]"
-          aria-label="Close Menu"
-        >
-          <X class="w-5 h-5" />
-        </button>
-        <ChapterNavList chapters={chapters} currentPath={currentPath} />
+        <div class="mobile-menu-scrim" aria-hidden="true"></div>
+        <div class="mobile-menu-panel">
+          <div class="mobile-menu-heading">
+            <strong>Contents</strong>
+            <button id="mobile-close-btn" class="hamburger-btn" aria-label="Close menu">
+              <X class="w-5 h-5" />
+            </button>
+          </div>
+          <div class="mobile-menu-scroll">
+            <ChapterNavList chapters={chapters} currentPath={currentPath} />
+          </div>
+        </div>
       </div>
 
       <!-- ═══ SIDEBAR ══════════════════════════════ -->
       <aside
-        class="hidden lg:flex flex-col col-start-1 row-start-2 sticky top-[var(--header-height)] h-[calc(100vh-var(--header-height))] overflow-y-auto border-r border-line-sub bg-surface-base py-6"
+        class="hidden lg:flex flex-col col-start-1 row-start-2 sticky top-[var(--header-height)] h-[calc(100vh-var(--header-height))] overflow-y-auto border-r border-line-sub bg-surface-sec py-6"
         id="sidebar"
         aria-label="Book Navigation"
       >
         <div class="px-6 mb-6">
-          <div class="text-[0.65rem] font-bold uppercase tracking-wider text-content-mut mb-2 flex justify-between">
+          <div class="text-[0.68rem] font-bold uppercase text-content-mut mb-2 flex justify-between">
             <span>Progress</span>
             <span>{currentIndex}/{totalChapters}</span>
           </div>
           <div
-            class="h-1 bg-surface-elev rounded-full overflow-hidden"
+            class="h-1 bg-surface-elev overflow-hidden"
             role="progressbar"
+            aria-label="Book progress"
             aria-valuenow={progress}
             aria-valuemin="0"
             aria-valuemax="100"
           >
-            <div
-              class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-out"
-              style={`width: ${progress}%`}
-            >
+            <div class="h-full bg-[var(--teal-600)] transition-[width] duration-300" style={`width: ${progress}%`}>
             </div>
           </div>
         </div>
@@ -232,31 +150,34 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
         id="main-content"
         data-pagefind-body
       >
-        <div class="max-w-[800px] mx-auto px-6 py-12 lg:px-12 lg:py-16">
+        <div class="max-w-[800px] mx-auto px-5 py-10 sm:px-8 lg:px-12 lg:py-14">
           <!-- Chapter Header -->
-          <div class="mb-10">
+          <header class="mb-10 border-b border-line-def pb-8">
             {
               chapter !== undefined && (
-                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-md text-[0.7rem] font-bold text-content-acc uppercase tracking-wider mb-4">
+                <div class="flex items-center gap-2 text-[0.72rem] font-bold text-content-acc uppercase mb-4">
                   <span>Chapter {String(chapter).padStart(2, '0')}</span>
+                  <span aria-hidden="true" class="text-content-mut">
+                    /
+                  </span>
+                  <span class="flex items-center gap-1.5 text-content-mut font-medium normal-case">
+                    <Clock3 class="size-3.5" /> {readingTime} read
+                  </span>
                 </div>
               )
             }
-            {description && <p class="text-xl text-content-sec leading-relaxed max-w-[700px] mb-6">{description}</p>}
-            <div class="flex flex-wrap items-center gap-4 text-[0.85rem] text-content-mut font-medium">
-              <span class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-elev rounded-md border border-line-sub">
-                <Clock class="w-3.5 h-3.5 text-content-acc" />
-                <span>{readingTime} read</span>
-              </span>
-              <span class="flex items-center gap-1.5 px-3 py-1.5 bg-surface-elev rounded-md border border-line-sub">
-                <Languages class="w-3.5 h-3.5 text-content-acc" />
-                <span>English</span>
-              </span>
-            </div>
-          </div>
+            <h1 class="font-display text-[2.55rem] sm:text-[3rem] leading-[1.15] font-semibold text-content-main m-0">
+              {title}
+            </h1>
+            {
+              description && (
+                <p class="text-[1.05rem] text-content-sec leading-[1.75] max-w-[700px] mt-4 mb-0">{description}</p>
+              )
+            }
+          </header>
 
           <!-- Article Content -->
-          <article class="prose dark:prose-invert prose-indigo max-w-none" id="article-content">
+          <article class="prose dark:prose-invert max-w-none" id="article-content">
             <slot />
           </article>
 
@@ -271,9 +192,9 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
                   <a
                     href={prev.href}
                     id="nav-prev-link"
-                    class="flex flex-col p-5 bg-surface-elev border border-line-def rounded-xl no-underline transition-all duration-200 hover:bg-surface-hover hover:border-indigo-500/30 hover:-translate-y-0.5 group"
+                    class="flex flex-col p-4 bg-surface-card border border-line-def rounded-md no-underline transition-colors duration-150 hover:bg-surface-hover hover:border-line-str group"
                   >
-                    <span class="text-[0.75rem] font-bold uppercase tracking-wider text-content-mut mb-1 transition-colors group-hover:text-content-acc flex items-center gap-1">
+                    <span class="text-[0.75rem] font-bold uppercase text-content-mut mb-1 transition-colors group-hover:text-content-acc flex items-center gap-1">
                       <kbd class="font-code text-[0.6rem] px-1 py-0.5 border border-line-str rounded bg-surface-base text-content-mut hidden lg:inline-block">
                         ←
                       </kbd>{' '}
@@ -286,9 +207,9 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
                   <a
                     href={next.href}
                     id="nav-next-link"
-                    class="flex flex-col items-end text-right p-5 bg-surface-elev border border-line-def rounded-xl no-underline transition-all duration-200 hover:bg-surface-hover hover:border-indigo-500/30 hover:-translate-y-0.5 group"
+                    class="flex flex-col items-end text-right p-4 bg-surface-card border border-line-def rounded-md no-underline transition-colors duration-150 hover:bg-surface-hover hover:border-line-str group"
                   >
-                    <span class="text-[0.75rem] font-bold uppercase tracking-wider text-content-mut mb-1 transition-colors group-hover:text-content-acc flex items-center gap-1">
+                    <span class="text-[0.75rem] font-bold uppercase text-content-mut mb-1 transition-colors group-hover:text-content-acc flex items-center gap-1">
                       Next{' '}
                       <kbd class="font-code text-[0.6rem] px-1 py-0.5 border border-line-str rounded bg-surface-base text-content-mut hidden lg:inline-block">
                         →
@@ -307,11 +228,11 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
       {
         tocHeadings.length > 0 && (
           <aside
-            class="hidden xl:flex flex-col col-start-3 row-start-2 pt-12 pr-6 pb-12 sticky top-[var(--header-height)] h-[calc(100vh-var(--header-height))] overflow-y-auto"
+            class="hidden xl:flex flex-col col-start-3 row-start-2 pt-10 pr-5 pb-12 sticky top-[var(--header-height)] h-[calc(100vh-var(--header-height))] overflow-y-auto border-l border-line-sub bg-surface-sec"
             aria-label="Table of Contents"
           >
             <div class="px-4">
-              <div class="text-[0.75rem] font-bold uppercase tracking-wider text-content-mut mb-4">On this page</div>
+              <div class="text-[0.72rem] font-bold uppercase text-content-mut mb-4">On this page</div>
               <nav class="flex flex-col gap-2 border-l border-line-sub pl-4 text-[0.85rem]" id="toc-list">
                 {tocHeadings.map((h) => (
                   <a href={`#${h.slug}`} class={`toc-item ${h.depth === 3 ? 'toc-item--h3' : ''}`}>
@@ -327,7 +248,7 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
 
     <button
       id="back-to-top"
-      class="fixed bottom-6 right-6 z-50 w-11 h-11 flex items-center justify-center rounded-full bg-surface-elev border border-line-def text-content-sec shadow-lg opacity-0 pointer-events-none translate-y-2 transition-all duration-200 hover:bg-surface-hover hover:text-content-main"
+      class="fixed bottom-5 right-5 z-50 w-10 h-10 flex items-center justify-center rounded-md bg-surface-card border border-line-def text-content-sec opacity-0 pointer-events-none translate-y-2 transition-all duration-150 hover:bg-surface-hover hover:text-content-main"
       aria-label="Back to top"
     >
       <ArrowUp class="w-4 h-4" />
@@ -336,7 +257,7 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
     <!-- Copy code button, ScrollSpy & interactions script -->
     <script>
       import { trapFocus } from '../utils/focusTrap';
-      import { renderMermaidDiagrams, rerenderMermaidTheme } from '../utils/mermaid';
+      import { renderMermaidDiagrams } from '../utils/mermaid';
 
       document.addEventListener('astro:page-load', () => {
         // ─── 1. COPY CODE BUTTONS (skip ```mermaid blocks — rendered as diagrams below) ───
@@ -414,54 +335,7 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
           headingEls.forEach((heading) => observer.observe(heading));
         }
 
-        // ─── 3. THEME SWITCHER ACTION ───
-        const themeBtn = document.querySelector('#theme-switcher-btn') as HTMLElement | null;
-        const themeLabel = document.querySelector('#theme-btn-label');
-        const themeIconMoon = document.querySelector('#theme-icon-moon') as HTMLElement | null;
-        const themeIconSun = document.querySelector('#theme-icon-sun') as HTMLElement | null;
-        const themeColorMeta = document.querySelector('#theme-color-meta') as HTMLMetaElement | null;
-
-        if (themeBtn) {
-          const themes = ['dark', 'light'];
-          const themeColors: Record<string, string> = { dark: '#0a0b0e', light: '#fcfcfd' };
-
-          const updateThemeButton = (currentTheme: string) => {
-            const isLight = currentTheme === 'light';
-            if (themeLabel) themeLabel.textContent = isLight ? 'Light Mode' : 'Dark Mode';
-            if (themeIconMoon && themeIconSun) {
-              themeIconMoon.style.display = isLight ? 'none' : 'block';
-              themeIconSun.style.display = isLight ? 'block' : 'none';
-            }
-            if (themeColorMeta) themeColorMeta.content = themeColors[currentTheme] ?? themeColors.dark;
-            themeBtn.setAttribute('aria-label', isLight ? 'Switch to dark mode' : 'Switch to light mode');
-            themeBtn.setAttribute('aria-pressed', String(isLight));
-          };
-
-          let currentTheme = localStorage.getItem('site-theme') || 'dark';
-          updateThemeButton(currentTheme);
-
-          themeBtn.addEventListener('click', () => {
-            let currentIndex = themes.indexOf(currentTheme);
-            let nextIndex = (currentIndex + 1) % themes.length;
-            let nextTheme = themes[nextIndex];
-
-            document.documentElement.setAttribute('data-theme', nextTheme);
-            localStorage.setItem('site-theme', nextTheme);
-            currentTheme = nextTheme;
-
-            updateThemeButton(nextTheme);
-            void rerenderMermaidTheme();
-
-            const iconWrapper = document.querySelector('#theme-btn-icon') as HTMLElement | null;
-            if (iconWrapper) {
-              iconWrapper.classList.remove('theme-icon-animate');
-              void iconWrapper.offsetWidth; // Force reflow
-              iconWrapper.classList.add('theme-icon-animate');
-            }
-          });
-        }
-
-        // ─── 4. MOBILE MENU OVERLAY ───
+        // ─── 3. MOBILE MENU OVERLAY ───
         const menuBtn = document.getElementById('mobile-menu-btn');
         const mobileCloseBtn = document.getElementById('mobile-close-btn');
         const menuOverlay = document.getElementById('mobile-menu-overlay');
@@ -472,6 +346,8 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
           const openMobileMenu = () => {
             document.body.classList.add('menu-open');
             menuOverlay.classList.add('active');
+            menuOverlay.setAttribute('aria-hidden', 'false');
+            menuOverlay.removeAttribute('inert');
             releaseMenuFocusTrap = trapFocus(menuOverlay);
             mobileCloseBtn.focus();
           };
@@ -479,6 +355,8 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
           const closeMobileMenu = () => {
             document.body.classList.remove('menu-open');
             menuOverlay.classList.remove('active');
+            menuOverlay.setAttribute('aria-hidden', 'true');
+            menuOverlay.setAttribute('inert', '');
             releaseMenuFocusTrap?.();
             releaseMenuFocusTrap = null;
             menuBtn.focus();
@@ -498,32 +376,6 @@ const canonicalUrl = absoluteUrlFromFullPath(Astro.url.pathname, Astro.site);
         }
 
         // ─── 5. SMOOTH SCROLL REVEAL (skipped for prefers-reduced-motion) ───
-        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const revealElements = document.querySelectorAll(
-          '#article-content p, #article-content h2, #article-content h3, #article-content pre, .chapter-nav'
-        );
-
-        if (reduceMotion) {
-          revealElements.forEach((el) => el.classList.add('reveal-active'));
-        } else {
-          const revealObserver = new IntersectionObserver(
-            (entries, observer) => {
-              entries.forEach((entry) => {
-                if (entry.isIntersecting) {
-                  entry.target.classList.add('reveal-active');
-                  observer.unobserve(entry.target);
-                }
-              });
-            },
-            { rootMargin: '0px 0px -10% 0px', threshold: 0 }
-          );
-
-          revealElements.forEach((el) => {
-            el.classList.add('reveal-item');
-            revealObserver.observe(el);
-          });
-        }
-
         // ─── 6. READING PROGRESS BAR + BACK TO TOP ───
         const progressBar = document.getElementById('reading-progress');
         const backToTopBtn = document.getElementById('back-to-top') as HTMLElement | null;

@@ -1,137 +1,95 @@
 ---
-// SearchModal.astro
-import { X } from '@lucide/astro';
+import { Search, X } from '@lucide/astro';
 import { withBase } from '../utils/url';
+
 const isProd = import.meta.env.PROD;
 ---
 
-<div
-  id="search-modal"
-  class="fixed inset-0 z-[9999] flex items-start justify-center pt-[10vh] opacity-0 pointer-events-none transition-opacity duration-300 ease-in [&.active]:opacity-100 [&.active]:pointer-events-auto"
-  aria-hidden="true"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Search"
->
-  <div class="absolute inset-0 bg-black/60 -z-10" id="search-modal-close-area"></div>
-  <div
-    id="search-modal-panel"
-    class="w-full max-w-[600px] bg-surface-card border border-line-def rounded-lg overflow-hidden shadow-lg mx-4 relative"
-  >
-    <button
-      id="search-modal-close-btn"
-      class="absolute top-3 right-3 z-10 flex items-center justify-center w-8 h-8 rounded-md text-content-mut transition-colors duration-150 hover:bg-surface-elev hover:text-content-main"
-      aria-label="Close Search"
-    >
-      <X class="w-4 h-4" />
-    </button>
-    <div id="search-ui">
-      {
-        !isProd && (
-          <div class="p-8 text-center text-content-mut">
-            <div class="text-[2rem] mb-4">🔍</div>
-            <p>Search is disabled in Development mode.</p>
-            <p class="text-[0.85rem] mt-2">
-              Run <code class="bg-surface-elev px-1.5 py-0.5 rounded font-code">npm run build</code> and{' '}
-              <code class="bg-surface-elev px-1.5 py-0.5 rounded font-code">npm run preview</code> to test search.
-            </p>
-          </div>
-        )
-      }
-    </div>
-    <div class="py-3 px-5 text-[0.75rem] text-content-mut border-t border-line-sub flex justify-end">
-      <span
-        ><kbd class="bg-surface-elev border border-line-sub rounded-md py-[2px] px-1.5 mr-1 font-code">Esc</kbd> to close</span
-      >
-    </div>
-  </div>
-</div>
-
-<style is:global>
-  /* Override Pagefind Default Styles for Dark Mode */
-  .pagefind-ui {
-    --pagefind-ui-scale: 0.9;
-    --pagefind-ui-primary: var(--primary-400);
-    --pagefind-ui-text: var(--text-primary);
-    --pagefind-ui-background: var(--bg-card);
-    --pagefind-ui-border: var(--border-default);
-    --pagefind-ui-tag: var(--bg-elevated);
-    --pagefind-ui-border-width: 1px;
-    --pagefind-ui-border-radius: var(--radius-md);
-    --pagefind-ui-image-border-radius: var(--radius-sm);
-    --pagefind-ui-font: var(--font-sans);
-  }
-</style>
-
 {
-  isProd && (
+  isProd ? (
     <>
-      <link href={withBase('pagefind/pagefind-ui.css')} rel="stylesheet" />
-      <script is:inline src={withBase('pagefind/pagefind-ui.js')} />
+      <pagefind-config bundle-path={withBase('pagefind/')} base-url={withBase('')} instance="book-search" />
+      <pagefind-modal instance="book-search" reset-on-close />
+      <link href={withBase('pagefind/pagefind-component-ui.css')} rel="stylesheet" />
+      <script is:inline type="module" src={withBase('pagefind/pagefind-component-ui.js')} />
     </>
+  ) : (
+    <dialog
+      id="book-search-modal"
+      class="w-[min(36rem,calc(100%-2rem))] rounded-md border border-line-def bg-surface-card p-0 text-content-main shadow-[var(--shadow-modal)] backdrop:bg-black/50"
+      aria-labelledby="search-development-title"
+    >
+      <div class="flex items-start gap-4 p-6">
+        <Search class="mt-1 h-5 w-5 shrink-0 text-primary-400" aria-hidden="true" />
+        <div class="min-w-0 flex-1">
+          <h2 id="search-development-title" class="text-lg font-semibold">
+            Search requires a production build
+          </h2>
+          <p class="mt-2 text-sm leading-6 text-content-mut">
+            Run <code class="rounded bg-surface-elev px-1.5 py-0.5 font-code">npm run build</code>, then{' '}
+            <code class="rounded bg-surface-elev px-1.5 py-0.5 font-code">npm run preview</code>.
+          </p>
+        </div>
+        <form method="dialog">
+          <button
+            class="flex h-8 w-8 items-center justify-center rounded-md text-content-mut hover:bg-surface-elev hover:text-content-main"
+            aria-label="Close search information"
+          >
+            <X class="h-4 w-4" />
+          </button>
+        </form>
+      </div>
+    </dialog>
   )
 }
 
-<script>
-  import { trapFocus } from '../utils/focusTrap';
+<style is:global>
+  pagefind-modal {
+    --pf-text: var(--text-primary);
+    --pf-text-secondary: var(--text-secondary);
+    --pf-text-muted: var(--text-muted);
+    --pf-background: var(--bg-card);
+    --pf-border: var(--border-default);
+    --pf-border-focus: var(--border-strong);
+    --pf-skeleton: var(--bg-elevated);
+    --pf-skeleton-shine: var(--bg-hover);
+    --pf-hover: var(--bg-hover);
+    --pf-mark: var(--primary-400);
+    --pf-outline-focus: var(--primary-400);
+    --pf-font: var(--font-sans);
+    --pf-border-radius: var(--radius-md);
+    --pf-modal-max-width: 680px;
+  }
+</style>
 
-  let searchKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
+<script>
+  let searchKeydownHandler: ((event: KeyboardEvent) => void) | null = null;
+
+  function openSearch() {
+    const modal = document.querySelector('pagefind-modal') ?? document.getElementById('book-search-modal');
+    if (modal instanceof HTMLDialogElement) {
+      if (!modal.open) modal.showModal();
+      return;
+    }
+
+    const pagefindModal = modal as (HTMLElement & { open?: () => void }) | null;
+    pagefindModal?.open?.();
+  }
 
   document.addEventListener('astro:page-load', () => {
-    const searchUiContainer = document.getElementById('search-ui');
-    if (searchUiContainer && searchUiContainer.innerHTML === '') {
-      try {
-        // @ts-ignore
-        new PagefindUI({ element: '#search-ui', showSubResults: true, showImages: false });
-      } catch (e) {
-        console.warn('Pagefind UI not loaded. Run build first.');
-      }
-    }
+    document.querySelectorAll<HTMLElement>('.open-search-btn').forEach((button) => {
+      if (button.dataset.searchBound === 'true') return;
+      button.dataset.searchBound = 'true';
+      button.addEventListener('click', openSearch);
+    });
 
-    const modal = document.getElementById('search-modal');
-    const panel = document.getElementById('search-modal-panel');
-    const closeArea = document.getElementById('search-modal-close-area');
-    const closeBtn = document.getElementById('search-modal-close-btn');
-    let lastFocusedTrigger: HTMLElement | null = null;
-    let releaseFocusTrap: (() => void) | null = null;
-
-    const openSearch = (e?: Event) => {
-      lastFocusedTrigger = (e?.currentTarget as HTMLElement) ?? (document.activeElement as HTMLElement);
-      modal?.classList.add('active');
-      modal?.setAttribute('aria-hidden', 'false');
-      if (panel) releaseFocusTrap = trapFocus(panel);
-      const input = document.querySelector('.pagefind-ui__search-input') as HTMLInputElement | null;
-      if (input) setTimeout(() => input.focus(), 100);
-    };
-
-    const closeSearch = () => {
-      modal?.classList.remove('active');
-      modal?.setAttribute('aria-hidden', 'true');
-      releaseFocusTrap?.();
-      releaseFocusTrap = null;
-      lastFocusedTrigger?.focus();
-    };
-
-    if (searchKeydownHandler) {
-      window.removeEventListener('keydown', searchKeydownHandler);
-    }
-
-    searchKeydownHandler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
+    if (searchKeydownHandler) window.removeEventListener('keydown', searchKeydownHandler);
+    searchKeydownHandler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
         openSearch();
       }
-      if (e.key === 'Escape' && modal?.classList.contains('active')) {
-        closeSearch();
-      }
     };
-
     window.addEventListener('keydown', searchKeydownHandler);
-
-    closeArea?.addEventListener('click', closeSearch);
-    closeBtn?.addEventListener('click', closeSearch);
-
-    const searchBtns = document.querySelectorAll('.open-search-btn');
-    searchBtns.forEach((btn) => btn.addEventListener('click', openSearch));
   });
 </script>

@@ -1,0 +1,34 @@
+---
+title: Validate A Profile Form
+description: Add validation to a profile form and verify the visible error state.
+chapter: 3
+status: published
+---
+
+This chapter adds one validation rule to an existing profile form. The learner begins with a working form and finishes with an error that is visible, accessible, and covered by a test. Validation belongs at the input boundary because invalid data should not reach the save operation.
+
+## Add The Validation Rule
+
+Open `src/profile.ts` and add the rule next to the existing name validation. Keeping related rules together makes the form behavior easier to inspect and test.
+
+```ts
+export function validateEmail(email: string): string | undefined {
+  return email.includes('@') ? undefined : 'Enter a valid email address.';
+}
+```
+
+The function returns no message for valid input and a specific message for invalid input. The form renders that message beside the email field.
+
+## Verify The Result
+
+Run the focused test from the project root:
+
+```bash
+npm test -- profile
+```
+
+Expected result: the test reports one passing validation case and the form displays `Enter a valid email address.` after an invalid submission.
+
+## Checkpoint
+
+Before continuing, confirm that valid input still submits, invalid input keeps focus in the form, and the test passes without changing unrelated files.

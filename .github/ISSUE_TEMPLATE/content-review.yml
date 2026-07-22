@@ -1,0 +1,26 @@
+name: Content correction
+description: Report inaccurate, stale or unclear teaching content.
+title: '[Content] '
+labels: ['content', 'needs-review']
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Chapter and section
+      placeholder: Chapter 03, Local Quality Gate
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: What needs correction?
+      description: Explain the learner impact and the observable mismatch.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Verification source
+      description: Link official documentation or provide a reproducible command and version.
+    validations:
+      required: true

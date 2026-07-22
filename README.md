@@ -26,14 +26,17 @@ aspnet-core-web-api-tutorial-book
 ```powershell
 npm install
 npm run dev
-npm run build
+npm run verify
 ```
 
-| Command                           | Action                                      |
-| --------------------------------- | ------------------------------------------- |
-| `npm run new-chapter -- "ชื่อบท"` | สร้างไฟล์บทใหม่พร้อม frontmatter ที่ถูกต้อง |
-| `npm run lint`                    | Run lint checks                             |
-| `npm run preview`                 | Preview production build locally            |
+| Command                           | Action                                                               |
+| --------------------------------- | -------------------------------------------------------------------- |
+| `npm run new-chapter -- "ชื่อบท"` | สร้างไฟล์บทใหม่พร้อม frontmatter ที่ถูกต้อง                          |
+| `npm run audit:book`              | ตรวจความเสี่ยงด้านการสอน ความปลอดภัย และ portability                 |
+| `npm run verify`                  | ตรวจ format, lint, types, tests, เนื้อหา, build และ links            |
+| `npm run verify:enterprise`       | เพิ่ม browser, accessibility, visual, performance และ security gates |
+| `npm run template:status`         | แสดงเวอร์ชัน template และ managed-file drift                         |
+| `npm run preview`                 | Preview production build locally                                     |
 
 เนื้อหาหนังสือเก็บใน `src/content/chapters/` เป็น Astro Content Collection ที่ validate ด้วย Zod
 (`src/content.config.ts`) Frontmatter รองรับ `part` สำหรับจัดกลุ่มบทตามภาค — sidebar และหน้าแรกจัดกลุ่มให้อัตโนมัติ
@@ -107,7 +110,7 @@ workflow จะตั้งค่า URL และ base path ให้เอง:
 ก่อน push ควรรัน:
 
 ```powershell
-npm run build
+npm run verify
 ```
 
 ถ้าต้องการตรวจ GitHub Pages base path ก่อน push ให้รันด้วยชื่อ repository จริง:
